@@ -1,0 +1,1 @@
+import{j as e}from"./index-BqHVJUcd.js";function a(){return e.jsxs("div",{className:"text-center py-12",children:[e.jsx("h1",{className:"text-2xl font-bold mb-2",children:"Example App"}),e.jsx("p",{className:"text-gray-600 dark:text-gray-400",children:"Replace this with your mini-app."})]})}export{a as default};
