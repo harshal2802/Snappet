@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import type { Person, Expense } from './types'
 import ExpenseCard from './ExpenseCard'
 import { calculateOwed, formatCurrency, generateId } from './utils'
+import { useLocalStorage } from '../../hooks/useLocalStorage'
 
 function makePerson(name: string): Person {
   return { id: generateId(), name }
@@ -18,17 +19,25 @@ function makeExpense(people: Person[]): Expense {
   }
 }
 
+function makeDefaultState() {
+  const defaultPeople = [makePerson('Person 1'), makePerson('Person 2')]
+  return { people: defaultPeople, expenses: [makeExpense(defaultPeople)] }
+}
+
 export default function ExpenseSplitter() {
-  const [people, setPeople] = useState<Person[]>([
-    makePerson('Person 1'),
-    makePerson('Person 2'),
-  ])
-  const [expenses, setExpenses] = useState<Expense[]>(() => [
-    makeExpense([makePerson('Person 1'), makePerson('Person 2')]),
-  ])
+  const [people, setPeople] = useLocalStorage<Person[]>('snappet:expense:people', makeDefaultState().people)
+  const [expenses, setExpenses] = useLocalStorage<Expense[]>('snappet:expense:expenses', makeDefaultState().expenses)
   const [nameInput, setNameInput] = useState('')
   const [removeError, setRemoveError] = useState<string | null>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  function handleReset() {
+    const fresh = makeDefaultState()
+    setPeople(fresh.people)
+    setExpenses(fresh.expenses)
+    setNameInput('')
+    setRemoveError(null)
+  }
 
   // Derived totals
   const owed = calculateOwed(expenses, people)
@@ -88,13 +97,21 @@ export default function ExpenseSplitter() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Expense Splitter
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Split bills across a group with custom amounts.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Expense Splitter
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Split bills across a group with custom amounts.
+          </p>
+        </div>
+        <button
+          onClick={handleReset}
+          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          ↺ Reset
+        </button>
       </div>
 
       {/* People */}

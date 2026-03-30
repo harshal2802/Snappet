@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLocalStorage } from '../../hooks/useLocalStorage'
 
 const PRESET_TIPS = [10, 15, 18, 20, 25] as const
 type TipOption = (typeof PRESET_TIPS)[number] | 'custom'
@@ -32,21 +32,44 @@ const TIP_BTN_INACTIVE =
 const AMOUNT_INPUT =
   'w-full pl-7 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
 
+const DEFAULT_ENTRIES: PersonEntry[] = [
+  { id: generateId(), name: 'Person 1', amount: '' },
+  { id: generateId(), name: 'Person 2', amount: '' },
+]
+
+const DEFAULTS = {
+  tipOption: 18 as TipOption,
+  customTipInput: '',
+  splitMode: 'equal' as SplitMode,
+  billInput: '',
+  people: 2,
+  personEntries: DEFAULT_ENTRIES,
+}
+
 export default function TipCalculator() {
   // Shared
-  const [tipOption, setTipOption] = useState<TipOption>(18)
-  const [customTipInput, setCustomTipInput] = useState('')
-  const [splitMode, setSplitMode] = useState<SplitMode>('equal')
+  const [tipOption, setTipOption] = useLocalStorage<TipOption>('snappet:tip:tipOption', DEFAULTS.tipOption)
+  const [customTipInput, setCustomTipInput] = useLocalStorage('snappet:tip:customTipInput', DEFAULTS.customTipInput)
+  const [splitMode, setSplitMode] = useLocalStorage<SplitMode>('snappet:tip:splitMode', DEFAULTS.splitMode)
 
   // Equal mode
-  const [billInput, setBillInput] = useState('')
-  const [people, setPeople] = useState(2)
+  const [billInput, setBillInput] = useLocalStorage('snappet:tip:billInput', DEFAULTS.billInput)
+  const [people, setPeople] = useLocalStorage('snappet:tip:people', DEFAULTS.people)
 
   // Per-person mode
-  const [personEntries, setPersonEntries] = useState<PersonEntry[]>([
-    { id: generateId(), name: 'Person 1', amount: '' },
-    { id: generateId(), name: 'Person 2', amount: '' },
-  ])
+  const [personEntries, setPersonEntries] = useLocalStorage<PersonEntry[]>('snappet:tip:personEntries', DEFAULTS.personEntries)
+
+  function handleReset() {
+    setTipOption(DEFAULTS.tipOption)
+    setCustomTipInput(DEFAULTS.customTipInput)
+    setSplitMode(DEFAULTS.splitMode)
+    setBillInput(DEFAULTS.billInput)
+    setPeople(DEFAULTS.people)
+    setPersonEntries([
+      { id: generateId(), name: 'Person 1', amount: '' },
+      { id: generateId(), name: 'Person 2', amount: '' },
+    ])
+  }
 
   const tipPercent: number =
     tipOption === 'custom'
@@ -175,13 +198,21 @@ export default function TipCalculator() {
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Tip Calculator
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Calculate tip and split the bill among friends.
-        </p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Tip Calculator
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Calculate tip and split the bill among friends.
+          </p>
+        </div>
+        <button
+          onClick={handleReset}
+          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        >
+          ↺ Reset
+        </button>
       </div>
 
       {/* Mode toggle */}
