@@ -1,9 +1,19 @@
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
 
+export type AppCategory =
+  | 'Utilities'
+  | 'Calculators'
+  | 'Productivity'
+  | 'Developer Tools'
+  | 'Creative'
+
 export interface AppRoute {
   path: string
   label: string
+  description: string
+  category: AppCategory
+  icon: string
   component: ComponentType
 }
 
@@ -12,6 +22,9 @@ export const routes: AppRoute[] = [
   {
     path: '/example',
     label: 'Example',
+    description: 'A placeholder mini-app — replace with a real tool.',
+    category: 'Utilities',
+    icon: '🔧',
     component: lazy(() => import('../apps/example')),
   },
 ]
