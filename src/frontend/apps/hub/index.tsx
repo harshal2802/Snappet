@@ -75,7 +75,7 @@ export default function HubPage() {
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
           <button
             onClick={() => setActiveCategory(ALL)}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveCategory(ALL)}
+            aria-pressed={activeCategory === ALL}
             className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               activeCategory === ALL
                 ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
@@ -88,7 +88,7 @@ export default function HubPage() {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setActiveCategory(cat)}
+              aria-pressed={activeCategory === cat}
               className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 activeCategory === cat
                   ? categoryChipStyles[cat]
