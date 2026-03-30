@@ -28,6 +28,14 @@ export const routes: AppRoute[] = [
     component: lazy(() => import('../apps/example')),
   },
   {
+    path: '/tip-calculator',
+    label: 'Tip Calculator',
+    description: 'Calculate tip and split the bill among friends.',
+    category: 'Calculators',
+    icon: '💰',
+    component: lazy(() => import('../apps/tip-calculator')),
+  },
+  {
     path: '/expense-splitter',
     label: 'Expense Splitter',
     description: 'Split bills and expenses across a group with custom amounts.',
