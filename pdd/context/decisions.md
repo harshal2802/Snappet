@@ -1,6 +1,6 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-03-29
+**Last updated**: 2026-03-30
 
 A log of significant technical decisions and the reasoning behind them.
 
@@ -33,8 +33,33 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
-## [2026-03-29] One folder per mini-app under `src/apps/`
+## [2026-03-29] One folder per mini-app under `src/frontend/apps/`
 
-**Decision**: Each mini-app lives in its own folder under `src/apps/` with its own `index.tsx` and optional `components/` subfolder.
+**Decision**: Each mini-app lives in its own folder under `src/frontend/apps/` with its own `index.tsx` and optional sub-files (`types.ts`, `utils.ts`, component files).
 **Why**: Keeps apps isolated, easy to add or remove without touching shared code. Clear ownership boundary.
 **Don't suggest**: Mixing all app components into a flat `src/components/` directory.
+
+---
+
+## [2026-03-30] localStorage persistence via shared `useLocalStorage` hook
+
+**Decision**: All user-facing state in every mini-app is persisted to localStorage via a shared `useLocalStorage` hook at `src/frontend/hooks/useLocalStorage.ts`. Keys follow `snappet:<app-slug>:<field>`.
+**Why**: Users lose their work on refresh — especially painful in the Expense Splitter with multiple entries. A single reusable hook avoids re-implementing the pattern per app.
+**Trade-offs**: Stale localStorage data could conflict if state shape changes. Mitigated by try/catch in the hook (falls back to default on parse failure).
+**Don't suggest**: Per-app ad-hoc `useEffect` + `localStorage` patterns — use the shared hook.
+
+---
+
+## [2026-03-30] Reset button on every mini-app
+
+**Decision**: Every mini-app has an `↺ Reset` button in the top-right of its header that restores all state to defaults with fresh IDs.
+**Why**: localStorage persistence means stale data accumulates. Users need an escape hatch to start clean without knowing about DevTools.
+**Don't suggest**: Confirmation dialogs before reset — the action is easily reversible by re-entering data, and dialogs add friction.
+
+---
+
+## [2026-03-30] Branch per feature + PR workflow
+
+**Decision**: Every new mini-app or feature is developed on a dedicated branch (`feat/<name>`) and merged via PR to `main`. Never commit feature work directly to `main`.
+**Why**: Provides a review gate for AI-generated code before it deploys. Keeps `main` always deployable.
+**Don't suggest**: Committing directly to `main` for anything beyond hotfixes.
