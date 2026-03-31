@@ -1,6 +1,6 @@
 # Project: Snappet
 
-**Last updated**: 2026-03-29
+**Last updated**: 2026-03-30
 **Type**: Frontend / Web app
 
 ## What we're building
@@ -41,12 +41,48 @@ Everyday users, students, professionals, and developers who need quick, no-insta
 
 ## Current state
 
-Starting from scratch. No source code written yet.
+**Live at**: https://harshal2802.github.io/Snappet/
 
-## Planned mini-apps (initial ideas)
+### Built and deployed
 
-**Utilities**: JSON Formatter, Base64 Encoder/Decoder, Regex Tester, URL Encoder/Decoder, Password Generator, UUID Generator
-**Calculators**: Tip Calculator, Bill Splitter, BMI Calculator, Age Calculator, Percentage Calculator, Unit Converter
-**Productivity**: Pomodoro Timer, Countdown Timer, Word Counter, Markdown Previewer
-**Developer tools**: Color Picker, CSS Gradient Generator, Aspect Ratio Calculator
+| App | Route | Category | Notes |
+|---|---|---|---|
+| Hub / Landing Page | `/` | — | Search + category chip filter, responsive 4-col grid |
+| Tip Calculator | `/tip-calculator` | Calculators | Equal split + per-person mode, preset/custom tip %, localStorage persisted |
+| Expense Splitter | `/expense-splitter` | Calculators | Multi-expense, equal/custom split per expense, localStorage persisted |
+
+### Shared infrastructure built
+
+- `src/frontend/hooks/useDarkMode.ts` — dark mode toggle, persisted to localStorage, FOUC-free
+- `src/frontend/hooks/useLocalStorage.ts` — generic drop-in for `useState` that persists to localStorage; all mini-apps should use this for user-facing state
+- `src/frontend/router/routes.tsx` — centralized route registry with `AppRoute` type (`path`, `label`, `description`, `category`, `icon`, `component`)
+- `src/frontend/apps/hub/AppCard.tsx` — shared app card component used by the hub
+- GitHub Actions deploy workflow — auto-deploys on push to `main`
+- Reset button pattern — every mini-app has an `↺ Reset` button (top-right, muted style) that restores defaults with fresh IDs
+
+### Patterns established (follow these in all future mini-apps)
+
+1. **State persistence**: use `useLocalStorage('snappet:<app-slug>:<field>', default)` for all user-facing state
+2. **Reset**: define `DEFAULTS` or `makeDefaultState()` at module level; `handleReset` sets all values back and generates fresh IDs
+3. **Reset button**: top-right of page header, `↺ Reset` label, muted style with red hover
+4. **Route registration**: add entry to `src/frontend/router/routes.tsx` with all 5 fields (`path`, `label`, `description`, `category`, `icon`)
+5. **Folder**: one folder per app under `src/frontend/apps/<app-slug>/`, default export from `index.tsx`
+6. **Branch + PR**: every new app or feature gets its own branch (`feat/<name>`) and PR before merging to `main`
+
+## Backlog (GitHub issues)
+
+| Issue | App | Category |
+|---|---|---|
+| harshal2802/Snappet#5 | Color Picker & Converter | Developer Tools |
+| harshal2802/Snappet#6 | Pomodoro Timer | Productivity |
+| harshal2802/Snappet#7 | Password Generator | Utilities |
+| harshal2802/Snappet#8 | JSON Formatter | Developer Tools |
+| harshal2802/Snappet#9 | Age Calculator | Calculators |
+
+## Planned mini-apps (full list)
+
+**Utilities**: Base64 Encoder/Decoder, Regex Tester, URL Encoder/Decoder, UUID Generator, Password Generator (#7)
+**Calculators**: BMI Calculator, Age Calculator (#9), Percentage Calculator, Unit Converter
+**Productivity**: Pomodoro Timer (#6), Countdown Timer, Word Counter, Markdown Previewer
+**Developer Tools**: Color Picker & Converter (#5), CSS Gradient Generator, Aspect Ratio Calculator, JSON Formatter (#8)
 **Creative**: Random Name Picker, Lorem Ipsum Generator, QR Code Generator
