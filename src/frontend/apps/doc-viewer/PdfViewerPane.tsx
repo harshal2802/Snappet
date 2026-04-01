@@ -1,6 +1,5 @@
 import { Worker, Viewer, SpecialZoomLevel } from '@react-pdf-viewer/core'
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout'
-import type { ToolbarProps, ToolbarSlot, TransformToolbarSlot } from '@react-pdf-viewer/toolbar'
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/default-layout/lib/styles/index.css'
@@ -39,20 +38,7 @@ const PdfViewerPane = forwardRef<PdfViewerPaneHandle, PdfViewerPaneProps>(
       }
     }, [activeWord, jumpToPage])
 
-    const transform: TransformToolbarSlot = (slot: ToolbarSlot) => ({
-      ...slot,
-      // Keep all default toolbar slots
-    })
-
-    const renderToolbar = (Toolbar: (props: ToolbarProps) => React.ReactElement) => (
-      <Toolbar>{renderDefaultToolbar(transform)}</Toolbar>
-    )
-
-    const defaultLayout = defaultLayoutPlugin({
-      renderToolbar,
-    })
-
-    const { renderDefaultToolbar } = defaultLayout.toolbarPluginInstance
+    const defaultLayout = defaultLayoutPlugin()
 
     return (
       <div className="flex flex-col h-full">

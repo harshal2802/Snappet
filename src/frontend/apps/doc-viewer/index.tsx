@@ -1,8 +1,11 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
-import type { FileType, OcrWord } from './types'
+import type { FileType, OcrWord, OcrPage, OcrStatus } from './types'
 import PdfViewerPane, { type PdfViewerPaneHandle } from './PdfViewerPane'
 import ImageViewerPane from './ImageViewerPane'
+import TextPanel from './TextPanel'
+import HighlightOverlay from './HighlightOverlay'
+import { runOcrOnImage, runOcrOnPdf } from './ocr'
 
 const ACCEPTED_EXT = '.pdf,.png,.jpg,.jpeg'
 
@@ -17,17 +20,39 @@ export default function DocViewer() {
   const [fileName, setFileName] = useLocalStorage<string | null>('snappet:doc-viewer:fileName', null)
   const [fileType, setFileType] = useLocalStorage<FileType | null>('snappet:doc-viewer:fileType', null)
 
-  // Non-persisted (binary can't be JSON-serialized)
+  // Non-persisted runtime state
   const [fileData, setFileData] = useState<Uint8Array | string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
-  // OCR state (populated in Part 2)
-  const [activeWord] = useState<OcrWord | null>(null)
+  // OCR state
+  const [ocrPages, setOcrPages] = useState<OcrPage[]>([])
+  const [ocrStatus, setOcrStatus] = useState<OcrStatus>('idle')
+  const [ocrProgress, setOcrProgress] = useState('')
+  const [ocrError, setOcrError] = useState<string | null>(null)
+  const [activeWordId, setActiveWordId] = useState<string | null>(null)
+
+  // Viewer container size (for HighlightOverlay coordinate scaling)
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
 
   const inputRef = useRef<HTMLInputElement>(null)
   const pdfRef = useRef<PdfViewerPaneHandle>(null)
+  const viewerContainerRef = useRef<HTMLDivElement>(null)
+
+  // Measure viewer container for overlay scaling
+  useEffect(() => {
+    const el = viewerContainerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      })
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [fileData])
 
   async function processFile(file: File) {
     const type = getFileType(file.type)
@@ -35,9 +60,14 @@ export default function DocViewer() {
       setError(`Unsupported file type "${file.type}". Please upload a PDF, PNG, or JPG.`)
       return
     }
-
     setIsLoading(true)
     setError(null)
+    // Reset OCR on new file
+    setOcrPages([])
+    setOcrStatus('idle')
+    setOcrProgress('')
+    setOcrError(null)
+    setActiveWordId(null)
 
     try {
       if (type === 'pdf') {
@@ -64,7 +94,6 @@ export default function DocViewer() {
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) processFile(file)
-    // Reset input so the same file can be re-selected
     e.target.value = ''
   }
 
@@ -85,13 +114,58 @@ export default function DocViewer() {
     if (file) processFile(file)
   }
 
+  async function handleStartOcr() {
+    if (!fileData || !fileType) return
+    setOcrStatus('running')
+    setOcrError(null)
+    setOcrPages([])
+    setActiveWordId(null)
+
+    try {
+      let pages: OcrPage[]
+      if (fileType === 'pdf') {
+        pages = await runOcrOnPdf(fileData as Uint8Array, (page, total, pct) => {
+          setOcrProgress(`Extracting page ${page} of ${total} (${Math.round(pct)}%)`)
+        })
+      } else {
+        pages = [
+          await runOcrOnImage(fileData as string, 0, (pct) => {
+            setOcrProgress(`${Math.round(pct)}%`)
+          }),
+        ]
+      }
+      setOcrPages(pages)
+      setOcrStatus('done')
+    } catch (e) {
+      setOcrStatus('error')
+      setOcrError(e instanceof Error ? e.message : 'OCR failed')
+    }
+  }
+
+  function handleWordClick(word: OcrWord) {
+    setActiveWordId(word.id)
+    // Jump to the page containing this word in the PDF viewer
+    if (fileType === 'pdf' && pdfRef.current) {
+      pdfRef.current.jumpToPage(word.bbox.pageIndex)
+    }
+  }
+
   const handleReset = useCallback(() => {
     setFileData(null)
     setFileName(null)
     setFileType(null)
     setError(null)
     setIsLoading(false)
+    setOcrPages([])
+    setOcrStatus('idle')
+    setOcrProgress('')
+    setOcrError(null)
+    setActiveWordId(null)
   }, [setFileName, setFileType])
+
+  const activeWord = ocrPages
+    .flatMap((p) => p.words)
+    .find((w) => w.id === activeWordId) ?? null
 
   // ── VIEWER ──────────────────────────────────────────────────────────────────
   if (fileData !== null && fileType !== null && fileName !== null) {
@@ -110,21 +184,43 @@ export default function DocViewer() {
           </button>
         </div>
 
-        {/* Viewer area */}
-        <div className="flex-1 overflow-hidden">
-          {fileType === 'pdf' ? (
-            <PdfViewerPane
-              ref={pdfRef}
-              fileData={fileData as Uint8Array}
-              fileName={fileName}
+        {/* Two-panel layout */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: viewer + highlight overlay */}
+          <div ref={viewerContainerRef} className="flex-1 relative overflow-hidden">
+            {fileType === 'pdf' ? (
+              <PdfViewerPane
+                ref={pdfRef}
+                fileData={fileData as Uint8Array}
+                fileName={fileName}
+                activeWord={activeWord}
+              />
+            ) : (
+              <ImageViewerPane
+                fileData={fileData as string}
+                fileName={fileName}
+              />
+            )}
+            <HighlightOverlay
               activeWord={activeWord}
+              ocrPages={ocrPages}
+              containerWidth={containerSize.width}
+              containerHeight={containerSize.height}
             />
-          ) : (
-            <ImageViewerPane
-              fileData={fileData as string}
-              fileName={fileName}
+          </div>
+
+          {/* Right: text panel — fixed 320px */}
+          <div className="w-80 shrink-0 overflow-hidden flex flex-col">
+            <TextPanel
+              pages={ocrPages}
+              activeWordId={activeWordId}
+              onWordClick={handleWordClick}
+              onStartOcr={handleStartOcr}
+              status={ocrStatus}
+              progress={ocrProgress}
+              errorMessage={ocrError}
             />
-          )}
+          </div>
         </div>
       </div>
     )
@@ -160,17 +256,14 @@ export default function DocViewer() {
         onDrop={handleDrop}
         className={`
           relative flex flex-col items-center justify-center gap-3 p-12
-          rounded-2xl border-2 border-dashed cursor-pointer
-          transition-colors duration-150
+          rounded-2xl border-2 border-dashed cursor-pointer transition-colors duration-150
           ${isDragging
             ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/30'
             : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
           }
         `}
       >
-        <span className="text-5xl select-none">
-          {isDragging ? '📂' : '📁'}
-        </span>
+        <span className="text-5xl select-none">{isDragging ? '📂' : '📁'}</span>
         <div className="text-center">
           <p className="font-medium text-gray-700 dark:text-gray-300">
             {isDragging ? 'Drop to open' : 'Drop a PDF or image here'}
@@ -179,9 +272,7 @@ export default function DocViewer() {
             or <span className="text-blue-600 dark:text-blue-400">click to browse</span>
           </p>
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          Supported: PDF, PNG, JPG
-        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">Supported: PDF, PNG, JPG</p>
 
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 dark:bg-gray-800/80">
@@ -193,7 +284,6 @@ export default function DocViewer() {
         )}
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={inputRef}
         type="file"
@@ -203,12 +293,8 @@ export default function DocViewer() {
         aria-label="Upload a document"
       />
 
-      {/* Error */}
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 px-1">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600 dark:text-red-400 px-1">{error}</p>}
 
-      {/* Feature list */}
       <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400">
         {[
           '📑 Thumbnails & bookmarks',
