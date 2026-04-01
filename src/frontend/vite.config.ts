@@ -8,4 +8,8 @@ const base = process.env.VITE_BASE_PATH ?? '/Snappet/'
 export default defineConfig({
   plugins: [react()],
   base,
+  build: {
+    // pdfjs-dist is intentionally large — only loads for /doc-viewer
+    chunkSizeWarningLimit: 700,
+  },
 })
