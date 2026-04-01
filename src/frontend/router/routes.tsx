@@ -43,4 +43,12 @@ export const routes: AppRoute[] = [
     icon: '🧾',
     component: lazy(() => import('../apps/expense-splitter')),
   },
+  {
+    path: '/doc-viewer',
+    label: 'Document Viewer',
+    description: 'View PDFs and images with full-featured viewer and OCR text extraction.',
+    category: 'Utilities',
+    icon: '📄',
+    component: lazy(() => import('../apps/doc-viewer')),
+  },
 ]
