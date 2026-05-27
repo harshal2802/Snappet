@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import typography from '@tailwindcss/typography'
 
 export default {
   darkMode: 'class',
@@ -11,7 +12,17 @@ export default {
     './router/**/*.{ts,tsx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translate(-50%, 0.5rem)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.2s ease-out',
+      },
+    },
   },
-  plugins: [],
+  plugins: [typography],
 } satisfies Config
