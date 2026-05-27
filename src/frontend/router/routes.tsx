@@ -123,4 +123,12 @@ export const routes: AppRoute[] = [
     icon: '🔑',
     component: lazy(() => import('../apps/password-generator')),
   },
+  {
+    path: '/unit-converter',
+    label: 'Unit Converter',
+    description: 'Convert length, weight, temperature, volume, speed, time, and data.',
+    category: 'Calculators',
+    icon: '📐',
+    component: lazy(() => import('../apps/unit-converter')),
+  },
 ]
