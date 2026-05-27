@@ -86,6 +86,10 @@ function TreeNode({
     setExpanded(false)
   }
 
+  const handleCopyPath = useCallback(() => {
+    onCopyPath(path)
+  }, [onCopyPath, path])
+
   const isObj = isObject(value)
   const isArr = isArray(value)
   const isExpandable = isObj || isArr
@@ -98,10 +102,6 @@ function TreeNode({
   }
 
   const isHighlighted = matchesSearch(keyName, value, searchTerm)
-
-  const handleCopyPath = useCallback(() => {
-    onCopyPath(path)
-  }, [onCopyPath, path])
 
   const copyButton = (
     <button
