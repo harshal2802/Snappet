@@ -44,22 +44,6 @@ export const routes: AppRoute[] = [
     component: lazy(() => import('../apps/expense-splitter')),
   },
   {
-    path: '/code-snapshot',
-    label: 'Code Snapshot',
-    description: 'Generate beautiful code screenshots with customizable themes.',
-    category: 'Developer Tools',
-    icon: '📸',
-    component: lazy(() => import('../apps/code-snapshot')),
-  },
-  {
-    path: '/json-explorer',
-    label: 'JSON Explorer',
-    description: 'Format, explore, and diff JSON data with a collapsible tree view.',
-    category: 'Developer Tools',
-    icon: '🔍',
-    component: lazy(() => import('../apps/json-explorer')),
-  },
-  {
     path: '/kanban-board',
     label: 'Kanban Board',
     description: 'Organize tasks with a drag-and-drop kanban board.',
