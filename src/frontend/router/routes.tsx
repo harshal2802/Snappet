@@ -43,4 +43,12 @@ export const routes: AppRoute[] = [
     icon: '🧾',
     component: lazy(() => import('../apps/expense-splitter')),
   },
+  {
+    path: '/json-explorer',
+    label: 'JSON Explorer',
+    description: 'Format, explore, and diff JSON data with a collapsible tree view.',
+    category: 'Developer Tools',
+    icon: '🔍',
+    component: lazy(() => import('../apps/json-explorer')),
+  },
 ]
