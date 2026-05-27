@@ -123,4 +123,12 @@ export const routes: AppRoute[] = [
     icon: '🔑',
     component: lazy(() => import('../apps/password-generator')),
   },
+  {
+    path: '/random-picker',
+    label: 'Random Picker',
+    description: 'Flip a coin, roll dice, pick from a list, or generate a random number.',
+    category: 'Utilities',
+    icon: '🎲',
+    component: lazy(() => import('../apps/random-picker')),
+  },
 ]
