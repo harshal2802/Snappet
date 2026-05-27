@@ -43,4 +43,12 @@ export const routes: AppRoute[] = [
     icon: '🧾',
     component: lazy(() => import('../apps/expense-splitter')),
   },
+  {
+    path: '/markdown-editor',
+    label: 'Markdown Editor',
+    description: 'Write and preview Markdown with live rendering and export.',
+    category: 'Productivity',
+    icon: '📝',
+    component: lazy(() => import('../apps/markdown-editor')),
+  },
 ]
