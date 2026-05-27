@@ -123,4 +123,12 @@ export const routes: AppRoute[] = [
     icon: '🔑',
     component: lazy(() => import('../apps/password-generator')),
   },
+  {
+    path: '/tally-counter',
+    label: 'Tally Counter',
+    description: 'Count things on the go with a giant tap-anywhere counter.',
+    category: 'Utilities',
+    icon: '🔢',
+    component: lazy(() => import('../apps/tally-counter')),
+  },
 ]
