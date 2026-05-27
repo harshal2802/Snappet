@@ -6,12 +6,9 @@ import {
 } from '@dnd-kit/sortable'
 import type { Card, CardColor } from './types'
 import KanbanCard from './KanbanCard'
+import { generateId } from './utils'
 
 const DEFAULT_COLOR: CardColor = 'blue'
-
-function generateId(): string {
-  return Math.random().toString(36).slice(2, 9)
-}
 
 interface ColumnProps {
   columnId: string

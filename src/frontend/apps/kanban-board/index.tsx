@@ -14,10 +14,7 @@ import type { Board, Card, Column as ColumnType } from './types'
 import Column from './Column'
 import CardModal from './CardModal'
 import KanbanCard from './KanbanCard'
-
-function generateId(): string {
-  return Math.random().toString(36).slice(2, 9)
-}
+import { generateId } from './utils'
 
 function createDefaultBoard(): Board {
   return [
@@ -166,7 +163,7 @@ export default function KanbanBoard() {
         })
       })
     },
-    []
+    [setBoard]
   )
 
   const handleDragEnd = useCallback(
@@ -199,7 +196,7 @@ export default function KanbanBoard() {
         )
       })
     },
-    []
+    [setBoard]
   )
 
   function handleCardClick(card: Card) {
