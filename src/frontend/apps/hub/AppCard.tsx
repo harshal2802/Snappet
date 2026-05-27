@@ -7,6 +7,7 @@ const categoryStyles: Record<AppCategory, string> = {
   Productivity: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   'Developer Tools': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
   Creative: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+  Health: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
 }
 
 interface AppCardProps {

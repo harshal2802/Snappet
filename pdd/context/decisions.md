@@ -6,6 +6,18 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-27] Workout app: Free Exercise DB + 4-phase prompt chain
+
+**Decision**: Build a Workout mini-app as a 4-phase prompt chain (Browser → Routine Builder → Workout Player → History). Data source: [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) — bundle the ~1 MB `exercises.json` (all 800 exercises) at build; lazy-load images from jsdelivr CDN. Default weight unit: kg. Rest-timer end cue: vibration + visual flash + short Web Audio beep. Full analysis in `pdd/context/research/workout-app.md`.
+
+**Why**: Largest single feature in Snappet — chaining keeps each PR review-able. Free Exercise DB is the only open-source option that gives us all three of: no API key, offline-bundlable metadata, predictable image URLs. wger (license + complexity) and ExerciseDB-RapidAPI (paid + key) both fail Snappet's no-backend constraint.
+
+**Trade-offs**: Image rights derive from older sources (project README says "free to use") — must include visible attribution to Free Exercise DB. ~60 MB of images means we intentionally don't precache them; users need online for the first view of each exercise (then HTTP cache covers repeat views).
+
+**Don't suggest**: A single mega-prompt for the whole app (too large for one PR); wger API integration (license + complexity); ExerciseDB/RapidAPI (paid + API key); auto-curating Wikimedia images (rights mess); a backend (violates no-backend ethos).
+
+---
+
 ## [2026-05-27] Five new mobile-friendly mini-apps
 
 **Decision**: Build all 5 candidates from `research/mobile-friendly-app-ideas.md` in parallel, one PR each: QR Code Generator (#20), Tally Counter (#21), Random Picker (#22), Stopwatch + Lap Timer (#23), Unit Converter (#24). Each ships as its own branch + PDD prompt + PR following the established per-app pattern. The numeric prefixes continue the existing prompt-file sequence (last was `19-touch-multi-select.md`).

@@ -7,6 +7,7 @@ export type AppCategory =
   | 'Productivity'
   | 'Developer Tools'
   | 'Creative'
+  | 'Health'
 
 export interface AppRoute {
   path: string
@@ -162,5 +163,13 @@ export const routes: AppRoute[] = [
     category: 'Calculators',
     icon: '📐',
     component: lazy(() => import('../apps/unit-converter')),
+  },
+  {
+    path: '/workout',
+    label: 'Workout',
+    description: 'Browse 800+ exercises with photos and how-to instructions.',
+    category: 'Health',
+    icon: '💪',
+    component: lazy(() => import('../apps/workout')),
   },
 ]
