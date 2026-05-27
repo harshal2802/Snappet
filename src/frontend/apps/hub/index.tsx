@@ -12,6 +12,7 @@ const CATEGORIES: AppCategory[] = [
   'Productivity',
   'Developer Tools',
   'Creative',
+  'Health',
 ]
 
 const categoryChipStyles: Record<AppCategory, string> = {
@@ -20,6 +21,7 @@ const categoryChipStyles: Record<AppCategory, string> = {
   Productivity: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800',
   'Developer Tools': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800',
   Creative: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300 border-pink-200 dark:border-pink-800',
+  Health: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200 dark:border-rose-800',
 }
 
 export default function HubPage() {
