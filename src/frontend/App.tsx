@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
+import UpdatePrompt from './components/UpdatePrompt'
 import { routes } from './router/routes'
 import HubPage from './apps/hub'
 
@@ -14,16 +15,19 @@ function NotFound() {
 
 export default function App() {
   return (
-    <Layout>
-      <Suspense fallback={<div className="text-center py-12 text-gray-400">Loading…</div>}>
-        <Routes>
-          <Route path="/" element={<HubPage />} />
-          {routes.map((route) => (
-            <Route key={route.path} path={route.path} element={<route.component />} />
-          ))}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </Layout>
+    <>
+      <Layout>
+        <Suspense fallback={<div className="text-center py-12 text-gray-400">Loading…</div>}>
+          <Routes>
+            <Route path="/" element={<HubPage />} />
+            {routes.map((route) => (
+              <Route key={route.path} path={route.path} element={<route.component />} />
+            ))}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </Layout>
+      <UpdatePrompt />
+    </>
   )
 }
