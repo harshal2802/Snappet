@@ -6,6 +6,15 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-27] Five new mobile-friendly mini-apps
+
+**Decision**: Build all 5 candidates from `research/mobile-friendly-app-ideas.md` in parallel, one PR each: QR Code Generator (#20), Tally Counter (#21), Random Picker (#22), Stopwatch + Lap Timer (#23), Unit Converter (#24). Each ships as its own branch + PDD prompt + PR following the established per-app pattern. The numeric prefixes continue the existing prompt-file sequence (last was `19-touch-multi-select.md`).
+**Why**: Snappet is now genuinely usable on iPhone post PR #22–#24. These 5 are the highest-impact mobile-native additions identified in research. Per-PR matches every prior mini-app (#1–#20 from issues).
+**Trade-offs**: Five parallel branches means each needs a rebase as the others merge (routes.tsx is the contended file). Manageable — only one app (QR) adds an npm dep, the rest are pure code.
+**Don't suggest**: Bundling into one big "more apps" PR; rejecting alternatives (Habit Tracker, Drawing Pad, Voice Recorder, Hash/Base64/JWT, Barcode Scanner) logged in the research file.
+
+---
+
 ## [2026-05-27] Touch multi-word selection in OcrTextView: long-press → drag
 
 **Decision**: Implement Option 1 from `research/touch-multi-select.md`. Pressing and holding a word for 300 ms enters extend mode; finger drag across words extends via `document.elementFromPoint`; lifting commits. Short tap stays single-select; short drag still scrolls. Mirrors iOS native text-selection vocabulary.
