@@ -59,4 +59,12 @@ export const routes: AppRoute[] = [
     icon: '🔍',
     component: lazy(() => import('../apps/json-explorer')),
   },
+  {
+    path: '/regex-playground',
+    label: 'Regex Playground',
+    description: 'Test, debug, and understand regular expressions in real time.',
+    category: 'Developer Tools',
+    icon: '🔤',
+    component: lazy(() => import('../apps/regex-playground')),
+  },
 ]
