@@ -113,6 +113,7 @@ export default function CodeSnapshot() {
   // Transient UI state
   const [exporting, setExporting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const theme = getTheme(themeId)
   const background = getBackground(backgroundId)
@@ -134,6 +135,7 @@ export default function CodeSnapshot() {
   const handleDownload = useCallback(async () => {
     if (!previewRef.current) return
     setExporting(true)
+    setExportError(null)
     try {
       const dataUrl = await toPng(previewRef.current, { pixelRatio: 2 })
       const link = document.createElement('a')
@@ -142,6 +144,11 @@ export default function CodeSnapshot() {
       link.click()
     } catch (err) {
       console.error('Failed to export image:', err)
+      setExportError(
+        err instanceof Error
+          ? `Export failed: ${err.message}. iOS Safari sometimes can't rasterize the preview — try a smaller code sample.`
+          : 'Export failed.',
+      )
     } finally {
       setExporting(false)
     }
@@ -150,6 +157,7 @@ export default function CodeSnapshot() {
   const handleCopy = useCallback(async () => {
     if (!previewRef.current) return
     setExporting(true)
+    setExportError(null)
     try {
       const blob = await toBlob(previewRef.current, { pixelRatio: 2 })
       if (blob) {
@@ -161,6 +169,11 @@ export default function CodeSnapshot() {
       }
     } catch (err) {
       console.error('Failed to copy image:', err)
+      setExportError(
+        err instanceof Error
+          ? `Copy failed: ${err.message}. iOS Safari sometimes can't rasterize the preview — try a smaller code sample.`
+          : 'Copy failed.',
+      )
     } finally {
       setExporting(false)
     }
@@ -235,6 +248,19 @@ export default function CodeSnapshot() {
                 </button>
               </div>
             </div>
+
+            {exportError && (
+              <div className="m-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
+                <span className="flex-1">{exportError}</span>
+                <button
+                  onClick={() => setExportError(null)}
+                  aria-label="Dismiss"
+                  className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Preview canvas — this is what gets exported */}
             <div className="overflow-auto p-4 bg-gray-100 dark:bg-gray-900/50">
@@ -361,7 +387,7 @@ export default function CodeSnapshot() {
                     style={{ backgroundColor: t.bgColor }}
                   >
                     <span
-                      className="absolute inset-0 flex items-center justify-center text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute inset-0 flex items-center justify-center text-[10px] font-medium opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                       style={{ color: t.isLight ? '#24292f' : '#e0e0e0' }}
                     >
                       {t.label}

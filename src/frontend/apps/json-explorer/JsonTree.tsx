@@ -106,7 +106,7 @@ function TreeNode({
   const copyButton = (
     <button
       onClick={handleCopyPath}
-      className="ml-2 opacity-0 group-hover:opacity-100 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded shrink-0"
+      className="ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded shrink-0"
       title={`Copy path: ${path || '(root)'}`}
     >
       copy

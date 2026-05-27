@@ -38,6 +38,19 @@ function migrateAnnotation(raw: Annotation | LegacyAnnotation): Annotation {
   }
 }
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [query])
+  return matches
+}
+
 const ACCEPTED_EXT = '.pdf,.png,.jpg,.jpeg'
 
 function getFileType(mime: string): FileType | null {
@@ -103,6 +116,7 @@ export default function DocViewer() {
     320,
   )
   const [isResizing, setIsResizing] = useState(false)
+  const isDesktop = useMediaQuery('(min-width: 768px)')
 
   useEffect(() => {
     if (!isResizing) return
@@ -391,10 +405,10 @@ export default function DocViewer() {
           </button>
         </div>
 
-        {/* Two-panel layout */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left: viewer + highlight overlay */}
-          <div className="flex-1 relative overflow-hidden">
+        {/* Two-panel layout — stacks vertically on mobile, side-by-side on desktop */}
+        <div className="flex flex-1 flex-col md:flex-row overflow-hidden">
+          {/* Top (mobile) / Left (desktop): viewer + highlight overlay */}
+          <div className="h-1/2 md:h-auto md:flex-1 relative overflow-hidden">
             {fileType === 'pdf' ? (
               <PdfViewerPane
                 ref={pdfRef}
@@ -414,20 +428,20 @@ export default function DocViewer() {
             />
           </div>
 
-          {/* Drag handle */}
+          {/* Drag handle — desktop only */}
           <div
             onMouseDown={() => setIsResizing(true)}
             role="separator"
             aria-orientation="vertical"
             aria-label="Resize text panel"
             title="Drag to resize"
-            className="w-1 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors shrink-0"
+            className="hidden md:block w-1 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors shrink-0"
           />
 
-          {/* Right: text panel — resizable */}
+          {/* Bottom (mobile) / Right (desktop): text panel */}
           <div
-            className="shrink-0 overflow-hidden flex flex-col"
-            style={{ width: panelWidth }}
+            className="w-full h-1/2 md:h-auto md:shrink-0 overflow-hidden flex flex-col border-t md:border-t-0 border-gray-200 dark:border-gray-700"
+            style={isDesktop ? { width: panelWidth } : undefined}
           >
             <TextPanel
               pages={ocrPages}

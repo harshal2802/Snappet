@@ -133,14 +133,19 @@ export default function OcrTextView({
     })
   }, [selectedWords])
 
-  // End drag on window mouseup so releasing outside any word still works.
+  // End drag on window pointerup/cancel so releasing outside any word still
+  // works (and iOS pointercancel cleans up if the OS interrupts).
   useEffect(() => {
     function onUp() {
       dragAnchorRef.current = null
       dragBaseSelectionRef.current = []
     }
-    window.addEventListener('mouseup', onUp)
-    return () => window.removeEventListener('mouseup', onUp)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    return () => {
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
   }, [])
 
   const visiblePages = useMemo(
@@ -175,11 +180,12 @@ export default function OcrTextView({
 
   // ── Selection interactions ──────────────────────────────────────────────────
 
-  const handleWordMouseDown = useCallback(
-    (word: OcrWord, e: React.MouseEvent) => {
-      // Only respond to primary button
+  const handleWordPointerDown = useCallback(
+    (word: OcrWord, e: React.PointerEvent) => {
+      // Only respond to primary button (button = 0 covers both mouse left-click
+      // and touch — touch always reports button 0).
       if (e.button !== 0) return
-      // Prevent native text selection (we render our own selection styling)
+      // Prevent native text selection on mouse (no-op for touch).
       e.preventDefault()
 
       if (e.shiftKey) {
@@ -197,7 +203,10 @@ export default function OcrTextView({
         onSetSelection(Array.from(set))
         return
       }
-      // Plain mousedown — start a drag from this word
+      // Plain pointerdown — set single selection. On mouse, the dragAnchor
+      // lets subsequent onPointerEnter extend the range; on touch, pointerenter
+      // doesn't fire on cross-element finger movement (implicit pointer
+      // capture), so this stays a single-tap select.
       dragAnchorRef.current = word.id
       dragBaseSelectionRef.current = []
       onSetSelection([word.id])
@@ -205,7 +214,7 @@ export default function OcrTextView({
     [allWordsOrdered, onSetSelection, selectedWordIds, wordOrder],
   )
 
-  const handleWordMouseEnter = useCallback(
+  const handleWordPointerEnter = useCallback(
     (word: OcrWord) => {
       const anchor = dragAnchorRef.current
       if (!anchor) return
@@ -275,7 +284,8 @@ export default function OcrTextView({
       {/* Help text if no selection */}
       {selectedWords.length === 0 && (
         <div className="px-3 py-1.5 text-[10px] text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-gray-700 shrink-0">
-          Tip: drag across words, or shift+click for a range, or ⌘/Ctrl+click to toggle.
+          <span className="hidden sm:inline">Tip: drag across words, or shift+click for a range, or ⌘/Ctrl+click to toggle.</span>
+          <span className="sm:hidden">Tip: tap a word to select.</span>
         </div>
       )}
 
@@ -365,8 +375,8 @@ export default function OcrTextView({
                                         ref={isLastSelected ? lastSelectedRef : null}
                                       >
                                         <span
-                                          onMouseDown={(e) => handleWordMouseDown(word, e)}
-                                          onMouseEnter={() => handleWordMouseEnter(word)}
+                                          onPointerDown={(e) => handleWordPointerDown(word, e)}
+                                          onPointerEnter={() => handleWordPointerEnter(word)}
                                           title={
                                             isLowConf
                                               ? `Low confidence (${Math.round(word.confidence)}%)`

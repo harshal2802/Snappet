@@ -3,7 +3,8 @@ import {
   DndContext,
   DragOverlay,
   closestCorners,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensors,
   useSensor,
 } from '@dnd-kit/core'
@@ -34,9 +35,14 @@ export default function KanbanBoard() {
   const [editingCard, setEditingCard] = useState<Card | null>(null)
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: { distance: 5 },
-    })
+    }),
+    useSensor(TouchSensor, {
+      // Long-press 200ms with 5px tolerance — clearly separates "tap to open
+      // the card modal" from "drag to reorder" on touch.
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
   )
 
   function handleReset() {
