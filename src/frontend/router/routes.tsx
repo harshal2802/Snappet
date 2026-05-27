@@ -91,4 +91,12 @@ export const routes: AppRoute[] = [
     icon: '📄',
     component: lazy(() => import('../apps/doc-viewer')),
   },
+  {
+    path: '/age-calculator',
+    label: 'Age Calculator',
+    description: 'Calculate your exact age, days until your next birthday, and more.',
+    category: 'Calculators',
+    icon: '🎂',
+    component: lazy(() => import('../apps/age-calculator')),
+  },
 ]
