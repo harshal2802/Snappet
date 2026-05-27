@@ -115,4 +115,12 @@ export const routes: AppRoute[] = [
     icon: '🎨',
     component: lazy(() => import('../apps/color-picker')),
   },
+  {
+    path: '/password-generator',
+    label: 'Password Generator',
+    description: 'Generate strong passwords with custom length, character sets, and a live strength meter.',
+    category: 'Utilities',
+    icon: '🔑',
+    component: lazy(() => import('../apps/password-generator')),
+  },
 ]
