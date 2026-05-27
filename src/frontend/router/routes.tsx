@@ -123,4 +123,12 @@ export const routes: AppRoute[] = [
     icon: '🔑',
     component: lazy(() => import('../apps/password-generator')),
   },
+  {
+    path: '/qr-code',
+    label: 'QR Code Generator',
+    description: 'Generate scannable QR codes for text, URLs, WiFi, and contacts.',
+    category: 'Utilities',
+    icon: '📲',
+    component: lazy(() => import('../apps/qr-code')),
+  },
 ]
