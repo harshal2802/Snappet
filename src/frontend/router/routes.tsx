@@ -75,4 +75,12 @@ export const routes: AppRoute[] = [
     icon: '📸',
     component: lazy(() => import('../apps/code-snapshot')),
   },
+  {
+    path: '/markdown-editor',
+    label: 'Markdown Editor',
+    description: 'Write and preview Markdown with live rendering and export.',
+    category: 'Productivity',
+    icon: '📝',
+    component: lazy(() => import('../apps/markdown-editor')),
+  },
 ]
