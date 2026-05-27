@@ -124,6 +124,14 @@ export const routes: AppRoute[] = [
     component: lazy(() => import('../apps/password-generator')),
   },
   {
+    path: '/qr-code',
+    label: 'QR Code Generator',
+    description: 'Generate scannable QR codes for text, URLs, WiFi, and contacts.',
+    category: 'Utilities',
+    icon: '📲',
+    component: lazy(() => import('../apps/qr-code')),
+  },
+  {
     path: '/tally-counter',
     label: 'Tally Counter',
     description: 'Count things on the go with a giant tap-anywhere counter.',
