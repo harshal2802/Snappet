@@ -114,6 +114,14 @@ export default function JsonExplorer() {
     setExplorerInput(minifyJson(explorerInput))
   }
 
+  function handleCopyInput() {
+    if (!explorerInput) return
+    navigator.clipboard.writeText(explorerInput).then(
+      () => setToast('Copied JSON to clipboard'),
+      () => setToast('Failed to copy'),
+    )
+  }
+
   const hasExplorerData = explorerInput.trim() !== '' && explorerParsed.error === null && explorerParsed.value !== null
   const hasDiffData =
     diffOriginal.trim() !== '' &&
@@ -175,8 +183,8 @@ export default function JsonExplorer() {
               spellCheck={false}
             />
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-2">
+            {/* Action buttons + counts */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleFormat}
                 disabled={!explorerInput.trim()}
@@ -191,6 +199,17 @@ export default function JsonExplorer() {
               >
                 Minify
               </button>
+              <button
+                onClick={handleCopyInput}
+                disabled={!explorerInput}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:border-blue-400 dark:hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Copy
+              </button>
+              <span className="ml-auto text-xs text-gray-400 dark:text-gray-500 font-mono tabular-nums">
+                {explorerInput.length.toLocaleString()} chars ·{' '}
+                {explorerInput === '' ? 0 : explorerInput.split('\n').length} lines
+              </span>
             </div>
 
             {/* Error display */}

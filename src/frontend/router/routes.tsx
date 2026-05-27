@@ -53,8 +53,8 @@ export const routes: AppRoute[] = [
   },
   {
     path: '/json-explorer',
-    label: 'JSON Explorer',
-    description: 'Format, explore, and diff JSON data with a collapsible tree view.',
+    label: 'JSON Explorer & Formatter',
+    description: 'Format, minify, validate, explore, and diff JSON — collapsible tree, char/line counts, one-click copy.',
     category: 'Developer Tools',
     icon: '🔍',
     component: lazy(() => import('../apps/json-explorer')),
