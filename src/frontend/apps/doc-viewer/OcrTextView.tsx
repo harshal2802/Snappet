@@ -106,6 +106,10 @@ export default function OcrTextView({
   // Selection is updated continuously during the drag.
   const dragAnchorRef = useRef<string | null>(null)
   const dragBaseSelectionRef = useRef<string[]>([])
+  const [isExtending, setIsExtending] = useState(false)
+  const longPressTimerRef = useRef<number | null>(null)
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null)
+  const lastExtendIdRef = useRef<string | null>(null)
 
   // Auto-scroll the last selected word into view
   useEffect(() => {
@@ -133,20 +137,55 @@ export default function OcrTextView({
     })
   }, [selectedWords])
 
-  // End drag on window pointerup/cancel so releasing outside any word still
-  // works (and iOS pointercancel cleans up if the OS interrupts).
+  // Global pointer handlers — cancel pending long-press on movement past
+  // tolerance, extend the range during touch long-press, and clean up on
+  // pointerup/pointercancel (covers iOS interrupting the gesture).
   useEffect(() => {
-    function onUp() {
+    function onMove(e: PointerEvent) {
+      // 1) Cancel a pending long-press if the finger moved past tolerance
+      //    (the user was trying to scroll, not to enter extend mode).
+      if (longPressTimerRef.current !== null && longPressStartRef.current) {
+        const dx = e.clientX - longPressStartRef.current.x
+        const dy = e.clientY - longPressStartRef.current.y
+        if (dx * dx + dy * dy > 64) {
+          window.clearTimeout(longPressTimerRef.current)
+          longPressTimerRef.current = null
+          longPressStartRef.current = null
+        }
+      }
+      // 2) While extending, extend the range to whichever word is under the finger.
+      if (isExtending && dragAnchorRef.current) {
+        const target = document.elementFromPoint(e.clientX, e.clientY)
+        const wordEl = target?.closest('[data-word-id]') as HTMLElement | null
+        const id = wordEl?.dataset.wordId
+        if (id && id !== lastExtendIdRef.current) {
+          lastExtendIdRef.current = id
+          onSetSelection(
+            rangeBetween(wordOrder, dragAnchorRef.current, id, allWordsOrdered),
+          )
+        }
+      }
+    }
+    function onEnd() {
+      if (longPressTimerRef.current !== null) {
+        window.clearTimeout(longPressTimerRef.current)
+        longPressTimerRef.current = null
+      }
+      longPressStartRef.current = null
+      lastExtendIdRef.current = null
+      if (isExtending) setIsExtending(false)
       dragAnchorRef.current = null
       dragBaseSelectionRef.current = []
     }
-    window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onEnd)
+    window.addEventListener('pointercancel', onEnd)
     return () => {
-      window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onEnd)
+      window.removeEventListener('pointercancel', onEnd)
     }
-  }, [])
+  }, [isExtending, allWordsOrdered, onSetSelection, wordOrder])
 
   const visiblePages = useMemo(
     () => (search ? pages.filter((p) => pageMatchesSearch(p, search)) : pages),
@@ -204,12 +243,28 @@ export default function OcrTextView({
         return
       }
       // Plain pointerdown — set single selection. On mouse, the dragAnchor
-      // lets subsequent onPointerEnter extend the range; on touch, pointerenter
-      // doesn't fire on cross-element finger movement (implicit pointer
-      // capture), so this stays a single-tap select.
+      // lets subsequent onPointerEnter extend the range; on touch, the
+      // long-press timer below activates extend mode after 300ms.
       dragAnchorRef.current = word.id
       dragBaseSelectionRef.current = []
       onSetSelection([word.id])
+
+      // Touch / pen: start a long-press timer. If the finger stays still
+      // for 300ms, enter extend mode; the window pointermove listener then
+      // extends the range as the finger moves across words.
+      if (e.pointerType !== 'mouse') {
+        // Defense: clear any pending timer from a previous touch so a stale
+        // one can't fire with the wrong anchor.
+        if (longPressTimerRef.current !== null) {
+          window.clearTimeout(longPressTimerRef.current)
+        }
+        longPressStartRef.current = { x: e.clientX, y: e.clientY }
+        longPressTimerRef.current = window.setTimeout(() => {
+          longPressTimerRef.current = null
+          setIsExtending(true)
+          navigator.vibrate?.(10) // haptic confirmation (Android only; iOS ignores)
+        }, 300)
+      }
     },
     [allWordsOrdered, onSetSelection, selectedWordIds, wordOrder],
   )
@@ -285,12 +340,16 @@ export default function OcrTextView({
       {selectedWords.length === 0 && (
         <div className="px-3 py-1.5 text-[10px] text-gray-400 dark:text-gray-500 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <span className="hidden sm:inline">Tip: drag across words, or shift+click for a range, or ⌘/Ctrl+click to toggle.</span>
-          <span className="sm:hidden">Tip: tap a word to select.</span>
+          <span className="sm:hidden">Tip: tap a word; long-press to start a range.</span>
         </div>
       )}
 
       {/* Pages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div
+        className={`flex-1 overflow-y-auto p-3 space-y-3 select-none [-webkit-touch-callout:none] ${
+          isExtending ? 'touch-none' : ''
+        }`}
+      >
         {visiblePages.length === 0 && (
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">
             No pages match "{search}".
@@ -372,6 +431,7 @@ export default function OcrTextView({
                                     return (
                                       <span
                                         key={word.id}
+                                        data-word-id={word.id}
                                         ref={isLastSelected ? lastSelectedRef : null}
                                       >
                                         <span

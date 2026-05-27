@@ -6,6 +6,15 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-27] Touch multi-word selection in OcrTextView: long-press → drag
+
+**Decision**: Implement Option 1 from `research/touch-multi-select.md`. Pressing and holding a word for 300 ms enters extend mode; finger drag across words extends via `document.elementFromPoint`; lifting commits. Short tap stays single-select; short drag still scrolls. Mirrors iOS native text-selection vocabulary.
+**Why**: Most familiar gesture for iOS users, doesn't conflict with scrolling, and reuses the existing `dragAnchorRef` + `rangeBetween` selection machinery. PR #23 explicitly deferred this with the v1 punt — user has now confirmed it's a real need.
+**Trade-offs**: Discoverability — the gesture isn't shown anywhere by default. Mitigated by updating the mobile tip line. Requires `-webkit-touch-callout: none` to suppress iOS's copy/share popup on long-press, and `touch-action: none` only-while-in-extend-mode to keep the browser from stealing pointermove for scroll.
+**Don't suggest**: A persistent "extend mode" toggle button (modal UI, easy to forget); iOS-style draggable handles (200+ LoC, brittle to text wrap); pure drag-from-word (breaks panel scrolling).
+
+---
+
 ## [2026-05-27] PWA via `vite-plugin-pwa` in `generateSW` mode
 
 **Decision**: Make Snappet a Progressive Web App using `vite-plugin-pwa` (the first-party Vite plugin built on Workbox) in its default `generateSW` mode. Precache the build manifest (HTML + hashed JS chunks + CSS + icons), fall back to `index.html` for SPA navigation, expose an in-app "Update available" prompt via `useRegisterSW` from `virtual:pwa-register/react`. Full analysis in `pdd/context/research/pwa-support.md`.
