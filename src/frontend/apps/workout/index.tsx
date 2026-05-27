@@ -174,6 +174,7 @@ export default function Workout() {
   function handleReset() {
     setSearchTerm('')
     setFilters(EMPTY_FILTERS)
+    setSelectedId(null)
   }
 
   const filtered = useMemo(() => {
