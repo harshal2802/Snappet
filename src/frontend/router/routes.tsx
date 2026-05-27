@@ -99,4 +99,12 @@ export const routes: AppRoute[] = [
     icon: '🎂',
     component: lazy(() => import('../apps/age-calculator')),
   },
+  {
+    path: '/pomodoro-timer',
+    label: 'Pomodoro Timer',
+    description: 'Focus timer with 25-min work sessions and short/long breaks.',
+    category: 'Productivity',
+    icon: '🍅',
+    component: lazy(() => import('../apps/pomodoro-timer')),
+  },
 ]
