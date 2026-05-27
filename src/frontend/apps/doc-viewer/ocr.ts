@@ -1,4 +1,4 @@
-import type { OcrPage, OcrWord } from './types'
+import type { OcrPage, OcrWord, OcrBlock, OcrParagraph, OcrLine } from './types'
 import type { RecognizeResult, Block, Paragraph, Line, Word } from 'tesseract.js'
 
 const PDFJS_WORKER_URL = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
@@ -24,7 +24,10 @@ export async function runOcrOnImage(
     },
   })
 
-  const result: RecognizeResult = await worker.recognize(dataUrl)
+  // tesseract.js v7's recognize() defaults to `{ text: true }` only, which
+  // leaves `data.blocks` null. Opt into the block hierarchy so we can pull
+  // word-level bounding boxes for the click-to-highlight feature.
+  const result: RecognizeResult = await worker.recognize(dataUrl, {}, { blocks: true, text: true })
   await worker.terminate()
 
   const { data } = result
@@ -34,27 +37,40 @@ export async function runOcrOnImage(
   const pageWidth = img.naturalWidth
   const pageHeight = img.naturalHeight
 
-  // In tesseract.js v7, words live inside blocks > paragraphs > lines > words
-  const allWords = (data.blocks ?? []).flatMap((block: Block) =>
-    block.paragraphs.flatMap((para: Paragraph) =>
-      para.lines.flatMap((line: Line) => line.words)
-    )
-  )
+  // Walk the block > paragraph > line > word hierarchy. We share OcrWord
+  // references between the flat `words` list and the structured `blocks` tree
+  // so selection and rendering both see the same identities.
+  const flatWords: OcrWord[] = []
 
-  const words: OcrWord[] = allWords.map((word: Word, i: number) => ({
-    id: `p${pageIndex}-w${i}`,
-    text: word.text,
-    confidence: word.confidence,
-    bbox: {
-      x: word.bbox.x0,
-      y: word.bbox.y0,
-      width: word.bbox.x1 - word.bbox.x0,
-      height: word.bbox.y1 - word.bbox.y0,
-      pageIndex,
-    },
-  }))
+  function toOcrWord(raw: Word): OcrWord {
+    const w: OcrWord = {
+      id: `p${pageIndex}-w${flatWords.length}`,
+      text: raw.text,
+      confidence: raw.confidence,
+      bbox: {
+        x: raw.bbox.x0,
+        y: raw.bbox.y0,
+        width: raw.bbox.x1 - raw.bbox.x0,
+        height: raw.bbox.y1 - raw.bbox.y0,
+        pageIndex,
+      },
+    }
+    flatWords.push(w)
+    return w
+  }
 
-  return { pageIndex, width: pageWidth, height: pageHeight, words }
+  const blocks: OcrBlock[] = (data.blocks ?? []).flatMap((block: Block) => {
+    const paragraphs: OcrParagraph[] = block.paragraphs.flatMap((para: Paragraph) => {
+      const lines: OcrLine[] = para.lines.flatMap((line: Line) => {
+        const words = line.words.filter((w) => (w.text ?? '').trim() !== '').map(toOcrWord)
+        return words.length > 0 ? [{ words }] : []
+      })
+      return lines.length > 0 ? [{ lines }] : []
+    })
+    return paragraphs.length > 0 ? [{ paragraphs }] : []
+  })
+
+  return { pageIndex, width: pageWidth, height: pageHeight, words: flatWords, blocks }
 }
 
 /**
@@ -69,7 +85,11 @@ export async function runOcrOnPdf(
   const pdfjsLib = await import('pdfjs-dist')
   pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL
 
-  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise
+  // Clone the buffer: pdf.js transfers `data` to its worker thread (detaching
+  // the ArrayBuffer), and the same bytes are also held by the react-pdf-viewer
+  // instance. Without a copy, whichever consumer runs second sees a detached
+  // buffer and OCR fails with "Cannot perform Construct on detached ArrayBuffer".
+  const pdf = await pdfjsLib.getDocument({ data: pdfData.slice() }).promise
   const totalPages = pdf.numPages
   const results: OcrPage[] = []
 
