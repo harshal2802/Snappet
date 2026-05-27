@@ -325,9 +325,12 @@ export default function PomodoroTimer() {
 
       {/* Permission hint */}
       {typeof Notification !== 'undefined' && notifPermission === 'default' && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-          Allow notifications to be alerted when a phase ends.
-        </p>
+        <div className="text-xs text-gray-400 dark:text-gray-500 text-center space-y-1">
+          <p>Allow notifications to be alerted when a phase ends.</p>
+          <p className="text-[10px]">
+            On iPhone, install Snappet to your home screen first — Safari's tab can't request notifications.
+          </p>
+        </div>
       )}
 
       {/* Fallback banner if notifications denied */}
