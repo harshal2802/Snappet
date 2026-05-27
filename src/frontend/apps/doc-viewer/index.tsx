@@ -1,11 +1,42 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
-import type { FileType, OcrWord, OcrPage, OcrStatus } from './types'
+import type {
+  FileType,
+  OcrPage,
+  OcrStatus,
+  Annotation,
+  AnnotationColor,
+  LegacyAnnotation,
+} from './types'
 import PdfViewerPane, { type PdfViewerPaneHandle } from './PdfViewerPane'
 import ImageViewerPane from './ImageViewerPane'
 import TextPanel from './TextPanel'
 import HighlightOverlay from './HighlightOverlay'
 import { runOcrOnImage, runOcrOnPdf } from './ocr'
+import { embedAnnotationsInPdf } from './pdfAnnotator'
+
+function generateId(): string {
+  return Math.random().toString(36).slice(2, 11)
+}
+
+// Convert legacy single-word annotations (pre-multi-select) into the
+// current multi-word shape. Safe to call on already-migrated entries.
+function migrateAnnotation(raw: Annotation | LegacyAnnotation): Annotation {
+  if ('wordIds' in raw && Array.isArray((raw as Annotation).wordIds)) {
+    return raw as Annotation
+  }
+  const legacy = raw as LegacyAnnotation
+  return {
+    id: legacy.id,
+    wordIds: [legacy.wordId],
+    pageIndex: legacy.pageIndex,
+    color: legacy.color,
+    note: legacy.note,
+    createdAt: legacy.createdAt,
+    text: legacy.text,
+    bboxes: [legacy.bbox],
+  }
+}
 
 const ACCEPTED_EXT = '.pdf,.png,.jpg,.jpeg'
 
@@ -31,28 +62,64 @@ export default function DocViewer() {
   const [ocrStatus, setOcrStatus] = useState<OcrStatus>('idle')
   const [ocrProgress, setOcrProgress] = useState('')
   const [ocrError, setOcrError] = useState<string | null>(null)
-  const [activeWordId, setActiveWordId] = useState<string | null>(null)
+  const [selectedWordIds, setSelectedWordIds] = useState<string[]>([])
 
-  // Viewer container size (for HighlightOverlay coordinate scaling)
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 })
+  // Persisted annotations, keyed by fileName so re-uploading restores them.
+  // Read as a wider type so we can migrate legacy single-word entries.
+  const [annotationsByFile, setAnnotationsByFile] = useLocalStorage<
+    Record<string, Array<Annotation | LegacyAnnotation>>
+  >('snappet:doc-viewer:annotations', {})
+
+  const annotations: Annotation[] = useMemo(() => {
+    if (!fileName) return []
+    return (annotationsByFile[fileName] ?? []).map(migrateAnnotation)
+  }, [annotationsByFile, fileName])
+
+  // Reverse lookup: each wordId → its annotation (no overlap allowed, so 1:1).
+  const annotationByWordId = useMemo(() => {
+    const map = new Map<string, Annotation>()
+    for (const a of annotations) {
+      for (const wid of a.wordIds) map.set(wid, a)
+    }
+    return map
+  }, [annotations])
+
+  const allWordsOrdered = useMemo(
+    () => ocrPages.flatMap((p) => p.words),
+    [ocrPages],
+  )
+
+  const selectedWords = useMemo(() => {
+    const set = new Set(selectedWordIds)
+    return allWordsOrdered.filter((w) => set.has(w.id))
+  }, [allWordsOrdered, selectedWordIds])
 
   const inputRef = useRef<HTMLInputElement>(null)
   const pdfRef = useRef<PdfViewerPaneHandle>(null)
-  const viewerContainerRef = useRef<HTMLDivElement>(null)
 
-  // Measure viewer container for overlay scaling
+  // Resizable text panel — persist width per user, clamp to a sane range.
+  const [panelWidth, setPanelWidth] = useLocalStorage<number>(
+    'snappet:doc-viewer:panelWidth',
+    320,
+  )
+  const [isResizing, setIsResizing] = useState(false)
+
   useEffect(() => {
-    const el = viewerContainerRef.current
-    if (!el) return
-    const observer = new ResizeObserver(([entry]) => {
-      setContainerSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      })
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [fileData])
+    if (!isResizing) return
+    function onMove(e: MouseEvent) {
+      const next = window.innerWidth - e.clientX
+      setPanelWidth(Math.max(240, Math.min(800, next)))
+    }
+    function onUp() {
+      setIsResizing(false)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [isResizing, setPanelWidth])
 
   async function processFile(file: File) {
     const type = getFileType(file.type)
@@ -67,7 +134,7 @@ export default function DocViewer() {
     setOcrStatus('idle')
     setOcrProgress('')
     setOcrError(null)
-    setActiveWordId(null)
+    setSelectedWordIds([])
 
     try {
       if (type === 'pdf') {
@@ -119,7 +186,7 @@ export default function DocViewer() {
     setOcrStatus('running')
     setOcrError(null)
     setOcrPages([])
-    setActiveWordId(null)
+    setSelectedWordIds([])
 
     try {
       let pages: OcrPage[]
@@ -142,12 +209,151 @@ export default function DocViewer() {
     }
   }
 
-  function handleWordClick(word: OcrWord) {
-    setActiveWordId(word.id)
-    // Jump to the page containing this word in the PDF viewer
-    if (fileType === 'pdf' && pdfRef.current) {
-      pdfRef.current.jumpToPage(word.bbox.pageIndex)
+  // ── Selection handlers ───────────────────────────────────────────────────────
+
+  function handleSetSelection(wordIds: string[]) {
+    // Dedupe but preserve first-seen order. Document-order normalization happens
+    // when we promote a selection into an annotation.
+    const deduped: string[] = []
+    const seen = new Set<string>()
+    for (const id of wordIds) {
+      if (!seen.has(id)) {
+        seen.add(id)
+        deduped.push(id)
+      }
     }
+    setSelectedWordIds(deduped)
+    if (deduped.length === 0) return
+    const first = allWordsOrdered.find((w) => w.id === deduped[0])
+    if (first && fileType === 'pdf' && pdfRef.current) {
+      pdfRef.current.jumpToPage(first.bbox.pageIndex)
+    }
+  }
+
+  // ── Annotation handlers ──────────────────────────────────────────────────────
+
+  function updateAnnotationsForCurrentFile(
+    updater: (current: Annotation[]) => Annotation[],
+  ) {
+    if (!fileName) return
+    setAnnotationsByFile((prev) => {
+      const current = (prev[fileName] ?? []).map(migrateAnnotation)
+      const next = updater(current)
+      if (next.length === 0) {
+        const { [fileName]: _omit, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [fileName]: next }
+    })
+  }
+
+  function handleApplyColorToSelection(color: AnnotationColor) {
+    if (selectedWords.length === 0) return
+    const selectedSet = new Set(selectedWordIds)
+
+    updateAnnotationsForCurrentFile((current) => {
+      // Set-equality check: same size + every wordId in selection
+      const exact = current.find(
+        (a) =>
+          a.wordIds.length === selectedSet.size &&
+          a.wordIds.every((id) => selectedSet.has(id)),
+      )
+      if (exact && exact.color === color) {
+        return current.filter((a) => a.id !== exact.id) // toggle off
+      }
+      if (exact) {
+        return current.map((a) => (a.id === exact.id ? { ...a, color } : a))
+      }
+      // New annotation — drop any overlapping ones to keep word↔annotation 1:1
+      const filtered = current.filter(
+        (a) => !a.wordIds.some((id) => selectedSet.has(id)),
+      )
+      const orderedWords = selectedWords // already in document order
+      const fresh: Annotation = {
+        id: generateId(),
+        wordIds: orderedWords.map((w) => w.id),
+        pageIndex: orderedWords[0].bbox.pageIndex,
+        color,
+        note: '',
+        createdAt: Date.now(),
+        text: orderedWords.map((w) => w.text).join(' '),
+        bboxes: orderedWords.map((w) => ({
+          x: w.bbox.x,
+          y: w.bbox.y,
+          width: w.bbox.width,
+          height: w.bbox.height,
+        })),
+      }
+      return [...filtered, fresh]
+    })
+  }
+
+  function handleRemoveAnnotation(annotationId: string) {
+    updateAnnotationsForCurrentFile((current) =>
+      current.filter((a) => a.id !== annotationId),
+    )
+  }
+
+  function handleUpdateNote(annotationId: string, note: string) {
+    updateAnnotationsForCurrentFile((current) =>
+      current.map((a) => (a.id === annotationId ? { ...a, note } : a)),
+    )
+  }
+
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+
+  async function handleDownloadAnnotatedPdf() {
+    if (!fileName || fileType !== 'pdf' || !fileData) return
+    setIsExportingPdf(true)
+    try {
+      // Clone the source bytes — pdf.js's worker may have detached the
+      // viewer's copy, and pdf-lib also takes ownership of what we pass.
+      const sourceCopy = new Uint8Array(fileData as Uint8Array)
+      const out = await embedAnnotationsInPdf(sourceCopy, annotations, ocrPages)
+      // pdf-lib returns Uint8Array<ArrayBufferLike>; Blob's type wants
+      // ArrayBuffer. Re-wrap so the underlying buffer is concrete.
+      const blob = new Blob([new Uint8Array(out).buffer], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${fileName.replace(/\.pdf$/i, '')}-annotated.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Failed to export annotated PDF:', e)
+      alert(`Failed to export annotated PDF: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
+
+  function handleExport() {
+    if (!fileName) return
+    const payload = {
+      fileName,
+      fileType,
+      exportedAt: new Date().toISOString(),
+      pages: ocrPages.map((p) => ({
+        pageIndex: p.pageIndex,
+        text: p.words.map((w) => w.text).join(' '),
+        wordCount: p.words.length,
+      })),
+      annotations: annotations.map((a) => ({
+        id: a.id,
+        pageIndex: a.pageIndex,
+        text: a.text,
+        color: a.color,
+        note: a.note,
+        createdAt: a.createdAt,
+      })),
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${fileName.replace(/\.[^.]+$/, '')}-ocr-annotations.json`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleReset = useCallback(() => {
@@ -160,17 +366,18 @@ export default function DocViewer() {
     setOcrStatus('idle')
     setOcrProgress('')
     setOcrError(null)
-    setActiveWordId(null)
+    setSelectedWordIds([])
   }, [setFileName, setFileType])
-
-  const activeWord = ocrPages
-    .flatMap((p) => p.words)
-    .find((w) => w.id === activeWordId) ?? null
 
   // ── VIEWER ──────────────────────────────────────────────────────────────────
   if (fileData !== null && fileType !== null && fileName !== null) {
     return (
       <div className="fixed inset-0 top-[57px] flex flex-col bg-white dark:bg-gray-900">
+        {/* Mouse capture overlay during drag-resize. Keeps cursor consistent and
+            prevents iframe content (PDF viewer) from stealing the move events. */}
+        {isResizing && (
+          <div className="fixed inset-0 z-[100] cursor-col-resize select-none" />
+        )}
         {/* Top bar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
           <h1 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -187,13 +394,12 @@ export default function DocViewer() {
         {/* Two-panel layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left: viewer + highlight overlay */}
-          <div ref={viewerContainerRef} className="flex-1 relative overflow-hidden">
+          <div className="flex-1 relative overflow-hidden">
             {fileType === 'pdf' ? (
               <PdfViewerPane
                 ref={pdfRef}
                 fileData={fileData as Uint8Array}
                 fileName={fileName}
-                activeWord={activeWord}
               />
             ) : (
               <ImageViewerPane
@@ -202,20 +408,43 @@ export default function DocViewer() {
               />
             )}
             <HighlightOverlay
-              activeWord={activeWord}
+              selectedWords={selectedWords}
+              annotations={annotations}
               ocrPages={ocrPages}
-              containerWidth={containerSize.width}
-              containerHeight={containerSize.height}
             />
           </div>
 
-          {/* Right: text panel — fixed 320px */}
-          <div className="w-80 shrink-0 overflow-hidden flex flex-col">
+          {/* Drag handle */}
+          <div
+            onMouseDown={() => setIsResizing(true)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize text panel"
+            title="Drag to resize"
+            className="w-1 cursor-col-resize bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors shrink-0"
+          />
+
+          {/* Right: text panel — resizable */}
+          <div
+            className="shrink-0 overflow-hidden flex flex-col"
+            style={{ width: panelWidth }}
+          >
             <TextPanel
               pages={ocrPages}
-              activeWordId={activeWordId}
-              onWordClick={handleWordClick}
+              annotations={annotations}
+              annotationByWordId={annotationByWordId}
+              allWordsOrdered={allWordsOrdered}
+              selectedWordIds={selectedWordIds}
+              selectedWords={selectedWords}
+              onSetSelection={handleSetSelection}
               onStartOcr={handleStartOcr}
+              onApplyColorToSelection={handleApplyColorToSelection}
+              onRemoveAnnotation={handleRemoveAnnotation}
+              onUpdateNote={handleUpdateNote}
+              onExport={handleExport}
+              canDownloadAnnotatedPdf={fileType === 'pdf'}
+              isExportingPdf={isExportingPdf}
+              onDownloadAnnotatedPdf={handleDownloadAnnotatedPdf}
               status={ocrStatus}
               progress={ocrProgress}
               errorMessage={ocrError}
@@ -273,6 +502,9 @@ export default function DocViewer() {
           </p>
         </div>
         <p className="text-xs text-gray-400 dark:text-gray-500">Supported: PDF, PNG, JPG</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs">
+          🔒 All OCR and processing happens in your browser. Your file never leaves your device.
+        </p>
 
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-white/80 dark:bg-gray-800/80">

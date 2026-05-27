@@ -4,9 +4,8 @@ import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/default-layout/lib/styles/index.css'
 
-import { useEffect, useImperativeHandle, forwardRef } from 'react'
+import { useImperativeHandle, useMemo, forwardRef } from 'react'
 import { useDarkMode } from '../../hooks/useDarkMode'
-import type { OcrWord } from './types'
 
 const WORKER_URL = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
 
@@ -17,11 +16,10 @@ export interface PdfViewerPaneHandle {
 interface PdfViewerPaneProps {
   fileData: Uint8Array
   fileName: string
-  activeWord: OcrWord | null
 }
 
 const PdfViewerPane = forwardRef<PdfViewerPaneHandle, PdfViewerPaneProps>(
-  ({ fileData, fileName, activeWord }, ref) => {
+  ({ fileData, fileName }, ref) => {
     const { isDark } = useDarkMode()
 
     const pageNavPlugin = pageNavigationPlugin()
@@ -31,14 +29,15 @@ const PdfViewerPane = forwardRef<PdfViewerPaneHandle, PdfViewerPaneProps>(
       jumpToPage: (pageIndex: number) => jumpToPage(pageIndex),
     }))
 
-    // Jump to active word's page when it changes
-    useEffect(() => {
-      if (activeWord !== null) {
-        jumpToPage(activeWord.bbox.pageIndex)
-      }
-    }, [activeWord, jumpToPage])
-
     const defaultLayout = defaultLayoutPlugin()
+
+    // pdf.js transfers `fileUrl`'s underlying ArrayBuffer to its worker, which
+    // detaches it from the main thread. Pass a clone so the parent's source
+    // buffer remains intact and is still available for OCR.
+    const viewerData = useMemo(
+      () => new Uint8Array(fileData),
+      [fileData],
+    )
 
     return (
       <div className="flex flex-col h-full">
@@ -52,7 +51,7 @@ const PdfViewerPane = forwardRef<PdfViewerPaneHandle, PdfViewerPaneProps>(
         <div className="flex-1 overflow-hidden" style={{ height: 'calc(100% - 36px)' }}>
           <Worker workerUrl={WORKER_URL}>
             <Viewer
-              fileUrl={fileData}
+              fileUrl={viewerData}
               plugins={[defaultLayout, pageNavPlugin]}
               theme={isDark ? 'dark' : 'light'}
               defaultScale={SpecialZoomLevel.PageWidth}
