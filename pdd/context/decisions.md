@@ -1,8 +1,17 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-03-30
+**Last updated**: 2026-05-27
 
 A log of significant technical decisions and the reasoning behind them.
+
+---
+
+## [2026-05-27] PWA via `vite-plugin-pwa` in `generateSW` mode
+
+**Decision**: Make Snappet a Progressive Web App using `vite-plugin-pwa` (the first-party Vite plugin built on Workbox) in its default `generateSW` mode. Precache the build manifest (HTML + hashed JS chunks + CSS + icons), fall back to `index.html` for SPA navigation, expose an in-app "Update available" prompt via `useRegisterSW` from `virtual:pwa-register/react`. Full analysis in `pdd/context/research/pwa-support.md`.
+**Why**: We don't need a custom service worker — defaults match what we need (offline shell, hashed-chunk precache, GitHub-Pages base path support). The plugin handles the SW lifecycle correctly, which is what bites every hand-rolled SW. Adopting it avoids ~200 lines of error-prone code.
+**Trade-offs**: One more dev dependency. The Document Viewer's CDN-loaded tesseract.js core (~3 MB) and eng language model (~10 MB) are **not** precached — too large for an installable bundle. They fall back to the browser's HTTP cache, which means Document Viewer's OCR feature requires online for the first use per machine.
+**Don't suggest**: Hand-writing a service worker, using workbox-cli directly, or bundling tesseract.js's WASM/traineddata into the precache.
 
 ---
 
