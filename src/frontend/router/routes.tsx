@@ -147,4 +147,12 @@ export const routes: AppRoute[] = [
     icon: '🎲',
     component: lazy(() => import('../apps/random-picker')),
   },
+  {
+    path: '/stopwatch',
+    label: 'Stopwatch',
+    description: 'Time anything with lap splits — workouts, cooking, intervals.',
+    category: 'Productivity',
+    icon: '⏱️',
+    component: lazy(() => import('../apps/stopwatch')),
+  },
 ]
