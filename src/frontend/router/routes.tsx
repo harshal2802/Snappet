@@ -107,4 +107,12 @@ export const routes: AppRoute[] = [
     icon: '🍅',
     component: lazy(() => import('../apps/pomodoro-timer')),
   },
+  {
+    path: '/color-picker',
+    label: 'Color Picker & Converter',
+    description: 'Convert between HEX, RGB, and HSL with a live preview and contrast checker.',
+    category: 'Developer Tools',
+    icon: '🎨',
+    component: lazy(() => import('../apps/color-picker')),
+  },
 ]
