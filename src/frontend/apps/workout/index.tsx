@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import ExerciseBrowser from './ExerciseBrowser'
+import HistoryView from './HistoryView'
 import RoutineEditor from './RoutineEditor'
 import RoutineList from './RoutineList'
 import WorkoutPlayer from './WorkoutPlayer'
@@ -9,7 +10,7 @@ import { STARTER_ROUTINES } from './starters'
 import { generateId } from './utils'
 import type { Exercise, Routine, SetLog, WorkoutSession } from './types'
 
-type Tab = 'browse' | 'routines'
+type Tab = 'browse' | 'routines' | 'history'
 
 const TAB_BTN_BASE =
   'flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
@@ -27,7 +28,7 @@ export default function Workout() {
     'snappet:workout:active-session',
     null,
   )
-  const [, setHistory] = useLocalStorage<WorkoutSession[]>(
+  const [history, setHistory] = useLocalStorage<WorkoutSession[]>(
     'snappet:workout:history',
     [],
   )
@@ -118,12 +119,22 @@ export default function Workout() {
             <span className="ml-1 text-gray-400 dark:text-gray-500">({routines.length})</span>
           )}
         </button>
+        <button
+          onClick={() => setTab('history')}
+          aria-pressed={tab === 'history'}
+          className={`${TAB_BTN_BASE} ${tab === 'history' ? TAB_BTN_ACTIVE : TAB_BTN_INACTIVE}`}
+        >
+          History
+          {history.length > 0 && (
+            <span className="ml-1 text-gray-400 dark:text-gray-500">({history.length})</span>
+          )}
+        </button>
       </div>
 
       {/* Body */}
-      {tab === 'browse' ? (
-        <ExerciseBrowser resetSignal={browseResetCounter} />
-      ) : (
+      {tab === 'browse' && <ExerciseBrowser resetSignal={browseResetCounter} />}
+      {tab === 'history' && <HistoryView history={history} exerciseById={exerciseById} />}
+      {tab === 'routines' && (
         <RoutinesView
           routines={routines}
           setRoutines={setRoutines}

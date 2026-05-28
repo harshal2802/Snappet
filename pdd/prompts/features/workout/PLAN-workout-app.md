@@ -118,6 +118,19 @@ None pending — research locked the four user-decided answers (full catalog, kg
 - **Why not split Phase 1 further?** Catalog + detail view share so much state (loaded data, filter context) that splitting them just multiplies plumbing without testable sub-artifacts.
 - **Why not merge Phase 4 into Phase 3?** Phase 3 alone is a usable workout app; Phase 4 is a clear "memory" feature with its own UI surface. Keeping them separate gives a clean shipping decision point — if Phase 3 takes longer than expected, Phase 4 can defer.
 
+## Status
+
+All four phases shipped:
+- Phase 1 — PR #30 (`25-workout-01-browser.md`)
+- Phase 2 — PR #31 (`26-workout-02-routines.md`)
+- Phase 3 — PR #32 (`27-workout-03-player.md`)
+- Phase 4 — PR #33 (`28-workout-04-history.md`)
+
 ## Next step
 
-`/project:pdd-prompts` to draft `25-workout-01-browser.md`. Implement → review → PR → merge. Then `25-prompts` for Phase 2, and so on.
+The workout app is feature-complete per this plan. Possible follow-ups (each its own future PR if requested):
+- Auto-scroll-on-edge during long workouts
+- Clear-all-history destructive action (with confirm)
+- Body weight tracking + chart
+- Cardio-specific session type (distance/time instead of sets/reps)
+- Import JSON to restore from export
