@@ -225,9 +225,65 @@ Phase 5 (issue #38) shipped:
 - Phase 5b — PR #42 (`30-workout-05b-routine-defaults.md`) — routine defaults · ⇪ apply-to-all
 - Phase 5c — PR #41 (`31-workout-05c-progress-essentials.md`) — Essentials view · Progress in ExerciseDetail
 
+---
+
+## Phase 7 — Custom exercises (add / edit your own) (added 2026-05-28)
+
+User ask: "add a way to add more workouts and edit existing ones." Clarified to **both**
+custom exercises in the catalog AND routine add/edit. Routines already have full CRUD
+(RoutineEditor + RoutineList edit/delete/duplicate), so the genuine gap is the **catalog**:
+today it's read-only — the 800-entry Free Exercise DB loaded from static JSON. There's no way
+to add a gym-specific machine, a variation, or anything not in the DB.
+
+**Key leverage point**: the whole app keys off a single merged `exercises` array →
+`exerciseById` Map (built in `index.tsx`). Browser, Picker, RoutineEditor, WorkoutPlayer,
+HistoryView, SessionDetail and Dashboard all read exercises by id from that Map. So storing
+user exercises in localStorage and **merging them into that one array** makes custom exercises
+flow into every surface automatically. The bulk of the work is one data-merge + an editor
+component + add/edit/delete affordances in the Browse tab.
+
+User-confirmed decision (from this turn): scope is **both** (custom exercises + routines).
+
+Assumed defaults for first ship (flag in PR for explicit confirmation):
+- **"Edit existing" = Customize-as-copy.** DB exercises live in a shared static dataset and
+  stay read-only. Editing a DB exercise offers "Customize" → creates an editable **custom
+  copy** (new id, prefilled from the DB entry). This avoids a fragile per-id shadow/override
+  system and keeps routine/history references stable. Users fully own custom exercises
+  (add / edit / delete). Routine-level renaming already exists (`displayName`, Phase 5a) for
+  the lighter "just rename it" case.
+- **No images for custom exercises** in v1 (catalog images are CDN paths into the DB repo).
+  Custom cards/detail show a clean placeholder (first letter / dumbbell glyph). A future PR
+  can add an image URL or data-URL upload field.
+- **Storage**: `snappet:workout:custom-exercises` — `Exercise[]` with `isCustom: true`.
+- **Deletion of a referenced custom exercise** is allowed but warns; orphaned routine/history
+  rows degrade gracefully (already handled by `getDisplayName`'s `(id)` fallback).
+
+**Produces**:
+- `src/frontend/apps/workout/types.ts` — `Exercise.isCustom?: boolean` (additive; DB entries lack it)
+- `src/frontend/apps/workout/customExercises.ts` — `CUSTOM_EXERCISES_KEY`, `makeCustomExercise()`
+  factory (id via `generateId()`, `isCustom: true`, empty `images`), `mergeCatalog(db, custom)`
+- `src/frontend/apps/workout/ExerciseEditor.tsx` — add/edit form (name, category, level,
+  equipment, force/mechanic, primary/secondary muscles, instructions); validation (name required)
+- `src/frontend/apps/workout/index.tsx` — own `customExercises` localStorage + CRUD handlers;
+  merge into `exercises`/`exerciseById`; pass customs + handlers to ExerciseBrowser
+- `src/frontend/apps/workout/ExerciseBrowser.tsx` — "+ New exercise" button; merge customs into
+  its loaded list; "Custom" badge; route Edit/Delete/Customize through handlers
+- `src/frontend/apps/workout/ExerciseDetail.tsx` — Edit + Delete (custom) / Customize (DB) header
+  actions; image placeholder when `images` is empty
+- `src/frontend/apps/workout/ExerciseCard.tsx` — placeholder thumbnail + "Custom" badge when `isCustom`
+
+**Depends on**: Phases 1–6 (all shipped on `main`). Single additive PR.
+
+**Risk**: Low–Medium — additive schema and storage, no migration. Main care points: keeping the
+merge order stable (customs first so they're easy to find), orphan-safe deletion, and not
+regressing the Browser's independent `loadExercises()` path.
+
+**Prompt**: `pdd/prompts/features/workout/34-workout-07-custom-exercises.md`
+
 ## Next step
 
-Workout app is feature-complete per this plan. Possible follow-ups (each its own future PR if requested):
+Possible follow-ups (each its own future PR if requested):
+- Custom-exercise image upload (URL or data-URL)
 - Auto-scroll-on-edge during long workouts
 - Clear-all-history destructive action (with confirm)
 - Body weight tracking + chart

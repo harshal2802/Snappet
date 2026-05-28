@@ -60,6 +60,9 @@ export interface Exercise {
   instructions: string[]
   category: ExerciseCategory
   images: string[]
+  // True for user-created exercises stored in localStorage (not in the bundled
+  // Free Exercise DB). Absent on DB rows. See `customExercises.ts`.
+  isCustom?: boolean
 }
 
 export interface ExerciseFilters {

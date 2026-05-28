@@ -8,6 +8,7 @@ import RoutineList from './RoutineList'
 import SettingsView from './SettingsView'
 import WorkoutPlayer from './WorkoutPlayer'
 import { loadExercises } from './data'
+import { CUSTOM_EXERCISES_KEY, mergeCatalog } from './customExercises'
 import { STARTER_ROUTINES } from './starters'
 import { generateId } from './utils'
 import type {
@@ -86,10 +87,45 @@ export default function Workout() {
         // routine views degrade gracefully showing exercise IDs.
       })
   }, [])
-  const exerciseById = useMemo(
-    () => new Map(exercises.map((e) => [e.id, e])),
-    [exercises],
+  // Phase 7 — user-created exercises stored in localStorage. Merged into the
+  // catalog (customs first) so they flow into every surface that resolves
+  // exercises by id from `exerciseById`: Picker, RoutineEditor, Player,
+  // History, SessionDetail, Dashboard.
+  const [customExercises, setCustomExercises] = useLocalStorage<Exercise[]>(
+    CUSTOM_EXERCISES_KEY,
+    [],
   )
+  const allExercises = useMemo(
+    () => mergeCatalog(exercises, customExercises),
+    [exercises, customExercises],
+  )
+  const exerciseById = useMemo(
+    () => new Map(allExercises.map((e) => [e.id, e])),
+    [allExercises],
+  )
+
+  function handleSaveCustomExercise(ex: Exercise) {
+    setCustomExercises((prev) => {
+      const i = prev.findIndex((x) => x.id === ex.id)
+      if (i === -1) return [...prev, ex]
+      const next = [...prev]
+      next[i] = ex
+      return next
+    })
+  }
+
+  function handleDeleteCustomExercise(id: string) {
+    // Intentionally does NOT touch routines/history — orphan rows degrade
+    // gracefully via getDisplayName()'s `(id)` fallback.
+    setCustomExercises((prev) => prev.filter((x) => x.id !== id))
+  }
+
+  function countExerciseReferences(id: string): { routines: number; sessions: number } {
+    return {
+      routines: routines.filter((r) => r.exercises.some((e) => e.exerciseId === id)).length,
+      sessions: history.filter((s) => s.exercises.some((e) => e.exerciseId === id)).length,
+    }
+  }
 
   // Reset counter for Browse tab — ExerciseBrowser watches this and clears
   // its search/filters/selection when it increments.
@@ -199,6 +235,10 @@ export default function Workout() {
           preferredUnit={preferredUnit}
           pendingExerciseId={pendingExerciseId}
           onConsumePending={() => setPendingExerciseId(null)}
+          customExercises={customExercises}
+          onSaveCustom={handleSaveCustomExercise}
+          onDeleteCustom={handleDeleteCustomExercise}
+          getReferenceCounts={countExerciseReferences}
         />
       )}
       {tab === 'history' && (
@@ -218,7 +258,7 @@ export default function Workout() {
         <RoutinesView
           routines={routines}
           setRoutines={setRoutines}
-          exercises={exercises}
+          exercises={allExercises}
           exerciseById={exerciseById}
           preferredUnit={preferredUnit}
           onDismissStarter={(id) => {

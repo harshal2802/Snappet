@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { loadExercises } from './data'
+import { makeCustomExercise, mergeCatalog } from './customExercises'
 import { ESSENTIAL_ID_SET } from './essentials'
 import { buildSearchBag, matchesQuery } from './search'
 import ExerciseCard from './ExerciseCard'
 import ExerciseDetail from './ExerciseDetail'
+import ExerciseEditor from './ExerciseEditor'
 import type {
   Equipment,
   Exercise,
@@ -141,7 +143,18 @@ interface ExerciseBrowserProps {
    *  call onConsumePending to clear the buffer. */
   pendingExerciseId?: string | null
   onConsumePending?: () => void
+  /** Phase 7 — custom exercises owned by the orchestrator, merged into the
+   *  browsable catalog (customs first). */
+  customExercises: Exercise[]
+  onSaveCustom: (ex: Exercise) => void
+  onDeleteCustom: (id: string) => void
+  getReferenceCounts: (id: string) => { routines: number; sessions: number }
 }
+
+type EditorState =
+  | { mode: 'new' }
+  | { mode: 'edit'; exercise: Exercise }
+  | { mode: 'customize'; seed: Exercise }
 
 export default function ExerciseBrowser({
   resetSignal,
@@ -149,8 +162,13 @@ export default function ExerciseBrowser({
   preferredUnit,
   pendingExerciseId,
   onConsumePending,
+  customExercises,
+  onSaveCustom,
+  onDeleteCustom,
+  getReferenceCounts,
 }: ExerciseBrowserProps) {
-  const [exercises, setExercises] = useState<Exercise[] | null>(null)
+  const [dbExercises, setDbExercises] = useState<Exercise[] | null>(null)
+  const [editor, setEditor] = useState<EditorState | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useLocalStorage<string>('snappet:workout:search', '')
   const [filters, setFilters] = useLocalStorage<ExerciseFiltersSerialized>(
@@ -164,11 +182,18 @@ export default function ExerciseBrowser({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
+  // Merged browsable catalog: custom exercises first, then the DB list.
+  // Null until the DB list has loaded (preserves the existing loading UI).
+  const exercises = useMemo(
+    () => (dbExercises === null ? null : mergeCatalog(dbExercises, customExercises)),
+    [dbExercises, customExercises],
+  )
+
   useEffect(() => {
     let cancelled = false
     loadExercises()
       .then((data) => {
-        if (!cancelled) setExercises(data)
+        if (!cancelled) setDbExercises(data)
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -225,7 +250,9 @@ export default function ExerciseBrowser({
   const filtered = useMemo(() => {
     if (!exercises) return []
     return exercises.filter((ex) => {
-      if (essentialsOnly && !ESSENTIAL_ID_SET.has(ex.id)) return false
+      // Custom exercises aren't in the curated Essentials set — always keep
+      // them visible regardless of the Essentials/All toggle.
+      if (essentialsOnly && !ESSENTIAL_ID_SET.has(ex.id) && !ex.isCustom) return false
       if (!matchesQuery(bagsById.get(ex.id) ?? [], searchTerm)) return false
       return matchesFilters(ex, filters)
     })
@@ -241,6 +268,27 @@ export default function ExerciseBrowser({
     filters.levels.length +
     filters.equipment.length +
     filters.muscles.length
+
+  function handleSaveCustom(ex: Exercise) {
+    onSaveCustom(ex)
+    setEditor(null)
+    setSelectedId(ex.id) // surface the just-saved exercise
+  }
+
+  function handleDeleteCustom(ex: Exercise) {
+    const { routines, sessions } = getReferenceCounts(ex.id)
+    if (routines > 0 || sessions > 0) {
+      const ok = confirm(
+        `"${ex.name}" is used in ${routines} routine${routines === 1 ? '' : 's'} ` +
+          `and ${sessions} past session${sessions === 1 ? '' : 's'}. Those will show the ` +
+          `exercise id until you swap it out. Delete anyway?`,
+      )
+      if (!ok) return
+    }
+    onDeleteCustom(ex.id)
+    setEditor(null)
+    if (selectedId === ex.id) setSelectedId(null)
+  }
 
   return (
     <div className="space-y-4">
@@ -269,6 +317,12 @@ export default function ExerciseBrowser({
                 {activeFilterCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setEditor({ mode: 'new' })}
+            className="shrink-0 px-3 py-2 rounded-lg bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            + New
           </button>
         </div>
 
@@ -346,9 +400,9 @@ export default function ExerciseBrowser({
               <button
                 onClick={() => {
                   setLoadError(null)
-                  setExercises(null)
+                  setDbExercises(null)
                   loadExercises()
-                    .then(setExercises)
+                    .then(setDbExercises)
                     .catch((err: unknown) =>
                       setLoadError(err instanceof Error ? err.message : 'Failed to load'),
                     )
@@ -408,6 +462,9 @@ export default function ExerciseBrowser({
               onClose={() => setSelectedId(null)}
               history={history}
               preferredUnit={preferredUnit}
+              onEdit={selected.isCustom ? () => setEditor({ mode: 'edit', exercise: selected }) : undefined}
+              onDelete={selected.isCustom ? () => handleDeleteCustom(selected) : undefined}
+              onCustomize={!selected.isCustom ? () => setEditor({ mode: 'customize', seed: makeCustomExercise(selected) }) : undefined}
               inline
             />
           </div>
@@ -422,8 +479,22 @@ export default function ExerciseBrowser({
             onClose={() => setSelectedId(null)}
             history={history}
             preferredUnit={preferredUnit}
+            onEdit={selected.isCustom ? () => setEditor({ mode: 'edit', exercise: selected }) : undefined}
+            onDelete={selected.isCustom ? () => handleDeleteCustom(selected) : undefined}
+            onCustomize={!selected.isCustom ? () => setEditor({ mode: 'customize', seed: makeCustomExercise(selected) }) : undefined}
           />
         </div>
+      )}
+
+      {/* Add / edit / customize exercise */}
+      {editor && (
+        <ExerciseEditor
+          exercise={editor.mode === 'edit' ? editor.exercise : null}
+          seed={editor.mode === 'customize' ? editor.seed : undefined}
+          onSave={handleSaveCustom}
+          onCancel={() => setEditor(null)}
+          onDelete={editor.mode === 'edit' ? () => handleDeleteCustom(editor.exercise) : undefined}
+        />
       )}
     </div>
   )
