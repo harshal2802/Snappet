@@ -19,6 +19,11 @@ interface ExerciseDetailProps {
   history?: WorkoutSession[]
   /** Display unit for aggregated stats (top set kg → user preference). */
   preferredUnit?: WeightUnit
+  /** Phase 7 — header actions. Edit/Delete for custom exercises; Customize
+   *  (copy-to-custom) for DB exercises. Rendered only when provided. */
+  onEdit?: () => void
+  onDelete?: () => void
+  onCustomize?: () => void
 }
 
 const LEVEL_PILL: Record<ExerciseLevel, string> = {
@@ -116,6 +121,9 @@ export default function ExerciseDetail({
   inline,
   history,
   preferredUnit,
+  onEdit,
+  onDelete,
+  onCustomize,
 }: ExerciseDetailProps) {
   // Close on Escape (both modes)
   useEffect(() => {
@@ -129,22 +137,62 @@ export default function ExerciseDetail({
   const body = (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl">
       {/* Sticky header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate pr-2">
-          {exercise.name}
-        </h2>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 text-lg leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
-        >
-          ✕
-        </button>
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+            {exercise.name}
+          </h2>
+          {exercise.isCustom && (
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+              Custom
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Edit
+            </button>
+          )}
+          {onCustomize && (
+            <button
+              onClick={onCustomize}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Customize
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            >
+              Delete
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 text-lg leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Image pair */}
+        {/* Image pair — placeholder tile for custom (image-less) exercises */}
+        {exercise.images.length === 0 ? (
+          <div className="rounded-lg bg-gray-100 dark:bg-gray-800 aspect-[16/7] flex items-center justify-center">
+            <span className="text-5xl font-bold text-gray-300 dark:text-gray-600 select-none">
+              {exercise.name.trim().charAt(0).toUpperCase() || '🏋'}
+            </span>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {exercise.images.map((path, i) => (
             <div
@@ -162,6 +210,7 @@ export default function ExerciseDetail({
             </div>
           ))}
         </div>
+        )}
 
         {/* Metadata row */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs">

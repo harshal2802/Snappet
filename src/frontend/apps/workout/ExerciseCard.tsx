@@ -24,13 +24,17 @@ export default function ExerciseCard({ exercise, onClick, isActive }: ExerciseCa
           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500'
       }`}
     >
-      <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-        {exercise.images[0] && (
+      <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+        {exercise.images[0] ? (
           <ExerciseImage
             path={exercise.images[0]}
             alt={exercise.name}
             className="w-full h-full object-cover"
           />
+        ) : (
+          <span className="text-2xl font-bold text-gray-400 dark:text-gray-500 select-none">
+            {exercise.name.trim().charAt(0).toUpperCase() || '🏋'}
+          </span>
         )}
       </div>
       <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
@@ -38,6 +42,11 @@ export default function ExerciseCard({ exercise, onClick, isActive }: ExerciseCa
           {exercise.name}
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
+          {exercise.isCustom && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+              Custom
+            </span>
+          )}
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${LEVEL_PILL[exercise.level]}`}>
             {exercise.level}
           </span>
