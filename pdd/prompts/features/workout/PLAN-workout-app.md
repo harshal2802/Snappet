@@ -179,6 +179,39 @@ User-confirmed decisions:
 
 ---
 
+---
+
+## Phase 6 — Dashboard tab (added 2026-05-28)
+
+Detailed dashboard answering "am I on track / consistent / trending / balanced / improving" at a glance. New first tab, default landing for fresh installs. Read-only over `snappet:workout:history`; no schema changes. All inline SVG, no new deps.
+
+Research: `pdd/context/research/workout-dashboard.md`
+
+User-confirmed defaults (assumed for first ship; flag in PR for explicit confirmation):
+- New first tab, default for fresh users; existing users keep their saved tab
+- Heatmap shading: 0 / 1 / 2 / 3+ sessions per day (4 buckets)
+- Sparkline: no gridlines; value annotation only on the current-week dot
+- Six sections (drop Session Quality from the design pass for first ship)
+
+**Produces**:
+- `src/frontend/apps/workout/dashboard.ts` — date bucketing + aggregation helpers (week boundaries, day buckets, streak, muscle-group volume, frequency)
+- `src/frontend/apps/workout/Dashboard.tsx` — orchestrator
+- `src/frontend/apps/workout/dashboard/WeekSnapshot.tsx` — three-tile hero strip with vs-last-week deltas
+- `src/frontend/apps/workout/dashboard/ConsistencyHeatmap.tsx` — 7×12 SVG calendar grid
+- `src/frontend/apps/workout/dashboard/VolumeSparkline.tsx` — single-line trend, 12 weeks
+- `src/frontend/apps/workout/dashboard/MuscleBalance.tsx` — top-6 horizontal bars, 30-day window
+- `src/frontend/apps/workout/dashboard/RecentPRs.tsx` — last 5 distinct-exercise PRs
+- `src/frontend/apps/workout/dashboard/TopExercises.tsx` — most-performed in last 30 days
+- `src/frontend/apps/workout/index.tsx` — add `'dashboard'` to Tab type; default tab; wire Dashboard
+
+**Depends on**: Phases 1–5. Reuses `progress.ts` helpers (`toKg`, `topSetForExercise`, etc.) and Exercise data (`primaryMuscles`).
+
+**Risk**: Low — entirely additive, read-only, no migrations. Largest single PR in Phase 5/6 by LoC but each widget is independently small.
+
+**Prompt**: `pdd/prompts/features/workout/32-workout-06-dashboard.md`
+
+---
+
 ## Status
 
 All four original phases shipped:

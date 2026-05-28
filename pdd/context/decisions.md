@@ -6,6 +6,18 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-28] Workout app Phase 6: Dashboard tab
+
+**Decision**: Ship a Dashboard as a new first tab in the workout app — six sections answering "now / lately / trend / balance / progress / habit". Sections: **WeekSnapshot** (sessions/volume/streak this-week vs last-week), **ConsistencyHeatmap** (7×12 grid, 4-step shading), **VolumeSparkline** (12-week kg-volume line), **MuscleBalance** (top-6 muscles by 30-day volume), **RecentPRs** (last 5 distinct-exercise PRs, tap-through to ExerciseDetail), **TopExercises** (top-5 by 30-day frequency). All inline SVG, no new dependencies. Read-only over `snappet:workout:history` — zero schema changes. Default tab for fresh installs; existing users keep their saved tab. Full analysis in `pdd/context/research/workout-dashboard.md`.
+
+**Why**: Phase 5 closed the per-exercise gap (ExerciseDetail Progress section), but cross-cutting questions (consistency, trend, muscle balance) had no home. A single dashboard tab puts them all in one scroll. Six sections matches the user's brief ("detailed dashboard") without bloating into a 1,500-LoC PR. Muscle balance is *free* — `Exercise.primaryMuscles` is already in the dataset, no tagging infra needed.
+
+**Trade-offs**: Five tabs (Dashboard / Browse / Routines / History / Settings) is the most this segmented-control will hold comfortably on a 360 px phone — pushing further would force a hamburger or bottom-nav redesign. Session Quality (avg completion %, avg duration) deferred to a hypothetical Phase 7 — diagnostic value but not motivational. Muscle-volume math splits weight evenly across `primaryMuscles` per set: approximate (a Bench Press 100% to chest is closer to truth than a 50/50 chest/triceps split would be), but predictable, dependency-free, and good enough as a "what am I neglecting" signal.
+
+**Don't suggest**: Adding Recharts / Visx (violates no-deps); making Dashboard a modal over Browse (extra navigation pattern); replacing History with Dashboard (they answer different questions); a global time-range selector (per-section windows are more legible); per-set muscle apportioning (compound lift biomechanics get complicated fast — `primaryMuscles` split is the right level of approximation).
+
+---
+
 ## [2026-05-28] Workout app Phase 5: round-one feedback chain
 
 **Decision**: Address user feedback (issue #38) as a 3-PR Phase 5 chain. **5a** ships smarter search (token + stem matcher), sticky weight unit via `snappet:workout:preferred-unit`, in-routine exercise rename (`RoutineExercise.displayName`), and a new fourth **Settings** tab. **5b** adds `Routine.defaults` with auto-derived values for existing routines + an apply-to-all affordance. **5c** ships a curated Essentials list of **100** exercises (default browser view) and promotes `ExerciseProgress` into `ExerciseDetail` with a three-card stat panel + PR marker. Full research in `pdd/context/research/workout-app-feedback.md`.

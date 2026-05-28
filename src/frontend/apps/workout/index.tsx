@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import Dashboard from './Dashboard'
 import ExerciseBrowser from './ExerciseBrowser'
 import HistoryView from './HistoryView'
 import RoutineEditor from './RoutineEditor'
@@ -11,15 +12,21 @@ import { STARTER_ROUTINES } from './starters'
 import { generateId } from './utils'
 import type { Exercise, Routine, SetLog, WeightUnit, WorkoutSession } from './types'
 
-type Tab = 'browse' | 'routines' | 'history' | 'settings'
+type Tab = 'dashboard' | 'browse' | 'routines' | 'history' | 'settings'
 
+// shrink-0 keeps each tab at its natural content width — combined with the
+// strip's overflow-x-auto, the strip scrolls horizontally when 5 tabs don't
+// fit on narrow phones, instead of compressing labels into ellipsis.
 const TAB_BTN_BASE =
-  'flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+  'shrink-0 px-4 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
 const TAB_BTN_ACTIVE = 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
 const TAB_BTN_INACTIVE = 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
 
 export default function Workout() {
-  const [tab, setTab] = useLocalStorage<Tab>('snappet:workout:tab', 'browse')
+  const [tab, setTab] = useLocalStorage<Tab>('snappet:workout:tab', 'dashboard')
+  // One-shot id buffer for cross-tab navigation (e.g. Dashboard → Browse on a
+  // PR row click). In-memory only; doesn't survive page reload.
+  const [pendingExerciseId, setPendingExerciseId] = useState<string | null>(null)
   const [routines, setRoutines] = useLocalStorage<Routine[]>('snappet:workout:routines', [])
   const [startersSeeded, setStartersSeeded] = useLocalStorage<boolean>(
     'snappet:workout:starters-seeded',
@@ -108,7 +115,14 @@ export default function Workout() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-full sm:w-fit">
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-full sm:w-fit overflow-x-auto">
+        <button
+          onClick={() => setTab('dashboard')}
+          aria-pressed={tab === 'dashboard'}
+          className={`${TAB_BTN_BASE} ${tab === 'dashboard' ? TAB_BTN_ACTIVE : TAB_BTN_INACTIVE}`}
+        >
+          Dashboard
+        </button>
         <button
           onClick={() => setTab('browse')}
           aria-pressed={tab === 'browse'}
@@ -146,8 +160,24 @@ export default function Workout() {
       </div>
 
       {/* Body */}
+      {tab === 'dashboard' && (
+        <Dashboard
+          history={history}
+          exerciseById={exerciseById}
+          onOpenExercise={(id) => {
+            setPendingExerciseId(id)
+            setTab('browse')
+          }}
+          onGoToRoutines={() => setTab('routines')}
+        />
+      )}
       {tab === 'browse' && (
-        <ExerciseBrowser resetSignal={browseResetCounter} history={history} />
+        <ExerciseBrowser
+          resetSignal={browseResetCounter}
+          history={history}
+          pendingExerciseId={pendingExerciseId}
+          onConsumePending={() => setPendingExerciseId(null)}
+        />
       )}
       {tab === 'history' && <HistoryView history={history} exerciseById={exerciseById} />}
       {tab === 'settings' && (
