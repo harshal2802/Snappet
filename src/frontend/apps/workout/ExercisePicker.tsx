@@ -1,35 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { buildSearchBag, matchesQuery } from './search'
+import {
+  ALL_CATEGORIES,
+  ALL_EQUIPMENT,
+  ALL_LEVELS,
+  ALL_MUSCLES,
+} from './customExercises'
 import ExerciseCard from './ExerciseCard'
-import type {
-  Equipment,
-  Exercise,
-  ExerciseCategory,
-  ExerciseFiltersSerialized,
-  ExerciseLevel,
-  Muscle,
-} from './types'
-
-const ALL_CATEGORIES: ExerciseCategory[] = [
-  'strength',
-  'cardio',
-  'stretching',
-  'plyometrics',
-  'powerlifting',
-  'olympic weightlifting',
-  'strongman',
-]
-const ALL_LEVELS: ExerciseLevel[] = ['beginner', 'intermediate', 'expert']
-const ALL_EQUIPMENT: Equipment[] = [
-  'body only', 'dumbbell', 'barbell', 'cable', 'machine', 'kettlebells',
-  'bands', 'medicine ball', 'exercise ball', 'foam roll', 'e-z curl bar', 'other',
-]
-const ALL_MUSCLES: Muscle[] = [
-  'abdominals', 'biceps', 'triceps', 'chest', 'shoulders', 'forearms',
-  'lats', 'middle back', 'lower back', 'traps', 'neck', 'quadriceps',
-  'hamstrings', 'glutes', 'calves', 'abductors', 'adductors',
-]
+import type { Exercise, ExerciseFiltersSerialized, Muscle } from './types'
 
 const EMPTY_FILTERS: ExerciseFiltersSerialized = {
   categories: [], levels: [], equipment: [], muscles: [],

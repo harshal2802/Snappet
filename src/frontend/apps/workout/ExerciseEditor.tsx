@@ -8,6 +8,7 @@ import {
   ALL_MUSCLES,
   makeCustomExercise,
 } from './customExercises'
+import { generateId } from './utils'
 import type {
   Equipment,
   Exercise,
@@ -17,6 +18,13 @@ import type {
   Mechanic,
   Muscle,
 } from './types'
+
+// Instruction rows carry a stable client id so React keys survive insert /
+// delete / reorder without focus or caret jumping to the wrong input.
+interface DraftStep {
+  id: string
+  text: string
+}
 
 interface ExerciseEditorProps {
   /** null = creating new; an Exercise = editing that custom exercise. */
@@ -139,8 +147,11 @@ export default function ExerciseEditor({
   const [mechanic, setMechanic] = useState<Mechanic>(base.mechanic)
   const [primaryMuscles, setPrimaryMuscles] = useState<Muscle[]>(base.primaryMuscles)
   const [secondaryMuscles, setSecondaryMuscles] = useState<Muscle[]>(base.secondaryMuscles)
-  const [instructions, setInstructions] = useState<string[]>(
-    base.instructions.length > 0 ? base.instructions : [''],
+  const [instructions, setInstructions] = useState<DraftStep[]>(() =>
+    (base.instructions.length > 0 ? base.instructions : ['']).map((text) => ({
+      id: generateId(),
+      text,
+    })),
   )
 
   const isEditingExisting = exercise !== null
@@ -171,7 +182,7 @@ export default function ExerciseEditor({
       equipment,
       primaryMuscles,
       secondaryMuscles,
-      instructions: instructions.map((s) => s.trim()).filter((s) => s.length > 0),
+      instructions: instructions.map((s) => s.text.trim()).filter((s) => s.length > 0),
       category,
       images: base.images, // always [] for custom in v1
       isCustom: true,
@@ -266,20 +277,22 @@ export default function ExerciseEditor({
             <p className={SECTION_LABEL}>Instructions</p>
             <div className="space-y-2">
               {instructions.map((step, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={step.id} className="flex gap-2 items-center">
                   <span className="text-xs text-gray-400 dark:text-gray-500 w-4 shrink-0 text-right">
                     {i + 1}
                   </span>
                   <input
                     type="text"
-                    value={step}
+                    value={step.text}
                     onChange={(e) =>
-                      setInstructions((prev) => prev.map((s, j) => (j === i ? e.target.value : s)))
+                      setInstructions((prev) =>
+                        prev.map((s) => (s.id === step.id ? { ...s, text: e.target.value } : s)),
+                      )
                     }
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && i === instructions.length - 1 && step.trim()) {
+                      if (e.key === 'Enter' && i === instructions.length - 1 && step.text.trim()) {
                         e.preventDefault()
-                        setInstructions((prev) => [...prev, ''])
+                        setInstructions((prev) => [...prev, { id: generateId(), text: '' }])
                       }
                     }}
                     placeholder={`Step ${i + 1}`}
@@ -288,7 +301,7 @@ export default function ExerciseEditor({
                   {instructions.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => setInstructions((prev) => prev.filter((_, j) => j !== i))}
+                      onClick={() => setInstructions((prev) => prev.filter((s) => s.id !== step.id))}
                       aria-label={`Remove step ${i + 1}`}
                       className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
@@ -299,7 +312,7 @@ export default function ExerciseEditor({
               ))}
               <button
                 type="button"
-                onClick={() => setInstructions((prev) => [...prev, ''])}
+                onClick={() => setInstructions((prev) => [...prev, { id: generateId(), text: '' }])}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1 py-0.5"
               >
                 + Add step

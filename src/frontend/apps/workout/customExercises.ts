@@ -11,9 +11,10 @@ import { generateId } from './utils'
 
 export const CUSTOM_EXERCISES_KEY = 'snappet:workout:custom-exercises'
 
-// Option arrays for the ExerciseEditor's chip rows. Mirror the literal sets
-// used by ExerciseBrowser / ExercisePicker; the `null`-able Force / Mechanic
-// option lists are new (the browser/picker filter on them differently).
+// Canonical option arrays for exercise fields. Shared by the ExerciseEditor's
+// chip rows and the ExerciseBrowser / ExercisePicker filter rows (single
+// source of truth — don't redefine these locally). The `null`-able Force /
+// Mechanic lists are editor-only (the browser/picker don't filter on them).
 export const ALL_CATEGORIES: ExerciseCategory[] = [
   'strength',
   'cardio',

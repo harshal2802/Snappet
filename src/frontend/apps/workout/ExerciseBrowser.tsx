@@ -1,69 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { loadExercises } from './data'
-import { makeCustomExercise, mergeCatalog } from './customExercises'
+import {
+  ALL_CATEGORIES,
+  ALL_EQUIPMENT,
+  ALL_LEVELS,
+  ALL_MUSCLES,
+  makeCustomExercise,
+  mergeCatalog,
+} from './customExercises'
 import { ESSENTIAL_ID_SET } from './essentials'
 import { buildSearchBag, matchesQuery } from './search'
 import ExerciseCard from './ExerciseCard'
 import ExerciseDetail from './ExerciseDetail'
 import ExerciseEditor from './ExerciseEditor'
 import type {
-  Equipment,
   Exercise,
-  ExerciseCategory,
   ExerciseFiltersSerialized,
-  ExerciseLevel,
   Muscle,
   WeightUnit,
   WorkoutSession,
 } from './types'
-
-const ALL_CATEGORIES: ExerciseCategory[] = [
-  'strength',
-  'cardio',
-  'stretching',
-  'plyometrics',
-  'powerlifting',
-  'olympic weightlifting',
-  'strongman',
-]
-
-const ALL_LEVELS: ExerciseLevel[] = ['beginner', 'intermediate', 'expert']
-
-const ALL_EQUIPMENT: Equipment[] = [
-  'body only',
-  'dumbbell',
-  'barbell',
-  'cable',
-  'machine',
-  'kettlebells',
-  'bands',
-  'medicine ball',
-  'exercise ball',
-  'foam roll',
-  'e-z curl bar',
-  'other',
-]
-
-const ALL_MUSCLES: Muscle[] = [
-  'abdominals',
-  'biceps',
-  'triceps',
-  'chest',
-  'shoulders',
-  'forearms',
-  'lats',
-  'middle back',
-  'lower back',
-  'traps',
-  'neck',
-  'quadriceps',
-  'hamstrings',
-  'glutes',
-  'calves',
-  'abductors',
-  'adductors',
-]
 
 const EMPTY_FILTERS: ExerciseFiltersSerialized = {
   categories: [],
@@ -290,6 +247,21 @@ export default function ExerciseBrowser({
     if (selectedId === ex.id) setSelectedId(null)
   }
 
+  // Header actions for the detail pane — Edit/Delete for custom exercises,
+  // Customize (copy-to-custom) for DB ones. Computed once so the desktop
+  // side-pane and the mobile modal can't drift apart.
+  const detailActions = selected
+    ? selected.isCustom
+      ? {
+          onEdit: () => setEditor({ mode: 'edit', exercise: selected }),
+          onDelete: () => handleDeleteCustom(selected),
+        }
+      : {
+          onCustomize: () =>
+            setEditor({ mode: 'customize', seed: makeCustomExercise(selected) }),
+        }
+    : {}
+
   return (
     <div className="space-y-4">
       {/* Sticky-top controls */}
@@ -462,9 +434,7 @@ export default function ExerciseBrowser({
               onClose={() => setSelectedId(null)}
               history={history}
               preferredUnit={preferredUnit}
-              onEdit={selected.isCustom ? () => setEditor({ mode: 'edit', exercise: selected }) : undefined}
-              onDelete={selected.isCustom ? () => handleDeleteCustom(selected) : undefined}
-              onCustomize={!selected.isCustom ? () => setEditor({ mode: 'customize', seed: makeCustomExercise(selected) }) : undefined}
+              {...detailActions}
               inline
             />
           </div>
@@ -479,9 +449,7 @@ export default function ExerciseBrowser({
             onClose={() => setSelectedId(null)}
             history={history}
             preferredUnit={preferredUnit}
-            onEdit={selected.isCustom ? () => setEditor({ mode: 'edit', exercise: selected }) : undefined}
-            onDelete={selected.isCustom ? () => handleDeleteCustom(selected) : undefined}
-            onCustomize={!selected.isCustom ? () => setEditor({ mode: 'customize', seed: makeCustomExercise(selected) }) : undefined}
+            {...detailActions}
           />
         </div>
       )}
@@ -489,6 +457,13 @@ export default function ExerciseBrowser({
       {/* Add / edit / customize exercise */}
       {editor && (
         <ExerciseEditor
+          key={
+            editor.mode === 'edit'
+              ? editor.exercise.id
+              : editor.mode === 'customize'
+                ? editor.seed.id
+                : 'new'
+          }
           exercise={editor.mode === 'edit' ? editor.exercise : null}
           seed={editor.mode === 'customize' ? editor.seed : undefined}
           onSave={handleSaveCustom}
