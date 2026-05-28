@@ -7,8 +7,25 @@ import type {
   Routine,
   RoutineDefaults,
   RoutineExercise,
+  RoutineLevel,
+  RoutineSource,
+  SportTag,
   WeightUnit,
 } from './types'
+
+const SPORT_OPTIONS: { value: SportTag | undefined; label: string }[] = [
+  { value: undefined, label: 'None' },
+  { value: 'general', label: 'General' },
+  { value: 'climbing', label: 'Climbing' },
+  { value: 'calisthenics', label: 'Calisthenics' },
+]
+
+const LEVEL_OPTIONS: { value: RoutineLevel | undefined; label: string }[] = [
+  { value: undefined, label: 'None' },
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+]
 
 interface RoutineEditorProps {
   /** null = creating new; otherwise editing an existing routine. */
@@ -58,6 +75,35 @@ export default function RoutineEditor({
   const [weightOpen, setWeightOpen] = useState<Set<number>>(new Set())
   const [notesOpen, setNotesOpen] = useState<Set<number>>(new Set())
   const [renameOpen, setRenameOpen] = useState<Set<number>>(new Set())
+
+  // Issue #35 — Advanced metadata local draft state
+  const [description, setDescription] = useState<string>(routine?.description ?? '')
+  const [sport, setSport] = useState<SportTag | undefined>(routine?.sport)
+  const [level, setLevel] = useState<RoutineLevel | undefined>(routine?.level)
+  const [tags, setTags] = useState<string[]>(routine?.tags ?? [])
+  const [tagDraft, setTagDraft] = useState<string>('')
+  const [sourceLabel, setSourceLabel] = useState<string>(routine?.source?.label ?? '')
+  const [sourceUrl, setSourceUrl] = useState<string>(routine?.source?.url ?? '')
+  // Open by default when anything is already set; otherwise collapsed.
+  const [metadataOpen, setMetadataOpen] = useState<boolean>(
+    Boolean(
+      routine?.description ||
+        routine?.sport ||
+        routine?.level ||
+        (routine?.tags && routine.tags.length > 0) ||
+        routine?.source,
+    ),
+  )
+
+  function commitTagDraft() {
+    const next = tagDraft.trim().toLowerCase()
+    if (!next) return
+    setTags((prev) => (prev.includes(next) ? prev : [...prev, next]))
+    setTagDraft('')
+  }
+  function removeTag(t: string) {
+    setTags((prev) => prev.filter((x) => x !== t))
+  }
 
   const canSave = name.trim().length > 0 && items.length > 0
 
@@ -133,6 +179,16 @@ export default function RoutineEditor({
     if (defaults.reps !== undefined && defaults.reps !== '') trimmedDefaults.reps = defaults.reps
     if (defaults.restSeconds !== undefined) trimmedDefaults.restSeconds = defaults.restSeconds
     if (defaults.weightUnit !== undefined) trimmedDefaults.weightUnit = defaults.weightUnit
+    // Issue #35 — assemble optional metadata; any empty field becomes undefined
+    const trimmedDescription = description.trim()
+    const trimmedSourceLabel = sourceLabel.trim()
+    const trimmedSourceUrl = sourceUrl.trim()
+    const builtSource: RoutineSource | undefined = trimmedSourceLabel
+      ? {
+          label: trimmedSourceLabel,
+          ...(trimmedSourceUrl ? { url: trimmedSourceUrl } : {}),
+        }
+      : undefined
     const saved: Routine = {
       id: routine?.id ?? generateId(),
       name: name.trim(),
@@ -140,6 +196,11 @@ export default function RoutineEditor({
       createdAt: routine?.createdAt ?? now,
       updatedAt: now,
       defaults: Object.keys(trimmedDefaults).length > 0 ? trimmedDefaults : undefined,
+      description: trimmedDescription === '' ? undefined : trimmedDescription,
+      sport,
+      level,
+      tags: tags.length > 0 ? tags : undefined,
+      source: builtSource,
       // isStarter intentionally omitted; once edited, it loses the starter pill
     }
     onSave(saved)
@@ -179,6 +240,149 @@ export default function RoutineEditor({
           placeholder="My Routine"
           className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      {/* Advanced metadata (issue #35) — sport / level / tags / description / source */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <button
+          onClick={() => setMetadataOpen((o) => !o)}
+          aria-expanded={metadataOpen}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-xl"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Advanced metadata
+          </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {metadataOpen ? '▲' : '▼'}
+          </span>
+        </button>
+        {metadataOpen && (
+          <div className="px-3 pb-3 space-y-3">
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What's this routine?"
+                className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                Sport
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {SPORT_OPTIONS.map((opt) => {
+                  const active = sport === opt.value
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => setSport(opt.value)}
+                      aria-pressed={active}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        active
+                          ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                Level
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {LEVEL_OPTIONS.map((opt) => {
+                  const active = level === opt.value
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => setLevel(opt.value)}
+                      aria-pressed={active}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        active
+                          ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                Tags
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  >
+                    {t}
+                    <button
+                      onClick={() => removeTag(t)}
+                      aria-label={`Remove tag ${t}`}
+                      className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus-visible:underline"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="text"
+                  value={tagDraft}
+                  onChange={(e) => setTagDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault()
+                      commitTagDraft()
+                    }
+                  }}
+                  onBlur={commitTagDraft}
+                  placeholder="Add tag…"
+                  className="flex-1 min-w-[6rem] px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                  Source label
+                </label>
+                <input
+                  type="text"
+                  value={sourceLabel}
+                  onChange={(e) => setSourceLabel(e.target.value)}
+                  placeholder="e.g. Hörst, Training for Climbing"
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
+                  Source URL (optional)
+                </label>
+                <input
+                  type="url"
+                  inputMode="url"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="https://…"
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Defaults for new exercises */}
