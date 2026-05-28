@@ -146,7 +146,9 @@ export default function Workout() {
       </div>
 
       {/* Body */}
-      {tab === 'browse' && <ExerciseBrowser resetSignal={browseResetCounter} />}
+      {tab === 'browse' && (
+        <ExerciseBrowser resetSignal={browseResetCounter} history={history} />
+      )}
       {tab === 'history' && <HistoryView history={history} exerciseById={exerciseById} />}
       {tab === 'settings' && (
         <SettingsView

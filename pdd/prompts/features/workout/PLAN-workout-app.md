@@ -189,8 +189,8 @@ All four original phases shipped:
 
 Phase 5 in progress (issue #38):
 - Phase 5a — PR #39 (`29-workout-05a-quick-wins.md`)
-- Phase 5b — in progress (`30-workout-05b-routine-defaults.md`)
-- Phase 5c — not started
+- Phase 5b — PR #40 (`30-workout-05b-routine-defaults.md`)
+- Phase 5c — in progress (`31-workout-05c-progress-essentials.md`)
 
 ## Next step
 

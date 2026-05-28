@@ -1,12 +1,21 @@
 import { useEffect } from 'react'
-import type { Exercise, ExerciseLevel, Muscle } from './types'
+import type { Exercise, ExerciseLevel, Muscle, WorkoutSession } from './types'
 import ExerciseImage from './ExerciseImage'
+import ExerciseProgress from './ExerciseProgress'
+import {
+  sessionCountForExercise,
+  topSetForExercise,
+  totalVolumeForExercise,
+} from './progress'
 
 interface ExerciseDetailProps {
   exercise: Exercise
   onClose: () => void
   /** When true (desktop), renders inline (no backdrop). */
   inline?: boolean
+  /** Completed sessions — when present, render a Progress section if the
+   *  user has any history for this exercise. */
+  history?: WorkoutSession[]
 }
 
 const LEVEL_PILL: Record<ExerciseLevel, string> = {
@@ -29,7 +38,79 @@ function MusclePill({ muscle, primary }: { muscle: Muscle; primary: boolean }) {
   )
 }
 
-export default function ExerciseDetail({ exercise, onClose, inline }: ExerciseDetailProps) {
+function ExerciseProgressPanel({
+  exerciseId,
+  history,
+}: {
+  exerciseId: string
+  history: WorkoutSession[]
+}) {
+  const sessionCount = sessionCountForExercise(history, exerciseId)
+  if (sessionCount === 0) return null
+  const topSet = topSetForExercise(history, exerciseId)
+  const volumeKg = totalVolumeForExercise(history, exerciseId)
+
+  const STAT_CARD =
+    'rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 flex flex-col gap-0.5'
+  const STAT_LABEL = 'text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400'
+  const STAT_VALUE = 'text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums'
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        Your progress
+      </h3>
+      <div className="grid grid-cols-3 gap-2">
+        <div className={STAT_CARD}>
+          <span className={STAT_LABEL}>Top set</span>
+          <span className={STAT_VALUE}>
+            {topSet
+              ? topSet.bestKg > 0
+                ? `${Math.round(topSet.bestKg)}kg`
+                : '—'
+              : '—'}
+          </span>
+          {topSet && (
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+              × {topSet.bestReps} reps
+            </span>
+          )}
+        </div>
+        <div className={STAT_CARD}>
+          <span className={STAT_LABEL}>Volume</span>
+          <span className={STAT_VALUE}>
+            {volumeKg > 0 ? volumeKg.toLocaleString() : '—'}
+            {volumeKg > 0 && (
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500"> kg</span>
+            )}
+          </span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+            all-time
+          </span>
+        </div>
+        <div className={STAT_CARD}>
+          <span className={STAT_LABEL}>Sessions</span>
+          <span className={STAT_VALUE}>{sessionCount}</span>
+          <span className="text-[10px] text-gray-500 dark:text-gray-400">
+            with this exercise
+          </span>
+        </div>
+      </div>
+      <ExerciseProgress
+        exerciseId={exerciseId}
+        history={history}
+        prSessionStartedAt={topSet?.prSessionStartedAt}
+      />
+    </div>
+  )
+}
+
+export default function ExerciseDetail({
+  exercise,
+  onClose,
+  inline,
+  history,
+}: ExerciseDetailProps) {
   // Close on Escape (both modes)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -98,6 +179,11 @@ export default function ExerciseDetail({ exercise, onClose, inline }: ExerciseDe
             </span>
           )}
         </div>
+
+        {/* Progress (only when the user has history for this exercise) */}
+        {history && history.length > 0 && (
+          <ExerciseProgressPanel exerciseId={exercise.id} history={history} />
+        )}
 
         {/* Muscles */}
         {(exercise.primaryMuscles.length > 0 || exercise.secondaryMuscles.length > 0) && (
