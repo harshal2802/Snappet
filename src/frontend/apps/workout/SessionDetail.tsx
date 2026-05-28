@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import ExerciseImage from './ExerciseImage'
 import ExerciseProgress from './ExerciseProgress'
+import { getDisplayName } from './utils'
 import type { Exercise, SessionExercise, WeightUnit, WorkoutSession } from './types'
 
 interface SessionDetailProps {
@@ -66,6 +67,7 @@ interface ExerciseBlockProps {
 }
 
 function ExerciseBlock({ ex, exerciseMeta, history }: ExerciseBlockProps) {
+  const label = getDisplayName(ex, exerciseMeta)
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
       <div className="flex items-start gap-2">
@@ -73,7 +75,7 @@ function ExerciseBlock({ ex, exerciseMeta, history }: ExerciseBlockProps) {
           {exerciseMeta?.images[0] && (
             <ExerciseImage
               path={exerciseMeta.images[0]}
-              alt={exerciseMeta.name}
+              alt={label}
               className="w-full h-full object-cover"
             />
           )}
@@ -81,7 +83,7 @@ function ExerciseBlock({ ex, exerciseMeta, history }: ExerciseBlockProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-              {exerciseMeta?.name ?? ex.exerciseId}
+              {label}
             </p>
             {ex.skipped && (
               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">

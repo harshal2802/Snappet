@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ExerciseImage from './ExerciseImage'
+import { getDisplayName } from './utils'
 import type { Exercise, Routine } from './types'
 
 interface RoutineListProps {
@@ -98,16 +99,17 @@ export default function RoutineList({
                     <div className="flex items-center gap-1 pt-1">
                       {thumbs.map((re, i) => {
                         const ex = exerciseById.get(re.exerciseId)
+                        const label = getDisplayName(re, ex)
                         return (
                           <div
                             key={`${re.exerciseId}-${i}`}
                             className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden"
-                            title={ex?.name ?? re.exerciseId}
+                            title={label}
                           >
                             {ex?.images[0] && (
                               <ExerciseImage
                                 path={ex.images[0]}
-                                alt={ex.name}
+                                alt={label}
                                 className="w-full h-full object-cover"
                               />
                             )}

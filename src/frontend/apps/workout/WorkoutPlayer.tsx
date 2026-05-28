@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ExerciseImage from './ExerciseImage'
+import { getDisplayName } from './utils'
 import type {
   Exercise,
   SessionExercise,
@@ -12,6 +13,8 @@ interface WorkoutPlayerProps {
   session: WorkoutSession
   setSession: React.Dispatch<React.SetStateAction<WorkoutSession | null>>
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
+  setPreferredUnit: (u: WeightUnit) => void
   onFinish: (final: WorkoutSession) => void
   onAbandon: () => void
 }
@@ -121,6 +124,8 @@ export default function WorkoutPlayer({
   session,
   setSession,
   exerciseById,
+  preferredUnit,
+  setPreferredUnit,
   onFinish,
   onAbandon,
 }: WorkoutPlayerProps) {
@@ -153,7 +158,7 @@ export default function WorkoutPlayer({
     if (prev?.completedAt) {
       setWeightInput(prev.actualWeight !== undefined ? String(prev.actualWeight) : '')
       setRepsInput(prev.actualReps !== undefined ? String(prev.actualReps) : '')
-      setUnitInput(prev.weightUnit ?? currentExercise.targetWeightUnit ?? 'kg')
+      setUnitInput(prev.weightUnit ?? currentExercise.targetWeightUnit ?? preferredUnit)
     } else {
       // Fall back to targets
       setWeightInput(
@@ -161,9 +166,9 @@ export default function WorkoutPlayer({
       )
       const targetRepInt = parseInt(currentExercise.targetReps, 10)
       setRepsInput(Number.isFinite(targetRepInt) ? String(targetRepInt) : '')
-      setUnitInput(currentExercise.targetWeightUnit ?? 'kg')
+      setUnitInput(currentExercise.targetWeightUnit ?? preferredUnit)
     }
-  }, [currentExerciseIdx, currentSetIdx, currentExercise])
+  }, [currentExerciseIdx, currentSetIdx, currentExercise, preferredUnit])
 
   // Tick during rest
   useEffect(() => {
@@ -413,7 +418,7 @@ export default function WorkoutPlayer({
               {ex?.images[0] ? (
                 <ExerciseImage
                   path={ex.images[0]}
-                  alt={ex.name}
+                  alt={getDisplayName(currentExercise, ex)}
                   className="w-full h-full object-contain max-h-[40vh]"
                 />
               ) : (
@@ -424,7 +429,7 @@ export default function WorkoutPlayer({
             {/* Name + target */}
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {ex?.name ?? currentExercise.exerciseId}
+                {getDisplayName(currentExercise, ex)}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {currentExercise.targetSets} × {currentExercise.targetReps}
@@ -467,7 +472,12 @@ export default function WorkoutPlayer({
                 repsInput={repsInput}
                 setRepsInput={setRepsInput}
                 unitInput={unitInput}
-                setUnitInput={setUnitInput}
+                setUnitInput={(u) => {
+                  setUnitInput(u)
+                  // User explicitly chose a unit mid-workout — persist so
+                  // subsequent exercises (and future sessions) default to it.
+                  setPreferredUnit(u)
+                }}
                 isLastSet={
                   currentSetIdx === currentExercise.targetSets - 1 &&
                   !session.exercises.some(
@@ -499,9 +509,8 @@ export default function WorkoutPlayer({
                         const nextEx = session.exercises.find(
                           (e, i) => i > currentExerciseIdx && !isExerciseDone(e),
                         )
-                        return nextEx
-                          ? exerciseById.get(nextEx.exerciseId)?.name ?? 'next exercise'
-                          : 'finish'
+                        if (!nextEx) return 'finish'
+                        return getDisplayName(nextEx, exerciseById.get(nextEx.exerciseId))
                       })()
                 }
               />

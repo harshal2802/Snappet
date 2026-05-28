@@ -95,6 +95,8 @@ export interface RoutineExercise {
   weightUnit?: WeightUnit
   // Free-form notes.
   notes?: string
+  // User-provided override for the displayed name. Falls back to Exercise.name.
+  displayName?: string
 }
 
 export interface Routine {
@@ -133,6 +135,9 @@ export interface SessionExercise {
   sets: SetLog[]
   // True if user explicitly skipped the remaining sets of this exercise.
   skipped?: boolean
+  // Snapshot of RoutineExercise.displayName at session start, so renaming the
+  // routine later doesn't retroactively change historic session labels.
+  displayName?: string
 }
 
 export interface WorkoutSession {

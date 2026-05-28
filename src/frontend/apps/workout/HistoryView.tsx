@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ExerciseImage from './ExerciseImage'
 import SessionDetail from './SessionDetail'
+import { getDisplayName } from './utils'
 import type { Exercise, WeightUnit, WorkoutSession } from './types'
 
 interface HistoryViewProps {
@@ -135,16 +136,17 @@ export default function HistoryView({ history, exerciseById }: HistoryViewProps)
                   <div className="flex items-center gap-1 pt-2">
                     {thumbs.map((re, i) => {
                       const ex = exerciseById.get(re.exerciseId)
+                      const label = getDisplayName(re, ex)
                       return (
                         <div
                           key={`${re.exerciseId}-${i}`}
                           className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-700 overflow-hidden"
-                          title={ex?.name ?? re.exerciseId}
+                          title={label}
                         >
                           {ex?.images[0] && (
                             <ExerciseImage
                               path={ex.images[0]}
-                              alt={ex.name}
+                              alt={label}
                               className="w-full h-full object-cover"
                             />
                           )}

@@ -30,9 +30,10 @@ export default function RoutineEditor({
     routine ? routine.exercises.map((e) => ({ ...e })) : [],
   )
   const [pickerOpen, setPickerOpen] = useState(false)
-  // Per-row UI state — which rows have weight/notes expanded
+  // Per-row UI state — which rows have weight/notes/rename expanded
   const [weightOpen, setWeightOpen] = useState<Set<number>>(new Set())
   const [notesOpen, setNotesOpen] = useState<Set<number>>(new Set())
+  const [renameOpen, setRenameOpen] = useState<Set<number>>(new Set())
 
   const canSave = name.trim().length > 0 && items.length > 0
 
@@ -56,22 +57,17 @@ export default function RoutineEditor({
   function removeItem(idx: number) {
     setItems((prev) => prev.filter((_, i) => i !== idx))
     // Tidy up associated UI state
-    setWeightOpen((s) => {
+    const remap = (s: Set<number>) => {
       const next = new Set<number>()
       s.forEach((i) => {
         if (i < idx) next.add(i)
         else if (i > idx) next.add(i - 1)
       })
       return next
-    })
-    setNotesOpen((s) => {
-      const next = new Set<number>()
-      s.forEach((i) => {
-        if (i < idx) next.add(i)
-        else if (i > idx) next.add(i - 1)
-      })
-      return next
-    })
+    }
+    setWeightOpen(remap)
+    setNotesOpen(remap)
+    setRenameOpen(remap)
   }
 
   function moveItem(idx: number, dir: -1 | 1) {
@@ -170,8 +166,11 @@ export default function RoutineEditor({
             const ex = exerciseById.get(it.exerciseId)
             const showWeight = weightOpen.has(idx)
             const showNotes = notesOpen.has(idx)
+            const showRename = renameOpen.has(idx)
             const isFirst = idx === 0
             const isLast = idx === items.length - 1
+            const displayedName = it.displayName?.trim() || ex?.name || `Unknown (${it.exerciseId})`
+            const isRenamed = (it.displayName?.trim().length ?? 0) > 0
             return (
               <li
                 key={`${it.exerciseId}-${idx}`}
@@ -184,9 +183,16 @@ export default function RoutineEditor({
                       <ExerciseImage path={ex.images[0]} alt={ex.name} className="w-full h-full object-cover" />
                     )}
                   </div>
-                  <p className="flex-1 min-w-0 text-sm font-medium text-gray-900 dark:text-gray-100 truncate pt-0.5">
-                    {ex?.name ?? `Unknown (${it.exerciseId})`}
-                  </p>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {displayedName}
+                    </p>
+                    {isRenamed && ex?.name && (
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                        {ex.name}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       onClick={() => moveItem(idx, -1)}
@@ -205,6 +211,18 @@ export default function RoutineEditor({
                       ▼
                     </button>
                     <button
+                      onClick={() => toggleSet(setRenameOpen, idx)}
+                      aria-label="Rename exercise"
+                      aria-pressed={showRename}
+                      className={`w-9 h-9 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        isRenamed
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      ✏
+                    </button>
+                    <button
                       onClick={() => removeItem(idx)}
                       aria-label="Remove"
                       className="w-9 h-9 rounded text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
@@ -213,6 +231,45 @@ export default function RoutineEditor({
                     </button>
                   </div>
                 </div>
+
+                {/* Rename (collapsible) */}
+                {showRename && (
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-2 space-y-1.5">
+                    <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Custom name (shown during workout & history)
+                    </label>
+                    <input
+                      type="text"
+                      value={it.displayName ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        updateItem(idx, { displayName: v === '' ? undefined : v })
+                      }}
+                      placeholder={ex?.name ?? 'Custom name'}
+                      className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        Original: {ex?.name ?? it.exerciseId}
+                      </p>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => updateItem(idx, { displayName: undefined })}
+                          disabled={!isRenamed}
+                          className="text-[11px] text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:cursor-default focus:outline-none focus-visible:underline"
+                        >
+                          Reset to original
+                        </button>
+                        <button
+                          onClick={() => toggleSet(setRenameOpen, idx)}
+                          className="text-[11px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none focus-visible:underline"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Sets / Reps / Rest */}
                 <div className="grid grid-cols-3 gap-2">

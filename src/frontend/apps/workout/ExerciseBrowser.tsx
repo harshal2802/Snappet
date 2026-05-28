@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { loadExercises } from './data'
+import { buildSearchBag, matchesQuery } from './search'
 import ExerciseCard from './ExerciseCard'
 import ExerciseDetail from './ExerciseDetail'
 import type {
@@ -185,14 +186,20 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
     })
   }
 
+  const bagsById = useMemo(() => {
+    const m = new Map<string, string[]>()
+    if (!exercises) return m
+    for (const ex of exercises) m.set(ex.id, buildSearchBag(ex))
+    return m
+  }, [exercises])
+
   const filtered = useMemo(() => {
     if (!exercises) return []
-    const term = searchTerm.trim().toLowerCase()
     return exercises.filter((ex) => {
-      if (term && !ex.name.toLowerCase().includes(term)) return false
+      if (!matchesQuery(bagsById.get(ex.id) ?? [], searchTerm)) return false
       return matchesFilters(ex, filters)
     })
-  }, [exercises, searchTerm, filters])
+  }, [exercises, searchTerm, filters, bagsById])
 
   const selected = useMemo(
     () => (selectedId ? exercises?.find((e) => e.id === selectedId) ?? null : null),
