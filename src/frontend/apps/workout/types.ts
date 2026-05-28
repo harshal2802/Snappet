@@ -121,6 +121,27 @@ export interface Routine {
   // via the per-row ⇪ icon. Absent until the user saves a routine through
   // the editor at least once.
   defaults?: RoutineDefaults
+  // Issue #35 — sport-tagged metadata. All optional; absence treated as
+  // 'general' / unspecified by filtering UI.
+  sport?: SportTag
+  level?: RoutineLevel
+  tags?: string[]
+  description?: string
+  source?: RoutineSource
+}
+
+// ── Sport-tagged routines (issue #35) ────────────────────────────────────
+
+// Extensible. 'general' is the implicit bucket for user-created routines
+// and pre-#35 starter routines; new sport keys can be added without code
+// changes elsewhere as long as RoutineList/Filter rows mention them.
+export type SportTag = 'general' | 'climbing' | 'calisthenics'
+
+export type RoutineLevel = 'beginner' | 'intermediate' | 'advanced'
+
+export interface RoutineSource {
+  label: string
+  url?: string
 }
 
 // ── Phase 3: Sessions ───────────────────────────────────────────────────────

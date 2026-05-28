@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ExerciseImage from './ExerciseImage'
 import { getDisplayName } from './utils'
-import type { Exercise, Routine } from './types'
+import type { Exercise, Routine, RoutineLevel, SportTag } from './types'
 
 interface RoutineListProps {
   routines: Routine[]
@@ -18,6 +18,18 @@ function estimateMinutes(r: Routine): number {
   // Active time per set ~30s + rest. Crude but useful.
   const seconds = r.exercises.reduce((acc, e) => acc + e.sets * (30 + e.restSeconds), 0)
   return Math.max(1, Math.round(seconds / 60))
+}
+
+// Issue #35 — static class lookups so Tailwind's content scanner finds them.
+const SPORT_BADGE: Record<Exclude<SportTag, 'general'>, string> = {
+  climbing: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+  calisthenics: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+}
+
+const LEVEL_PILL: Record<RoutineLevel, string> = {
+  beginner: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  intermediate: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  advanced: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
 }
 
 export default function RoutineList({
@@ -89,11 +101,48 @@ export default function RoutineList({
                         Starter
                       </span>
                     )}
+                    {r.sport && r.sport !== 'general' && (
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded capitalize ${SPORT_BADGE[r.sport]}`}
+                      >
+                        {r.sport}
+                      </span>
+                    )}
+                    {r.level && (
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded capitalize ${LEVEL_PILL[r.level]}`}
+                      >
+                        {r.level}
+                      </span>
+                    )}
                   </div>
+                  {r.description && (
+                    <p className="text-xs italic text-gray-500 dark:text-gray-400 line-clamp-1">
+                      {r.description}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {r.exercises.length} exercise{r.exercises.length === 1 ? '' : 's'} · ~
                     {estimateMinutes(r)} min
                   </p>
+                  {r.source && (
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                      Source:{' '}
+                      {r.source.url ? (
+                        <a
+                          href={r.source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="underline hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          {r.source.label}
+                        </a>
+                      ) : (
+                        r.source.label
+                      )}
+                    </p>
+                  )}
                   {/* Thumbnails */}
                   {thumbs.length > 0 && (
                     <div className="flex items-center gap-1 pt-1">
