@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { loadExercises } from './data'
 import ExerciseCard from './ExerciseCard'
@@ -160,11 +160,11 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
     }
   }, [])
 
-  // Reset signal from parent — guard against the initial value (0) running on mount.
-  const isInitialRef = useState({ initial: true })[0]
+  // Reset signal from parent — guard against the initial value running on mount.
+  const initialResetRef = useRef(true)
   useEffect(() => {
-    if (isInitialRef.initial) {
-      isInitialRef.initial = false
+    if (initialResetRef.current) {
+      initialResetRef.current = false
       return
     }
     setSearchTerm('')

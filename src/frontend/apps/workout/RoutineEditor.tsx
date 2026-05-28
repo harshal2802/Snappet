@@ -150,9 +150,11 @@ export default function RoutineEditor({
         </h3>
         <button
           onClick={() => setPickerOpen(true)}
-          className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          disabled={exercises.length === 0}
+          title={exercises.length === 0 ? 'Loading exercises…' : undefined}
+          className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 disabled:opacity-50 disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
-          + Add exercise
+          {exercises.length === 0 ? 'Loading…' : '+ Add exercise'}
         </button>
       </div>
 
