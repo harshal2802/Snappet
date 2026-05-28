@@ -118,17 +118,83 @@ None pending — research locked the four user-decided answers (full catalog, kg
 - **Why not split Phase 1 further?** Catalog + detail view share so much state (loaded data, filter context) that splitting them just multiplies plumbing without testable sub-artifacts.
 - **Why not merge Phase 4 into Phase 3?** Phase 3 alone is a usable workout app; Phase 4 is a clear "memory" feature with its own UI surface. Keeping them separate gives a clean shipping decision point — if Phase 3 takes longer than expected, Phase 4 can defer.
 
+---
+
+## Phase 5 — Round-one feedback (added 2026-05-28)
+
+Round-one user feedback (issue #38) flagged five usability issues. Research at `pdd/context/research/workout-app-feedback.md`. Split into three small PRs.
+
+User-confirmed decisions:
+- Essentials list size: **100** exercises
+- Settings surface: **fourth top-level tab** ("Settings", next to History)
+- Migration of existing routines for `defaults`: **auto-derive from most common values** on first read
+
+### Phase 5a — Quick wins
+
+**Produces**:
+- `src/frontend/apps/workout/search.ts` — token-and-stem matcher (`buildSearchBag`, `matchesQuery`); used by Browser + Picker
+- `src/frontend/apps/workout/ExerciseBrowser.tsx`, `ExercisePicker.tsx` — replace `name.includes(term)` with the new matcher; also search muscles/equipment/category
+- `src/frontend/apps/workout/types.ts` — `RoutineExercise.displayName?: string`
+- `src/frontend/apps/workout/RoutineEditor.tsx` — ✏ rename modal per row; reset-to-original; passes through to display
+- `src/frontend/apps/workout/utils.ts` — `getDisplayName(routineExercise, exercise)` helper
+- `src/frontend/apps/workout/WorkoutPlayer.tsx`, `RoutineList.tsx`, `HistoryView.tsx`, `SessionDetail.tsx` — use `getDisplayName`
+- `src/frontend/apps/workout/index.tsx` — new **Settings** tab (4th)
+- `src/frontend/apps/workout/SettingsView.tsx` — preferred-unit toggle; reads/writes `snappet:workout:preferred-unit`
+- `WorkoutPlayer` — read preferred-unit on session start + write it on every user toggle
+
+**Depends on**: Phases 1–4 (already shipped)
+
+**Risk**: Low — additive schema, no migration needed for 5a's changes.
+
+**Prompt**: `pdd/prompts/features/workout/29-workout-05a-quick-wins.md`
+
+### Phase 5b — Routine defaults
+
+**Produces**:
+- `src/frontend/apps/workout/types.ts` — `Routine.defaults?: { sets?, reps?, restSeconds?, weightUnit? }`
+- `src/frontend/apps/workout/utils.ts` — `deriveDefaults(routine)` (median sets, mode reps, median rest, mode unit)
+- `src/frontend/apps/workout/RoutineEditor.tsx` — Defaults block above the row list; new exercises inherit; ⇪ apply-to-all icon on per-row sets/reps/rest fields
+- Migration: on RoutineEditor mount, if a routine has `defaults === undefined` AND has ≥1 exercise, compute via `deriveDefaults` and pre-populate (display only; persisted on next Save)
+
+**Depends on**: Phase 5a (clean baseline; not strictly required but stack PRs).
+
+**Risk**: Low–Medium — additive schema, but the auto-derive read path must be deterministic and not surprise users.
+
+**Prompt**: `pdd/prompts/features/workout/30-workout-05b-routine-defaults.md`
+
+### Phase 5c — Progress in ExerciseDetail + Essentials view
+
+**Produces**:
+- `src/frontend/apps/workout/essentials.ts` — curated list of **100** exercise IDs (constant; covers all major muscle × equipment combos)
+- `src/frontend/apps/workout/ExerciseBrowser.tsx` — Essentials/All toggle; persisted to `snappet:workout:essentials-only` (default `true`)
+- `src/frontend/apps/workout/ExerciseDetail.tsx` — new Progress section: three stat cards (top set, total volume, session count) + reuse `ExerciseProgress`; PR marker on highest top-set
+- `src/frontend/apps/workout/ExerciseProgress.tsx` — extend with PR star marker; accept `history` prop directly so it works outside SessionDetail
+- `src/frontend/apps/workout/index.tsx` — pass `history` down to Browser → Detail
+
+**Depends on**: Phases 5a, 5b.
+
+**Risk**: Low — read-only views and curated data; ExerciseProgress is already proven.
+
+**Prompt**: `pdd/prompts/features/workout/31-workout-05c-progress-essentials.md`
+
+---
+
 ## Status
 
-All four phases shipped:
+All four original phases shipped:
 - Phase 1 — PR #30 (`25-workout-01-browser.md`)
 - Phase 2 — PR #31 (`26-workout-02-routines.md`)
 - Phase 3 — PR #32 (`27-workout-03-player.md`)
 - Phase 4 — PR #33 (`28-workout-04-history.md`)
 
+Phase 5 in progress (issue #38):
+- Phase 5a — in progress (`29-workout-05a-quick-wins.md`)
+- Phase 5b — not started
+- Phase 5c — not started
+
 ## Next step
 
-The workout app is feature-complete per this plan. Possible follow-ups (each its own future PR if requested):
+After Phase 5 ships, possible follow-ups (each its own future PR if requested):
 - Auto-scroll-on-edge during long workouts
 - Clear-all-history destructive action (with confirm)
 - Body weight tracking + chart

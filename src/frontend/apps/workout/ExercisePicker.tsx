@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import { buildSearchBag, matchesQuery } from './search'
 import ExerciseCard from './ExerciseCard'
 import type {
   Equipment,
@@ -90,13 +91,18 @@ export default function ExercisePicker({
     })
   }
 
+  const bagsById = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const ex of exercises) m.set(ex.id, buildSearchBag(ex))
+    return m
+  }, [exercises])
+
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase()
     return exercises.filter((ex) => {
-      if (term && !ex.name.toLowerCase().includes(term)) return false
+      if (!matchesQuery(bagsById.get(ex.id) ?? [], search)) return false
       return matchesFilters(ex, filters)
     })
-  }, [exercises, search, filters])
+  }, [exercises, search, filters, bagsById])
 
   const activeCount =
     filters.categories.length + filters.levels.length + filters.equipment.length + filters.muscles.length

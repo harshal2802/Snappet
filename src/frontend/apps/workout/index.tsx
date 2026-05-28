@@ -4,13 +4,14 @@ import ExerciseBrowser from './ExerciseBrowser'
 import HistoryView from './HistoryView'
 import RoutineEditor from './RoutineEditor'
 import RoutineList from './RoutineList'
+import SettingsView from './SettingsView'
 import WorkoutPlayer from './WorkoutPlayer'
 import { loadExercises } from './data'
 import { STARTER_ROUTINES } from './starters'
 import { generateId } from './utils'
-import type { Exercise, Routine, SetLog, WorkoutSession } from './types'
+import type { Exercise, Routine, SetLog, WeightUnit, WorkoutSession } from './types'
 
-type Tab = 'browse' | 'routines' | 'history'
+type Tab = 'browse' | 'routines' | 'history' | 'settings'
 
 const TAB_BTN_BASE =
   'flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
@@ -31,6 +32,10 @@ export default function Workout() {
   const [history, setHistory] = useLocalStorage<WorkoutSession[]>(
     'snappet:workout:history',
     [],
+  )
+  const [preferredUnit, setPreferredUnit] = useLocalStorage<WeightUnit>(
+    'snappet:workout:preferred-unit',
+    'kg',
   )
 
   // One-shot seed of starter routines on first ever load.
@@ -71,6 +76,8 @@ export default function Workout() {
         session={activeSession}
         setSession={setActiveSession}
         exerciseById={exerciseById}
+        preferredUnit={preferredUnit}
+        setPreferredUnit={setPreferredUnit}
         onFinish={(final) => {
           setHistory((h) => [final, ...h])
           setActiveSession(null)
@@ -129,11 +136,24 @@ export default function Workout() {
             <span className="ml-1 text-gray-400 dark:text-gray-500">({history.length})</span>
           )}
         </button>
+        <button
+          onClick={() => setTab('settings')}
+          aria-pressed={tab === 'settings'}
+          className={`${TAB_BTN_BASE} ${tab === 'settings' ? TAB_BTN_ACTIVE : TAB_BTN_INACTIVE}`}
+        >
+          Settings
+        </button>
       </div>
 
       {/* Body */}
       {tab === 'browse' && <ExerciseBrowser resetSignal={browseResetCounter} />}
       {tab === 'history' && <HistoryView history={history} exerciseById={exerciseById} />}
+      {tab === 'settings' && (
+        <SettingsView
+          preferredUnit={preferredUnit}
+          setPreferredUnit={setPreferredUnit}
+        />
+      )}
       {tab === 'routines' && (
         <RoutinesView
           routines={routines}
@@ -155,6 +175,7 @@ export default function Workout() {
                 targetRestSeconds: re.restSeconds,
                 targetWeight: re.weight,
                 targetWeightUnit: re.weightUnit,
+                displayName: re.displayName,
                 sets: Array.from({ length: re.sets }, () => ({} as SetLog)),
               })),
             }

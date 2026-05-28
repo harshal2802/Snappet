@@ -6,6 +6,18 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-28] Workout app Phase 5: round-one feedback chain
+
+**Decision**: Address user feedback (issue #38) as a 3-PR Phase 5 chain. **5a** ships smarter search (token + stem matcher), sticky weight unit via `snappet:workout:preferred-unit`, in-routine exercise rename (`RoutineExercise.displayName`), and a new fourth **Settings** tab. **5b** adds `Routine.defaults` with auto-derived values for existing routines + an apply-to-all affordance. **5c** ships a curated Essentials list of **100** exercises (default browser view) and promotes `ExerciseProgress` into `ExerciseDetail` with a three-card stat panel + PR marker. Full research in `pdd/context/research/workout-app-feedback.md`.
+
+**Why**: Five concrete usability issues, each cheap to fix and independently shippable. Single mega-PR would be reviewable but a chain matches the original workout app's per-phase shipping cadence and lets the maintainer ship incremental value.
+
+**Trade-offs**: `Routine.defaults` migration is auto-derived on first read (median sets, mode reps, median rest, mode unit) — slightly opinionated but predictable; existing routines see no behaviour change because defaults only apply to *new* exercise picks. Essentials at 100 deliberately hides 700 long-tail entries by default; power users toggle "Show all 800". The 4th Settings tab adds nav weight but leaves room to grow (rest sound, vibration, theme).
+
+**Don't suggest**: Adding Fuse.js for fuzzy search (token+stem covers the reported case without the dep); a separate Progress top-level tab (deep-link from history into ExerciseDetail covers the same need); per-routine migration prompts (silent auto-derive is less friction).
+
+---
+
 ## [2026-05-27] Workout app: Free Exercise DB + 4-phase prompt chain
 
 **Decision**: Build a Workout mini-app as a 4-phase prompt chain (Browser → Routine Builder → Workout Player → History). Data source: [`yuhonas/free-exercise-db`](https://github.com/yuhonas/free-exercise-db) — bundle the ~1 MB `exercises.json` (all 800 exercises) at build; lazy-load images from jsdelivr CDN. Default weight unit: kg. Rest-timer end cue: vibration + visual flash + short Web Audio beep. Full analysis in `pdd/context/research/workout-app.md`.
