@@ -294,9 +294,13 @@ function handleDeleteRoutine(id: string) {
 
 Migration path: existing users with `starters-seeded: true` flag — their 6 v1 starters are already there (or they deleted some). On next load: their non-dismissed v1 starters stay; the 9 new sport-tagged routines get added (their ids aren't in `have` or `dismissed`). The old boolean flag becomes a no-op; can be removed in a follow-up cleanup.
 
+## Custom routines with full metadata
+
+**Update (2026-05-28)**: the Routine Editor will expose the same metadata fields the starters use (description, sport, level, tags, source) under an "Advanced metadata" disclosure (closed by default). This is the path for niche / sport-specific protocols the curated library doesn't cover — hangboard / fingerboard / yoga flows / sport-specific conditioning. Users compose them with the metadata; the curated library only ships the ones whose underlying exercises exist in the bundled dataset.
+
 ## Out of scope
 
-- Hangboard / fingerboard protocols (require equipment + form coaching we can't replicate)
+- ~~Hangboard / fingerboard protocols~~ — now handled by the editor; users build their own and tag them as `climbing`. We just don't ship a curated one because the dataset doesn't have the underlying exercises.
 - Routine versioning (v1 of a starter being updated to v2 — not yet a real problem)
 - Sharing routines (no backend)
 - Sport icons (emoji is enough for v1)
