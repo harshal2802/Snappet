@@ -135,9 +135,18 @@ interface ExerciseBrowserProps {
   /** Incremented by the parent when the user clicks Reset; we clear state on change. */
   resetSignal: number
   history: WorkoutSession[]
+  /** Cross-tab navigation: when set, select this id once exercises load and
+   *  call onConsumePending to clear the buffer. */
+  pendingExerciseId?: string | null
+  onConsumePending?: () => void
 }
 
-export default function ExerciseBrowser({ resetSignal, history }: ExerciseBrowserProps) {
+export default function ExerciseBrowser({
+  resetSignal,
+  history,
+  pendingExerciseId,
+  onConsumePending,
+}: ExerciseBrowserProps) {
   const [exercises, setExercises] = useState<Exercise[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useLocalStorage<string>('snappet:workout:search', '')
@@ -167,6 +176,16 @@ export default function ExerciseBrowser({ resetSignal, history }: ExerciseBrowse
       cancelled = true
     }
   }, [])
+
+  // Cross-tab navigation: consume a pending exerciseId once the catalog
+  // is loaded. One-shot — clear the parent buffer immediately so a later
+  // visit to Browse via the tab strip doesn't re-open the same exercise.
+  useEffect(() => {
+    if (!pendingExerciseId || !exercises) return
+    const hit = exercises.some((e) => e.id === pendingExerciseId)
+    if (hit) setSelectedId(pendingExerciseId)
+    onConsumePending?.()
+  }, [pendingExerciseId, exercises, onConsumePending])
 
   // Reset signal from parent — guard against the initial value running on mount.
   const initialResetRef = useRef(true)
