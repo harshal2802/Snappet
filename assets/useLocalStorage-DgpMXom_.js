@@ -1,1 +1,0 @@
-import{r as a}from"./index-BPuQTGjR.js";function u(t,e){const[r,s]=a.useState(()=>{try{const o=localStorage.getItem(t);return o!==null?JSON.parse(o):e}catch{return e}});return a.useEffect(()=>{try{localStorage.setItem(t,JSON.stringify(r))}catch{}},[t,r]),[r,s]}export{u};
