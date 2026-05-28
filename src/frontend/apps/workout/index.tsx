@@ -3,10 +3,11 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import ExerciseBrowser from './ExerciseBrowser'
 import RoutineEditor from './RoutineEditor'
 import RoutineList from './RoutineList'
+import WorkoutPlayer from './WorkoutPlayer'
 import { loadExercises } from './data'
 import { STARTER_ROUTINES } from './starters'
 import { generateId } from './utils'
-import type { Exercise, Routine } from './types'
+import type { Exercise, Routine, SetLog, WorkoutSession } from './types'
 
 type Tab = 'browse' | 'routines'
 
@@ -21,6 +22,14 @@ export default function Workout() {
   const [startersSeeded, setStartersSeeded] = useLocalStorage<boolean>(
     'snappet:workout:starters-seeded',
     false,
+  )
+  const [activeSession, setActiveSession] = useLocalStorage<WorkoutSession | null>(
+    'snappet:workout:active-session',
+    null,
+  )
+  const [, setHistory] = useLocalStorage<WorkoutSession[]>(
+    'snappet:workout:history',
+    [],
   )
 
   // One-shot seed of starter routines on first ever load.
@@ -52,6 +61,23 @@ export default function Workout() {
   // Reset counter for Browse tab — ExerciseBrowser watches this and clears
   // its search/filters/selection when it increments.
   const [browseResetCounter, setBrowseResetCounter] = useState(0)
+
+  // If a session is active (incl. restored from localStorage after refresh),
+  // take over the whole view with the player.
+  if (activeSession) {
+    return (
+      <WorkoutPlayer
+        session={activeSession}
+        setSession={setActiveSession}
+        exerciseById={exerciseById}
+        onFinish={(final) => {
+          setHistory((h) => [final, ...h])
+          setActiveSession(null)
+        }}
+        onAbandon={() => setActiveSession(null)}
+      />
+    )
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
@@ -103,6 +129,26 @@ export default function Workout() {
           setRoutines={setRoutines}
           exercises={exercises}
           exerciseById={exerciseById}
+          onStartRoutine={(routineId) => {
+            const r = routines.find((x) => x.id === routineId)
+            if (!r || r.exercises.length === 0) return
+            const session: WorkoutSession = {
+              id: generateId(),
+              routineId: r.id,
+              routineName: r.name,
+              startedAt: Date.now(),
+              exercises: r.exercises.map((re) => ({
+                exerciseId: re.exerciseId,
+                targetSets: re.sets,
+                targetReps: re.reps,
+                targetRestSeconds: re.restSeconds,
+                targetWeight: re.weight,
+                targetWeightUnit: re.weightUnit,
+                sets: Array.from({ length: re.sets }, () => ({} as SetLog)),
+              })),
+            }
+            setActiveSession(session)
+          }}
         />
       )}
     </div>
@@ -114,9 +160,16 @@ interface RoutinesViewProps {
   setRoutines: React.Dispatch<React.SetStateAction<Routine[]>>
   exercises: Exercise[]
   exerciseById: Map<string, Exercise>
+  onStartRoutine: (routineId: string) => void
 }
 
-function RoutinesView({ routines, setRoutines, exercises, exerciseById }: RoutinesViewProps) {
+function RoutinesView({
+  routines,
+  setRoutines,
+  exercises,
+  exerciseById,
+  onStartRoutine,
+}: RoutinesViewProps) {
   type EditTarget = null | 'new' | string
   const [editingId, setEditingId] = useState<EditTarget>(null)
 
@@ -173,7 +226,7 @@ function RoutinesView({ routines, setRoutines, exercises, exerciseById }: Routin
       onEdit={(id) => setEditingId(id)}
       onDuplicate={handleDuplicate}
       onDelete={handleDelete}
-      // onStart deliberately omitted in Phase 2 — Phase 3 will wire it.
+      onStart={onStartRoutine}
     />
   )
 }

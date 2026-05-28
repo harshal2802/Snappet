@@ -108,3 +108,40 @@ export interface Routine {
   // re-seed; the `snappet:workout:starters-seeded` flag guards that.
   isStarter?: boolean
 }
+
+// ── Phase 3: Sessions ───────────────────────────────────────────────────────
+
+export interface SetLog {
+  // Actual reps performed; undefined = set not completed.
+  actualReps?: number
+  // Actual weight; optional (bodyweight or skipped logging).
+  actualWeight?: number
+  weightUnit?: WeightUnit
+  completedAt?: number
+}
+
+export interface SessionExercise {
+  exerciseId: string
+  // Snapshots of the routine's targets at session-start so routine edits
+  // mid-session don't corrupt the active log.
+  targetSets: number
+  targetReps: string
+  targetRestSeconds: number
+  targetWeight?: number
+  targetWeightUnit?: WeightUnit
+  // Length always === targetSets; empty {} = pending, populated = completed.
+  sets: SetLog[]
+  // True if user explicitly skipped the remaining sets of this exercise.
+  skipped?: boolean
+}
+
+export interface WorkoutSession {
+  id: string
+  routineId: string
+  // Snapshot — routine may be renamed/deleted after the session starts.
+  routineName: string
+  startedAt: number
+  // Set when user taps Finish or the last set completes naturally.
+  completedAt?: number
+  exercises: SessionExercise[]
+}
