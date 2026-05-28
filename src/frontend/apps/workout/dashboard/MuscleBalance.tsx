@@ -1,17 +1,24 @@
+import { formatWeightNumber, kgToUnit } from '../progress'
 import { last30Days, muscleVolume } from './data'
-import type { Exercise, Muscle, WorkoutSession } from '../types'
+import type { Exercise, Muscle, WeightUnit, WorkoutSession } from '../types'
 
 interface MuscleBalanceProps {
   history: WorkoutSession[]
   exerciseById: Map<string, Exercise>
   now: number
+  preferredUnit: WeightUnit
 }
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1)
 }
 
-export default function MuscleBalance({ history, exerciseById, now }: MuscleBalanceProps) {
+export default function MuscleBalance({
+  history,
+  exerciseById,
+  now,
+  preferredUnit,
+}: MuscleBalanceProps) {
   const { fromMs, toMs } = last30Days(now)
   const m = muscleVolume(history, exerciseById, fromMs, toMs)
   const ranked: Array<{ muscle: Muscle; kg: number }> = Array.from(m.entries())
@@ -42,9 +49,9 @@ export default function MuscleBalance({ history, exerciseById, now }: MuscleBala
                   <div
                     className="flex-1 h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden"
                     role="meter"
-                    aria-valuenow={Math.round(kg)}
+                    aria-valuenow={Math.round(kgToUnit(kg, preferredUnit))}
                     aria-valuemin={0}
-                    aria-valuemax={Math.round(max)}
+                    aria-valuemax={Math.round(kgToUnit(max, preferredUnit))}
                     aria-label={`${capitalize(muscle)} volume`}
                   >
                     <div
@@ -52,8 +59,8 @@ export default function MuscleBalance({ history, exerciseById, now }: MuscleBala
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="w-16 text-right shrink-0 text-gray-500 dark:text-gray-400 tabular-nums text-xs">
-                    {Math.round(kg).toLocaleString()} kg
+                  <span className="w-20 text-right shrink-0 text-gray-500 dark:text-gray-400 tabular-nums text-xs">
+                    {formatWeightNumber(kg, preferredUnit)} {preferredUnit}
                   </span>
                 </li>
               )

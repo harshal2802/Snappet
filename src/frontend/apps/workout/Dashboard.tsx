@@ -5,11 +5,12 @@ import RecentPRs from './dashboard/RecentPRs'
 import TopExercises from './dashboard/TopExercises'
 import VolumeSparkline from './dashboard/VolumeSparkline'
 import WeekSnapshot from './dashboard/WeekSnapshot'
-import type { Exercise, WorkoutSession } from './types'
+import type { Exercise, WeightUnit, WorkoutSession } from './types'
 
 interface DashboardProps {
   history: WorkoutSession[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
   onOpenExercise: (exerciseId: string) => void
   onGoToRoutines: () => void
 }
@@ -17,6 +18,7 @@ interface DashboardProps {
 export default function Dashboard({
   history,
   exerciseById,
+  preferredUnit,
   onOpenExercise,
   onGoToRoutines,
 }: DashboardProps) {
@@ -47,11 +49,21 @@ export default function Dashboard({
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <WeekSnapshot history={history} now={now} />
+      <WeekSnapshot history={history} now={now} preferredUnit={preferredUnit} />
       <ConsistencyHeatmap history={history} now={now} />
-      <VolumeSparkline history={history} now={now} />
-      <MuscleBalance history={history} exerciseById={exerciseById} now={now} />
-      <RecentPRs history={history} exerciseById={exerciseById} onOpen={onOpenExercise} />
+      <VolumeSparkline history={history} now={now} preferredUnit={preferredUnit} />
+      <MuscleBalance
+        history={history}
+        exerciseById={exerciseById}
+        now={now}
+        preferredUnit={preferredUnit}
+      />
+      <RecentPRs
+        history={history}
+        exerciseById={exerciseById}
+        preferredUnit={preferredUnit}
+        onOpen={onOpenExercise}
+      />
       <TopExercises history={history} exerciseById={exerciseById} now={now} />
     </div>
   )

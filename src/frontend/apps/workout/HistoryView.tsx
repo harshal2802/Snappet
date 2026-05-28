@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import ExerciseImage from './ExerciseImage'
 import SessionDetail from './SessionDetail'
+import { formatWeightNumber } from './progress'
 import { getDisplayName } from './utils'
 import type { Exercise, WeightUnit, WorkoutSession } from './types'
 
 interface HistoryViewProps {
   history: WorkoutSession[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
 }
 
 function formatDuration(ms: number): string {
@@ -62,7 +64,7 @@ function handleExport(history: WorkoutSession[]) {
   URL.revokeObjectURL(url)
 }
 
-export default function HistoryView({ history, exerciseById }: HistoryViewProps) {
+export default function HistoryView({ history, exerciseById, preferredUnit }: HistoryViewProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const selected = useMemo(
@@ -130,7 +132,7 @@ export default function HistoryView({ history, exerciseById }: HistoryViewProps)
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {formatDuration(duration)} · {sets.done}/{sets.target} sets
-                  {vol > 0 ? ` · ${vol.toLocaleString()} kg` : ''}
+                  {vol > 0 ? ` · ${formatWeightNumber(vol, preferredUnit)} ${preferredUnit}` : ''}
                 </p>
                 {thumbs.length > 0 && (
                   <div className="flex items-center gap-1 pt-2">
@@ -172,6 +174,7 @@ export default function HistoryView({ history, exerciseById }: HistoryViewProps)
               session={selected}
               history={history}
               exerciseById={exerciseById}
+              preferredUnit={preferredUnit}
               onClose={() => setSelectedId(null)}
               inline
             />
@@ -186,6 +189,7 @@ export default function HistoryView({ history, exerciseById }: HistoryViewProps)
             session={selected}
             history={history}
             exerciseById={exerciseById}
+            preferredUnit={preferredUnit}
             onClose={() => setSelectedId(null)}
           />
         </div>

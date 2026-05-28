@@ -1,9 +1,11 @@
+import { formatWeightNumber, kgToUnit } from '../progress'
 import { weeklyVolumeSeries } from './data'
-import type { WorkoutSession } from '../types'
+import type { WeightUnit, WorkoutSession } from '../types'
 
 interface VolumeSparklineProps {
   history: WorkoutSession[]
   now: number
+  preferredUnit: WeightUnit
 }
 
 const WEEKS = 12
@@ -18,7 +20,7 @@ function monthLabel(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: 'short' })
 }
 
-export default function VolumeSparkline({ history, now }: VolumeSparklineProps) {
+export default function VolumeSparkline({ history, now, preferredUnit }: VolumeSparklineProps) {
   const buckets = weeklyVolumeSeries(history, WEEKS, now)
   const max = buckets.reduce((m, b) => Math.max(m, b.volumeKg), 0)
   const safeMax = max > 0 ? max : 1
@@ -33,7 +35,8 @@ export default function VolumeSparkline({ history, now }: VolumeSparklineProps) 
   const nonZero = points.filter((p) => p.bucket.volumeKg > 0)
   const polyline = nonZero.map((p) => `${p.x},${p.y}`).join(' ')
   const current = points[points.length - 1]
-  const currentKg = Math.round(current.bucket.volumeKg)
+  const currentLabel = `${formatWeightNumber(current.bucket.volumeKg, preferredUnit)} ${preferredUnit}`
+  const maxInPreferredUnit = Math.round(kgToUnit(max, preferredUnit))
 
   // Month tick labels: first / middle / last bucket
   const tickIdxs = buckets.length >= 3 ? [0, Math.floor(buckets.length / 2), buckets.length - 1] : [0, buckets.length - 1]
@@ -41,7 +44,7 @@ export default function VolumeSparkline({ history, now }: VolumeSparklineProps) 
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        Volume (kg) · last 12 weeks
+        Volume ({preferredUnit}) · last 12 weeks
       </h3>
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
         {max === 0 ? (
@@ -53,7 +56,7 @@ export default function VolumeSparkline({ history, now }: VolumeSparklineProps) 
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             className="w-full h-auto"
             role="img"
-            aria-label={`Weekly volume sparkline, peak ${Math.round(max).toLocaleString()} kg`}
+            aria-label={`Weekly volume sparkline, peak ${maxInPreferredUnit.toLocaleString()} ${preferredUnit}`}
           >
             {/* Polyline through non-zero weeks */}
             {nonZero.length >= 2 && (
@@ -85,7 +88,7 @@ export default function VolumeSparkline({ history, now }: VolumeSparklineProps) 
               className="fill-gray-700 dark:fill-gray-200"
               style={{ fontSize: '10px', fontWeight: 600 }}
             >
-              {currentKg.toLocaleString()} kg
+              {currentLabel}
             </text>
             {/* Per-bucket faint dots so the empty weeks still show */}
             {points.map((p, i) => (
@@ -95,7 +98,7 @@ export default function VolumeSparkline({ history, now }: VolumeSparklineProps) 
                     month: 'short',
                     day: 'numeric',
                   })}
-                  : {Math.round(p.bucket.volumeKg).toLocaleString()} kg
+                  : {formatWeightNumber(p.bucket.volumeKg, preferredUnit)} {preferredUnit}
                   {' · '}
                   {p.bucket.sessionCount} session{p.bucket.sessionCount === 1 ? '' : 's'}
                 </title>

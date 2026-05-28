@@ -164,6 +164,7 @@ export default function Workout() {
         <Dashboard
           history={history}
           exerciseById={exerciseById}
+          preferredUnit={preferredUnit}
           onOpenExercise={(id) => {
             setPendingExerciseId(id)
             setTab('browse')
@@ -175,11 +176,18 @@ export default function Workout() {
         <ExerciseBrowser
           resetSignal={browseResetCounter}
           history={history}
+          preferredUnit={preferredUnit}
           pendingExerciseId={pendingExerciseId}
           onConsumePending={() => setPendingExerciseId(null)}
         />
       )}
-      {tab === 'history' && <HistoryView history={history} exerciseById={exerciseById} />}
+      {tab === 'history' && (
+        <HistoryView
+          history={history}
+          exerciseById={exerciseById}
+          preferredUnit={preferredUnit}
+        />
+      )}
       {tab === 'settings' && (
         <SettingsView
           preferredUnit={preferredUnit}
@@ -192,6 +200,7 @@ export default function Workout() {
           setRoutines={setRoutines}
           exercises={exercises}
           exerciseById={exerciseById}
+          preferredUnit={preferredUnit}
           onStartRoutine={(routineId) => {
             const r = routines.find((x) => x.id === routineId)
             if (!r || r.exercises.length === 0) return
@@ -224,6 +233,7 @@ interface RoutinesViewProps {
   setRoutines: React.Dispatch<React.SetStateAction<Routine[]>>
   exercises: Exercise[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
   onStartRoutine: (routineId: string) => void
 }
 
@@ -232,6 +242,7 @@ function RoutinesView({
   setRoutines,
   exercises,
   exerciseById,
+  preferredUnit,
   onStartRoutine,
 }: RoutinesViewProps) {
   type EditTarget = null | 'new' | string
@@ -275,6 +286,7 @@ function RoutinesView({
         routine={editingRoutine}
         exercises={exercises}
         exerciseById={exerciseById}
+        preferredUnit={preferredUnit}
         onSave={handleSave}
         onCancel={() => setEditingId(null)}
         onDelete={editingRoutine ? handleDelete : undefined}

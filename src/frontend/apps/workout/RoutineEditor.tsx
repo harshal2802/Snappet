@@ -15,6 +15,7 @@ interface RoutineEditorProps {
   routine: Routine | null
   exercises: Exercise[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
   onSave: (routine: Routine) => void
   onCancel: () => void
   onDelete?: (routineId: string) => void
@@ -24,6 +25,7 @@ export default function RoutineEditor({
   routine,
   exercises,
   exerciseById,
+  preferredUnit,
   onSave,
   onCancel,
   onDelete,
@@ -72,7 +74,9 @@ export default function RoutineEditor({
         sets: defaults.sets ?? 3,
         reps: defaults.reps ?? '10',
         restSeconds: defaults.restSeconds ?? 60,
-        weightUnit: defaults.weightUnit,
+        // Routine defaults win; otherwise fall back to the user's global
+        // preferred unit so a fresh row reflects the Settings tab choice.
+        weightUnit: defaults.weightUnit ?? preferredUnit,
       },
     ])
     setPickerOpen(false)
@@ -541,7 +545,7 @@ export default function RoutineEditor({
                     </div>
                     <div className="flex border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
                       {(['kg', 'lb'] as WeightUnit[]).map((u) => {
-                        const active = (it.weightUnit ?? 'kg') === u
+                        const active = (it.weightUnit ?? preferredUnit) === u
                         return (
                           <button
                             key={u}

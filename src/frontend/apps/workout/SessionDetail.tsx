@@ -1,14 +1,15 @@
 import { useEffect } from 'react'
 import ExerciseImage from './ExerciseImage'
 import ExerciseProgress from './ExerciseProgress'
-import { toKg } from './progress'
+import { formatWeightNumber, toKg } from './progress'
 import { getDisplayName } from './utils'
-import type { Exercise, SessionExercise, WorkoutSession } from './types'
+import type { Exercise, SessionExercise, WeightUnit, WorkoutSession } from './types'
 
 interface SessionDetailProps {
   session: WorkoutSession
   history: WorkoutSession[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
   onClose: () => void
   /** When true (desktop), renders inline (no backdrop). Mirrors ExerciseDetail. */
   inline?: boolean
@@ -61,9 +62,10 @@ interface ExerciseBlockProps {
   ex: SessionExercise
   exerciseMeta: Exercise | undefined
   history: WorkoutSession[]
+  preferredUnit: WeightUnit
 }
 
-function ExerciseBlock({ ex, exerciseMeta, history }: ExerciseBlockProps) {
+function ExerciseBlock({ ex, exerciseMeta, history, preferredUnit }: ExerciseBlockProps) {
   const label = getDisplayName(ex, exerciseMeta)
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
@@ -91,7 +93,7 @@ function ExerciseBlock({ ex, exerciseMeta, history }: ExerciseBlockProps) {
           <p className="text-[11px] text-gray-500 dark:text-gray-400">
             Target: {ex.targetSets} × {ex.targetReps}
             {ex.targetWeight !== undefined && ex.targetWeight > 0
-              ? ` @ ${ex.targetWeight}${ex.targetWeightUnit ?? 'kg'}`
+              ? ` @ ${ex.targetWeight}${ex.targetWeightUnit ?? preferredUnit}`
               : ''}
           </p>
         </div>
@@ -137,6 +139,7 @@ export default function SessionDetail({
   session,
   history,
   exerciseById,
+  preferredUnit,
   onClose,
   inline,
 }: SessionDetailProps) {
@@ -218,8 +221,8 @@ export default function SessionDetail({
               Volume
             </p>
             <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {volume.toLocaleString()}
-              <span className="text-sm font-medium text-gray-400 dark:text-gray-500"> kg</span>
+              {formatWeightNumber(volume, preferredUnit)}
+              <span className="text-sm font-medium text-gray-400 dark:text-gray-500"> {preferredUnit}</span>
             </p>
           </div>
         </div>
@@ -232,6 +235,7 @@ export default function SessionDetail({
               ex={ex}
               exerciseMeta={exerciseById.get(ex.exerciseId)}
               history={history}
+              preferredUnit={preferredUnit}
             />
           ))}
         </div>

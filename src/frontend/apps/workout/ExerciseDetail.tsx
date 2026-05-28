@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import type { Exercise, ExerciseLevel, Muscle, WorkoutSession } from './types'
+import type { Exercise, ExerciseLevel, Muscle, WeightUnit, WorkoutSession } from './types'
 import ExerciseImage from './ExerciseImage'
 import ExerciseProgress from './ExerciseProgress'
 import {
+  formatWeightNumber,
   sessionCountForExercise,
   topSetForExercise,
   totalVolumeForExercise,
@@ -16,6 +17,8 @@ interface ExerciseDetailProps {
   /** Completed sessions — when present, render a Progress section if the
    *  user has any history for this exercise. */
   history?: WorkoutSession[]
+  /** Display unit for aggregated stats (top set kg → user preference). */
+  preferredUnit?: WeightUnit
 }
 
 const LEVEL_PILL: Record<ExerciseLevel, string> = {
@@ -41,9 +44,11 @@ function MusclePill({ muscle, primary }: { muscle: Muscle; primary: boolean }) {
 function ExerciseProgressPanel({
   exerciseId,
   history,
+  preferredUnit,
 }: {
   exerciseId: string
   history: WorkoutSession[]
+  preferredUnit: WeightUnit
 }) {
   const sessionCount = sessionCountForExercise(history, exerciseId)
   if (sessionCount === 0) return null
@@ -66,7 +71,7 @@ function ExerciseProgressPanel({
           <span className={STAT_VALUE}>
             {topSet
               ? topSet.bestKg > 0
-                ? `${Math.round(topSet.bestKg)}kg`
+                ? `${formatWeightNumber(topSet.bestKg, preferredUnit)}${preferredUnit}`
                 : '—'
               : '—'}
           </span>
@@ -79,9 +84,9 @@ function ExerciseProgressPanel({
         <div className={STAT_CARD}>
           <span className={STAT_LABEL}>Volume</span>
           <span className={STAT_VALUE}>
-            {volumeKg > 0 ? volumeKg.toLocaleString() : '—'}
+            {volumeKg > 0 ? formatWeightNumber(volumeKg, preferredUnit) : '—'}
             {volumeKg > 0 && (
-              <span className="text-xs font-medium text-gray-400 dark:text-gray-500"> kg</span>
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500"> {preferredUnit}</span>
             )}
           </span>
           <span className="text-[10px] text-gray-500 dark:text-gray-400">
@@ -110,6 +115,7 @@ export default function ExerciseDetail({
   onClose,
   inline,
   history,
+  preferredUnit,
 }: ExerciseDetailProps) {
   // Close on Escape (both modes)
   useEffect(() => {
@@ -182,7 +188,11 @@ export default function ExerciseDetail({
 
         {/* Progress (only when the user has history for this exercise) */}
         {history && history.length > 0 && (
-          <ExerciseProgressPanel exerciseId={exercise.id} history={history} />
+          <ExerciseProgressPanel
+            exerciseId={exercise.id}
+            history={history}
+            preferredUnit={preferredUnit ?? 'kg'}
+          />
         )}
 
         {/* Muscles */}

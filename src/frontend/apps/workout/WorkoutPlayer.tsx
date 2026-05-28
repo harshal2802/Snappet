@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ExerciseImage from './ExerciseImage'
+import { formatWeightNumber } from './progress'
 import { getDisplayName } from './utils'
 import type {
   Exercise,
@@ -410,7 +411,11 @@ export default function WorkoutPlayer({
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
         {phase === 'done' && (
-          <DoneScreen session={session} onSaveExit={handleSaveExit} />
+          <DoneScreen
+            session={session}
+            preferredUnit={preferredUnit}
+            onSaveExit={handleSaveExit}
+          />
         )}
 
         {phase !== 'done' && currentExercise && (
@@ -436,7 +441,7 @@ export default function WorkoutPlayer({
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {currentExercise.targetSets} × {currentExercise.targetReps}
                 {currentExercise.targetWeight !== undefined && currentExercise.targetWeight > 0
-                  ? ` @ ${currentExercise.targetWeight}${currentExercise.targetWeightUnit ?? 'kg'}`
+                  ? ` @ ${currentExercise.targetWeight}${currentExercise.targetWeightUnit ?? preferredUnit}`
                   : ''}
                 {currentExercise.targetRestSeconds > 0
                   ? `, ${currentExercise.targetRestSeconds}s rest`
@@ -766,10 +771,11 @@ function RestStep({
 
 interface DoneScreenProps {
   session: WorkoutSession
+  preferredUnit: WeightUnit
   onSaveExit: () => void
 }
 
-function DoneScreen({ session, onSaveExit }: DoneScreenProps) {
+function DoneScreen({ session, preferredUnit, onSaveExit }: DoneScreenProps) {
   const duration = (session.completedAt ?? Date.now()) - session.startedAt
   const sets = setsCompleted(session)
   const volume = totalVolumeKg(session)
@@ -816,8 +822,8 @@ function DoneScreen({ session, onSaveExit }: DoneScreenProps) {
         <div className={STAT_CARD}>
           <span className={STAT_LABEL}>Volume</span>
           <span className={STAT_VALUE}>
-            {volume.toLocaleString()}
-            <span className="text-base font-medium text-gray-400 dark:text-gray-500"> kg</span>
+            {formatWeightNumber(volume, preferredUnit)}
+            <span className="text-base font-medium text-gray-400 dark:text-gray-500"> {preferredUnit}</span>
           </span>
         </div>
       </div>
