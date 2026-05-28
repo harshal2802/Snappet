@@ -1,8 +1,14 @@
 import { useMemo, useState } from 'react'
 import ExerciseImage from './ExerciseImage'
 import ExercisePicker from './ExercisePicker'
-import { generateId } from './utils'
-import type { Exercise, Routine, RoutineExercise, WeightUnit } from './types'
+import { deriveDefaults, generateId } from './utils'
+import type {
+  Exercise,
+  Routine,
+  RoutineDefaults,
+  RoutineExercise,
+  WeightUnit,
+} from './types'
 
 interface RoutineEditorProps {
   /** null = creating new; otherwise editing an existing routine. */
@@ -29,7 +35,23 @@ export default function RoutineEditor({
   const [items, setItems] = useState<RoutineExercise[]>(
     routine ? routine.exercises.map((e) => ({ ...e })) : [],
   )
+  const [defaults, setDefaults] = useState<RoutineDefaults>(() => {
+    if (routine?.defaults) return { ...routine.defaults }
+    // Migration: derive a sensible starting point from existing rows. The
+    // user makes this permanent by saving the routine; closing without
+    // saving leaves persisted storage untouched.
+    if (routine && routine.exercises.length > 0) return deriveDefaults(routine)
+    return {}
+  })
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Defaults block defaults to collapsed unless the user has used the
+  // feature before, or has just landed on an empty routine (where seeing
+  // defaults helps the very first pick inherit useful values).
+  const [defaultsOpen, setDefaultsOpen] = useState<boolean>(() => {
+    if (routine?.defaults) return true
+    if (routine && routine.exercises.length === 0) return true
+    return false
+  })
   // Per-row UI state — which rows have weight/notes/rename expanded
   const [weightOpen, setWeightOpen] = useState<Set<number>>(new Set())
   const [notesOpen, setNotesOpen] = useState<Set<number>>(new Set())
@@ -45,9 +67,19 @@ export default function RoutineEditor({
   function handlePick(ex: Exercise) {
     setItems((prev) => [
       ...prev,
-      { exerciseId: ex.id, sets: 3, reps: '10', restSeconds: 60 },
+      {
+        exerciseId: ex.id,
+        sets: defaults.sets ?? 3,
+        reps: defaults.reps ?? '10',
+        restSeconds: defaults.restSeconds ?? 60,
+        weightUnit: defaults.weightUnit,
+      },
     ])
     setPickerOpen(false)
+  }
+
+  function applyToAll(field: 'sets' | 'reps' | 'restSeconds', value: number | string) {
+    setItems((prev) => prev.map((it) => ({ ...it, [field]: value })))
   }
 
   function updateItem(idx: number, patch: Partial<RoutineExercise>) {
@@ -92,12 +124,18 @@ export default function RoutineEditor({
   function handleSave() {
     if (!canSave) return
     const now = Date.now()
+    const trimmedDefaults: RoutineDefaults = {}
+    if (defaults.sets !== undefined) trimmedDefaults.sets = defaults.sets
+    if (defaults.reps !== undefined && defaults.reps !== '') trimmedDefaults.reps = defaults.reps
+    if (defaults.restSeconds !== undefined) trimmedDefaults.restSeconds = defaults.restSeconds
+    if (defaults.weightUnit !== undefined) trimmedDefaults.weightUnit = defaults.weightUnit
     const saved: Routine = {
       id: routine?.id ?? generateId(),
       name: name.trim(),
       exercises: items,
       createdAt: routine?.createdAt ?? now,
       updatedAt: now,
+      defaults: Object.keys(trimmedDefaults).length > 0 ? trimmedDefaults : undefined,
       // isStarter intentionally omitted; once edited, it loses the starter pill
     }
     onSave(saved)
@@ -137,6 +175,119 @@ export default function RoutineEditor({
           placeholder="My Routine"
           className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      {/* Defaults for new exercises */}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <button
+          onClick={() => setDefaultsOpen((o) => !o)}
+          aria-expanded={defaultsOpen}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-xl"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Defaults for new exercises
+          </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {defaultsOpen ? '▲' : '▼'}
+          </span>
+        </button>
+        {defaultsOpen && (
+          <div className="px-3 pb-3 space-y-2">
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+                  Sets
+                </label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={20}
+                  value={defaults.sets ?? ''}
+                  placeholder="3"
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDefaults((d) => ({
+                      ...d,
+                      sets: v === '' ? undefined : Math.max(1, Math.min(20, Number(v) || 1)),
+                    }))
+                  }}
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+                  Reps
+                </label>
+                <input
+                  type="text"
+                  value={defaults.reps ?? ''}
+                  placeholder="10"
+                  onChange={(e) =>
+                    setDefaults((d) => ({
+                      ...d,
+                      reps: e.target.value === '' ? undefined : e.target.value,
+                    }))
+                  }
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
+                  Rest (s)
+                </label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={defaults.restSeconds ?? ''}
+                  placeholder="60"
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDefaults((d) => ({
+                      ...d,
+                      restSeconds: v === '' ? undefined : Math.max(0, Number(v) || 0),
+                    }))
+                  }}
+                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Unit
+              </label>
+              <div className="flex border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
+                {(['kg', 'lb'] as WeightUnit[]).map((u) => {
+                  const active = defaults.weightUnit === u
+                  return (
+                    <button
+                      key={u}
+                      onClick={() =>
+                        setDefaults((d) => ({
+                          ...d,
+                          weightUnit: active ? undefined : u,
+                        }))
+                      }
+                      aria-pressed={active}
+                      className={`px-2 py-1 text-xs font-medium ${
+                        active
+                          ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      } focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                    >
+                      {u}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              New picks inherit these. Existing rows aren't changed — use the
+              ⇪ icon on any row to apply that row's value to every other row.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Exercises */}
@@ -277,48 +428,84 @@ export default function RoutineEditor({
                     <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
                       Sets
                     </label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={20}
-                      value={it.sets}
-                      onChange={(e) =>
-                        updateItem(idx, {
-                          sets: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
-                        })
-                      }
-                      className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={20}
+                        value={it.sets}
+                        onChange={(e) =>
+                          updateItem(idx, {
+                            sets: Math.max(1, Math.min(20, Number(e.target.value) || 1)),
+                          })
+                        }
+                        className="flex-1 min-w-0 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => applyToAll('sets', it.sets)}
+                        title="Apply to all rows"
+                        aria-label="Apply sets to all rows"
+                        disabled={items.length < 2}
+                        className="w-6 h-7 rounded text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500 dark:disabled:hover:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs"
+                      >
+                        ⇪
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
                       Reps
                     </label>
-                    <input
-                      type="text"
-                      value={it.reps}
-                      onChange={(e) => updateItem(idx, { reps: e.target.value })}
-                      placeholder="e.g. 10, 8-12, 30s"
-                      className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={it.reps}
+                        onChange={(e) => updateItem(idx, { reps: e.target.value })}
+                        placeholder="e.g. 10, 8-12, 30s"
+                        className="flex-1 min-w-0 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => applyToAll('reps', it.reps)}
+                        title="Apply to all rows"
+                        aria-label="Apply reps to all rows"
+                        disabled={items.length < 2}
+                        className="w-6 h-7 rounded text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500 dark:disabled:hover:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs"
+                      >
+                        ⇪
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-0.5">
                       Rest (s)
                     </label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      value={it.restSeconds}
-                      onChange={(e) =>
-                        updateItem(idx, {
-                          restSeconds: Math.max(0, Number(e.target.value) || 0),
-                        })
-                      }
-                      className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={it.restSeconds}
+                        onChange={(e) =>
+                          updateItem(idx, {
+                            restSeconds: Math.max(0, Number(e.target.value) || 0),
+                          })
+                        }
+                        className="flex-1 min-w-0 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => applyToAll('restSeconds', it.restSeconds)}
+                        title="Apply to all rows"
+                        aria-label="Apply rest to all rows"
+                        disabled={items.length < 2}
+                        className="w-6 h-7 rounded text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500 dark:disabled:hover:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs"
+                      >
+                        ⇪
+                      </button>
+                    </div>
                   </div>
                 </div>
 

@@ -99,6 +99,13 @@ export interface RoutineExercise {
   displayName?: string
 }
 
+export interface RoutineDefaults {
+  sets?: number
+  reps?: string
+  restSeconds?: number
+  weightUnit?: WeightUnit
+}
+
 export interface Routine {
   id: string
   name: string
@@ -109,6 +116,11 @@ export interface Routine {
   // (e.g. show a "Starter" pill). Users can delete starters — they don't
   // re-seed; the `snappet:workout:starters-seeded` flag guards that.
   isStarter?: boolean
+  // Phase 5b — optional defaults inherited by newly picked exercises in the
+  // editor. Existing rows are never auto-updated; user explicitly applies
+  // via the per-row ⇪ icon. Absent until the user saves a routine through
+  // the editor at least once.
+  defaults?: RoutineDefaults
 }
 
 // ── Phase 3: Sessions ───────────────────────────────────────────────────────

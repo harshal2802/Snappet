@@ -188,8 +188,8 @@ All four original phases shipped:
 - Phase 4 — PR #33 (`28-workout-04-history.md`)
 
 Phase 5 in progress (issue #38):
-- Phase 5a — in progress (`29-workout-05a-quick-wins.md`)
-- Phase 5b — not started
+- Phase 5a — PR #39 (`29-workout-05a-quick-wins.md`)
+- Phase 5b — in progress (`30-workout-05b-routine-defaults.md`)
 - Phase 5c — not started
 
 ## Next step
