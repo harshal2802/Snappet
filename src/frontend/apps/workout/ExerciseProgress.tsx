@@ -5,6 +5,8 @@ interface ExerciseProgressProps {
   history: WorkoutSession[]
   /** Cap on most-recent sessions to chart. Default 10. */
   limit?: number
+  /** When set, render a ★ above the bar whose session matches this timestamp. */
+  prSessionStartedAt?: number
 }
 
 interface DataPoint {
@@ -37,6 +39,7 @@ export default function ExerciseProgress({
   exerciseId,
   history,
   limit = 10,
+  prSessionStartedAt,
 }: ExerciseProgressProps) {
   // Filter + map. `history` is most-recent-first; collect up to `limit` and
   // reverse for chronological left-to-right.
@@ -87,10 +90,13 @@ export default function ExerciseProgress({
           const h = Math.max(2, (p.topSet / safeMax) * chartH)
           const x = PAD_L + i * slotW + (slotW - barW) / 2
           const y = PAD_T + (chartH - h)
+          const isPR =
+            prSessionStartedAt !== undefined && p.date === prSessionStartedAt
           return (
             <g key={i}>
               <title>
                 {formatShortDate(p.date)}: {Math.round(p.topSet)}
+                {isPR ? ' · PR' : ''}
               </title>
               <rect
                 x={x}
@@ -98,8 +104,19 @@ export default function ExerciseProgress({
                 width={barW}
                 height={h}
                 rx={2}
-                className="fill-blue-500 dark:fill-blue-400"
+                className={isPR ? 'fill-amber-500 dark:fill-amber-400' : 'fill-blue-500 dark:fill-blue-400'}
               />
+              {isPR && (
+                <text
+                  x={x + barW / 2}
+                  y={Math.max(PAD_T - 2, y - 4)}
+                  textAnchor="middle"
+                  className="fill-amber-500 dark:fill-amber-400"
+                  style={{ fontSize: '10px' }}
+                >
+                  ★
+                </text>
+              )}
             </g>
           )
         })}

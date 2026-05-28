@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import ExerciseImage from './ExerciseImage'
 import ExerciseProgress from './ExerciseProgress'
+import { toKg } from './progress'
 import { getDisplayName } from './utils'
-import type { Exercise, SessionExercise, WeightUnit, WorkoutSession } from './types'
+import type { Exercise, SessionExercise, WorkoutSession } from './types'
 
 interface SessionDetailProps {
   session: WorkoutSession
@@ -22,10 +23,6 @@ function formatDuration(ms: number): string {
     return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
   return `${m}:${String(s).padStart(2, '0')}`
-}
-
-function toKg(weight: number, unit: WeightUnit | undefined): number {
-  return unit === 'lb' ? weight * 0.453592 : weight
 }
 
 function setsCompleted(session: WorkoutSession): { done: number; target: number } {

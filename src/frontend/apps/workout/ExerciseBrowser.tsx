@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { loadExercises } from './data'
+import { ESSENTIAL_ID_SET } from './essentials'
 import { buildSearchBag, matchesQuery } from './search'
 import ExerciseCard from './ExerciseCard'
 import ExerciseDetail from './ExerciseDetail'
@@ -11,6 +12,7 @@ import type {
   ExerciseFiltersSerialized,
   ExerciseLevel,
   Muscle,
+  WorkoutSession,
 } from './types'
 
 const ALL_CATEGORIES: ExerciseCategory[] = [
@@ -132,15 +134,20 @@ function SkeletonCard() {
 interface ExerciseBrowserProps {
   /** Incremented by the parent when the user clicks Reset; we clear state on change. */
   resetSignal: number
+  history: WorkoutSession[]
 }
 
-export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
+export default function ExerciseBrowser({ resetSignal, history }: ExerciseBrowserProps) {
   const [exercises, setExercises] = useState<Exercise[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useLocalStorage<string>('snappet:workout:search', '')
   const [filters, setFilters] = useLocalStorage<ExerciseFiltersSerialized>(
     'snappet:workout:filters',
     EMPTY_FILTERS,
+  )
+  const [essentialsOnly, setEssentialsOnly] = useLocalStorage<boolean>(
+    'snappet:workout:essentials-only',
+    true,
   )
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -196,10 +203,11 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
   const filtered = useMemo(() => {
     if (!exercises) return []
     return exercises.filter((ex) => {
+      if (essentialsOnly && !ESSENTIAL_ID_SET.has(ex.id)) return false
       if (!matchesQuery(bagsById.get(ex.id) ?? [], searchTerm)) return false
       return matchesFilters(ex, filters)
     })
-  }, [exercises, searchTerm, filters, bagsById])
+  }, [exercises, searchTerm, filters, bagsById, essentialsOnly])
 
   const selected = useMemo(
     () => (selectedId ? exercises?.find((e) => e.id === selectedId) ?? null : null),
@@ -271,13 +279,37 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
           </div>
         )}
 
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {exercises === null && loadError === null
-            ? 'Loading…'
-            : loadError !== null
-              ? ''
-              : `${filtered.length.toLocaleString()} exercise${filtered.length === 1 ? '' : 's'}`}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden text-xs">
+            {([
+              { value: true, label: 'Essentials' },
+              { value: false, label: 'All exercises' },
+            ] as const).map((opt) => {
+              const active = essentialsOnly === opt.value
+              return (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setEssentialsOnly(opt.value)}
+                  aria-pressed={active}
+                  className={`px-3 py-1.5 font-medium transition-colors ${
+                    active
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  } focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+            {exercises === null && loadError === null
+              ? 'Loading…'
+              : loadError !== null
+                ? ''
+                : `${filtered.length.toLocaleString()} exercise${filtered.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
       </div>
 
       {/* Body — two columns on md+ when a card is selected */}
@@ -315,10 +347,24 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
           )}
 
           {exercises !== null && filtered.length === 0 && (
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                No exercises match. Try clearing filters.
-              </p>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center space-y-2">
+              {essentialsOnly ? (
+                <>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    No matches in Essentials.
+                  </p>
+                  <button
+                    onClick={() => setEssentialsOnly(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    Search all 800 exercises
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No exercises match. Try clearing filters.
+                </p>
+              )}
             </div>
           )}
 
@@ -338,6 +384,7 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
             <ExerciseDetail
               exercise={selected}
               onClose={() => setSelectedId(null)}
+              history={history}
               inline
             />
           </div>
@@ -347,7 +394,11 @@ export default function ExerciseBrowser({ resetSignal }: ExerciseBrowserProps) {
       {/* Mobile modal */}
       {selected && (
         <div className="md:hidden">
-          <ExerciseDetail exercise={selected} onClose={() => setSelectedId(null)} />
+          <ExerciseDetail
+            exercise={selected}
+            onClose={() => setSelectedId(null)}
+            history={history}
+          />
         </div>
       )}
     </div>
