@@ -140,7 +140,9 @@ export default function WorkoutPlayer({
   // Inputs for the current set — local string state so user can clear / partial-type.
   const [weightInput, setWeightInput] = useState<string>('')
   const [repsInput, setRepsInput] = useState<string>('')
-  const [unitInput, setUnitInput] = useState<WeightUnit>('kg')
+  // Seed from preferredUnit so the first paint doesn't flash 'kg' for lb users
+  // before the post-mount useEffect below corrects it.
+  const [unitInput, setUnitInput] = useState<WeightUnit>(preferredUnit)
 
   // Derived: current exercise + set
   const currentExerciseIdx = useMemo(() => firstPendingExerciseIdx(session), [session])
