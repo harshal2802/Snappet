@@ -187,14 +187,14 @@ All four original phases shipped:
 - Phase 3 — PR #32 (`27-workout-03-player.md`)
 - Phase 4 — PR #33 (`28-workout-04-history.md`)
 
-Phase 5 in progress (issue #38):
-- Phase 5a — PR #39 (`29-workout-05a-quick-wins.md`)
-- Phase 5b — PR #40 (`30-workout-05b-routine-defaults.md`)
-- Phase 5c — in progress (`31-workout-05c-progress-essentials.md`)
+Phase 5 (issue #38) shipped:
+- Phase 5a — PR #39 (`29-workout-05a-quick-wins.md`) — search · sticky unit · rename · Settings
+- Phase 5b — PR #42 (`30-workout-05b-routine-defaults.md`) — routine defaults · ⇪ apply-to-all
+- Phase 5c — PR #41 (`31-workout-05c-progress-essentials.md`) — Essentials view · Progress in ExerciseDetail
 
 ## Next step
 
-After Phase 5 ships, possible follow-ups (each its own future PR if requested):
+Workout app is feature-complete per this plan. Possible follow-ups (each its own future PR if requested):
 - Auto-scroll-on-edge during long workouts
 - Clear-all-history destructive action (with confirm)
 - Body weight tracking + chart
