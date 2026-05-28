@@ -172,4 +172,12 @@ export const routes: AppRoute[] = [
     icon: '💪',
     component: lazy(() => import('../apps/workout')),
   },
+  {
+    path: '/video-editor',
+    label: 'Video Editor',
+    description: 'Browser-only video editor — trim, sequence, and export. Strictly client-side.',
+    category: 'Creative',
+    icon: '🎬',
+    component: lazy(() => import('../apps/video-editor')),
+  },
 ]
