@@ -1,10 +1,12 @@
+import { formatWeightNumber } from '../progress'
 import { recentDistinctPRs } from './data'
 import { getDisplayName } from '../utils'
-import type { Exercise, WorkoutSession } from '../types'
+import type { Exercise, WeightUnit, WorkoutSession } from '../types'
 
 interface RecentPRsProps {
   history: WorkoutSession[]
   exerciseById: Map<string, Exercise>
+  preferredUnit: WeightUnit
   onOpen: (exerciseId: string) => void
 }
 
@@ -12,7 +14,12 @@ function formatShortDate(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-export default function RecentPRs({ history, exerciseById, onOpen }: RecentPRsProps) {
+export default function RecentPRs({
+  history,
+  exerciseById,
+  preferredUnit,
+  onOpen,
+}: RecentPRsProps) {
   const prs = recentDistinctPRs(history, 5)
 
   return (
@@ -41,7 +48,9 @@ export default function RecentPRs({ history, exerciseById, onOpen }: RecentPRsPr
                       {label}
                     </span>
                     <span className="text-sm text-gray-700 dark:text-gray-300 tabular-nums shrink-0">
-                      {pr.bestKg > 0 ? `${Math.round(pr.bestKg)} kg × ${pr.bestReps}` : `${pr.bestReps} reps`}
+                      {pr.bestKg > 0
+                        ? `${formatWeightNumber(pr.bestKg, preferredUnit)} ${preferredUnit} × ${pr.bestReps}`
+                        : `${pr.bestReps} reps`}
                     </span>
                     <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 w-14 text-right">
                       {formatShortDate(pr.prSessionStartedAt)}

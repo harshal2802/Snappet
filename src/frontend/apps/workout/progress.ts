@@ -4,6 +4,26 @@ export function toKg(weight: number, unit: WeightUnit | undefined): number {
   return unit === 'lb' ? weight * 0.453592 : weight
 }
 
+// Inverse of toKg: convert a kg figure (the common denominator we use for
+// aggregates) back to the user's preferred display unit.
+export function kgToUnit(kg: number, unit: WeightUnit): number {
+  return unit === 'lb' ? kg / 0.453592 : kg
+}
+
+// Display helper: convert kg → preferredUnit, round, and append the unit label.
+// Used by every aggregate surface (volume tiles, muscle balance, PR feed,
+// volume sparkline, history cards) so flipping `snappet:workout:preferred-unit`
+// flips every label.
+export function formatVolume(kg: number, unit: WeightUnit): string {
+  return `${Math.round(kgToUnit(kg, unit)).toLocaleString()} ${unit}`
+}
+
+// Just the number in the preferred unit (no label) — useful when the unit
+// label is rendered separately, e.g. as a smaller suffix span.
+export function formatWeightNumber(kg: number, unit: WeightUnit): string {
+  return Math.round(kgToUnit(kg, unit)).toLocaleString()
+}
+
 // Best (heaviest) set across all of `history` for `exerciseId`, expressed
 // in kg. "Best" = top weight × reps. Bodyweight sets (no `actualWeight`)
 // fall back to a weight of 1 so the rep-only comparison stays sane within

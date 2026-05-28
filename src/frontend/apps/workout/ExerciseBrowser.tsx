@@ -12,6 +12,7 @@ import type {
   ExerciseFiltersSerialized,
   ExerciseLevel,
   Muscle,
+  WeightUnit,
   WorkoutSession,
 } from './types'
 
@@ -135,6 +136,7 @@ interface ExerciseBrowserProps {
   /** Incremented by the parent when the user clicks Reset; we clear state on change. */
   resetSignal: number
   history: WorkoutSession[]
+  preferredUnit: WeightUnit
   /** Cross-tab navigation: when set, select this id once exercises load and
    *  call onConsumePending to clear the buffer. */
   pendingExerciseId?: string | null
@@ -144,6 +146,7 @@ interface ExerciseBrowserProps {
 export default function ExerciseBrowser({
   resetSignal,
   history,
+  preferredUnit,
   pendingExerciseId,
   onConsumePending,
 }: ExerciseBrowserProps) {
@@ -404,6 +407,7 @@ export default function ExerciseBrowser({
               exercise={selected}
               onClose={() => setSelectedId(null)}
               history={history}
+              preferredUnit={preferredUnit}
               inline
             />
           </div>
@@ -417,6 +421,7 @@ export default function ExerciseBrowser({
             exercise={selected}
             onClose={() => setSelectedId(null)}
             history={history}
+            preferredUnit={preferredUnit}
           />
         </div>
       )}

@@ -1,3 +1,4 @@
+import { formatWeightNumber, kgToUnit } from '../progress'
 import {
   currentStreakDays,
   lastWeekRange,
@@ -5,11 +6,12 @@ import {
   sessionsInRange,
   thisWeekRange,
 } from './data'
-import type { WorkoutSession } from '../types'
+import type { WeightUnit, WorkoutSession } from '../types'
 
 interface WeekSnapshotProps {
   history: WorkoutSession[]
   now: number
+  preferredUnit: WeightUnit
 }
 
 function formatDelta(delta: number, unit?: string): { arrow: string; label: string; cls: string } {
@@ -59,7 +61,7 @@ function Tile({ label, value, delta, highlight }: TileProps) {
   )
 }
 
-export default function WeekSnapshot({ history, now }: WeekSnapshotProps) {
+export default function WeekSnapshot({ history, now, preferredUnit }: WeekSnapshotProps) {
   const thisWeek = thisWeekRange(now)
   const lastWeek = lastWeekRange(now)
   const thisWeekSessions = sessionsInRange(history, thisWeek.fromMs, thisWeek.toMs)
@@ -67,12 +69,15 @@ export default function WeekSnapshot({ history, now }: WeekSnapshotProps) {
 
   const thisCount = thisWeekSessions.length
   const lastCount = lastWeekSessions.length
-  const thisVolume = Math.round(thisWeekSessions.reduce((sum, s) => sum + sessionVolumeKg(s), 0))
-  const lastVolume = Math.round(lastWeekSessions.reduce((sum, s) => sum + sessionVolumeKg(s), 0))
+  const thisVolumeKg = thisWeekSessions.reduce((sum, s) => sum + sessionVolumeKg(s), 0)
+  const lastVolumeKg = lastWeekSessions.reduce((sum, s) => sum + sessionVolumeKg(s), 0)
+  const thisVolume = Math.round(kgToUnit(thisVolumeKg, preferredUnit))
+  const lastVolume = Math.round(kgToUnit(lastVolumeKg, preferredUnit))
   const streak = currentStreakDays(history, now)
 
   const countDelta = lastCount === 0 ? undefined : formatDelta(thisCount - lastCount)
-  const volumeDelta = lastVolume === 0 ? undefined : formatDelta(thisVolume - lastVolume, 'kg')
+  const volumeDelta =
+    lastVolumeKg === 0 ? undefined : formatDelta(thisVolume - lastVolume, preferredUnit)
 
   return (
     <div className="space-y-2">
@@ -81,7 +86,11 @@ export default function WeekSnapshot({ history, now }: WeekSnapshotProps) {
       </h3>
       <div className="grid grid-cols-3 gap-2">
         <Tile label="Sessions" value={thisCount.toString()} delta={countDelta} />
-        <Tile label="Volume" value={`${thisVolume.toLocaleString()} kg`} delta={volumeDelta} />
+        <Tile
+          label="Volume"
+          value={`${formatWeightNumber(thisVolumeKg, preferredUnit)} ${preferredUnit}`}
+          delta={volumeDelta}
+        />
         <Tile
           label="Streak"
           value={streak > 0 ? `🔥 ${streak}` : '—'}
