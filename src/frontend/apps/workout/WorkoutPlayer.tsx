@@ -188,7 +188,7 @@ export default function WorkoutPlayer({
     setPhase(isSessionDone(session) ? 'done' : 'exercise')
   }, [now, phase, restEndsAt, session])
 
-  // Wake Lock — acquire on mount, re-acquire when tab returns to foreground
+  // Wake Lock — acquire on mount, re-acquire when tab returns to foreground.
   useEffect(() => {
     let lock: WakeLockSentinelLike | null = null
     let cancelled = false
@@ -197,7 +197,14 @@ export default function WorkoutPlayer({
     async function acquire() {
       if (!nav.wakeLock) return
       try {
-        lock = await nav.wakeLock.request('screen')
+        const newLock = await nav.wakeLock.request('screen')
+        // Guard against the unmount-during-await race: if cleanup already
+        // ran while we were awaiting, release immediately instead of leaking.
+        if (cancelled) {
+          newLock.release().catch(() => undefined)
+          return
+        }
+        lock = newLock
       } catch {
         // user blocked, low-power mode, etc.
       }
@@ -219,13 +226,22 @@ export default function WorkoutPlayer({
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   function ensureAudio() {
-    if (audioCtxRef.current) return
-    try {
-      const Ctor = window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (Ctor) audioCtxRef.current = new Ctor()
-    } catch {
-      // ignore
+    if (!audioCtxRef.current) {
+      try {
+        const Ctor =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        if (Ctor) audioCtxRef.current = new Ctor()
+      } catch {
+        // ignore
+      }
+    }
+    // iOS Safari starts the context in 'suspended' state; resume() must be
+    // called from a user gesture so subsequent programmatic plays (the
+    // rest-end beep) actually emit audio.
+    const ctx = audioCtxRef.current
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => undefined)
     }
   }
 
@@ -478,7 +494,7 @@ export default function WorkoutPlayer({
                 onSkip={handleSkipRest}
                 nextLabel={
                   currentSetIdx < currentExercise.targetSets - 1
-                    ? `Set ${currentSetIdx + 2} of ${currentExercise.targetSets}`
+                    ? `Set ${currentSetIdx + 1} of ${currentExercise.targetSets}`
                     : (() => {
                         const nextEx = session.exercises.find(
                           (e, i) => i > currentExerciseIdx && !isExerciseDone(e),
