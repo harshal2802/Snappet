@@ -1,10 +1,29 @@
 import type { Clip, Project, Track } from '../types/timeline'
 
+// A clip's duration ON THE TIMELINE accounts for its playback speed:
+// faster clips occupy less timeline time. Source span is (outSec - inSec).
+export function clipSpeed(clip: Clip): number {
+  const s = clip.speed ?? 1
+  return s > 0 ? s : 1
+}
+
+export function clipTimelineDuration(clip: Clip): number {
+  return (clip.outSec - clip.inSec) / clipSpeed(clip)
+}
+
+export function clipTimelineEnd(clip: Clip): number {
+  return clip.startSec + clipTimelineDuration(clip)
+}
+
 export function totalDurationSec(project: Project): number {
   let max = 0
   for (const c of Object.values(project.clips)) {
-    const end = c.startSec + (c.outSec - c.inSec)
+    const end = clipTimelineEnd(c)
     if (end > max) max = end
+  }
+  // Text overlays can extend the timeline beyond the last clip.
+  for (const t of Object.values(project.textOverlays ?? {})) {
+    if (t.endSec > max) max = t.endSec
   }
   return max
 }
@@ -22,7 +41,7 @@ export function clipsAtTime(
   const out: Clip[] = []
   for (const c of Object.values(project.clips)) {
     if (!trackIds.has(c.trackId)) continue
-    const end = c.startSec + (c.outSec - c.inSec)
+    const end = clipTimelineEnd(c)
     if (time >= c.startSec && time < end) out.push(c)
   }
   // Higher track index = on top.
@@ -35,7 +54,9 @@ export function clipsAtTime(
 }
 
 export function sourceTimeForClip(clip: Clip, time: number): number {
-  return clip.inSec + (time - clip.startSec)
+  // Map a timeline time to a source time, scaling by speed (2× clip advances the
+  // source twice as fast per timeline second).
+  return clip.inSec + (time - clip.startSec) * clipSpeed(clip)
 }
 
 export function formatTimecode(sec: number): string {

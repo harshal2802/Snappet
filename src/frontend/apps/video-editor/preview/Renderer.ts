@@ -3,6 +3,7 @@ import { clipsAtTime, sourceTimeForClip, totalDurationSec } from '../state/selec
 import { Compositor } from './Compositor'
 import { DecoderPool } from './DecoderPool'
 import { readFile as opfsReadFile } from '../media/opfs'
+import { toCssFilter } from '../types/filters'
 
 type Store = typeof useEditorStore
 
@@ -80,10 +81,12 @@ export class Renderer {
       const h = this.canvas.height
       const active = clipsAtTime(state.project, state.playhead, 'video')
       if (active.length === 0) {
+        this.canvas.style.filter = 'none'
         this.compositor.clear(w, h)
         return
       }
-      // M2: render the topmost video clip only.
+      // Render the topmost video clip. Color filters are applied as a CSS filter
+      // on the canvas element — identical semantics to the 2D export path (WYSIWYG).
       const top = active[active.length - 1]
       const t = sourceTimeForClip(top, state.playhead)
       const frame = await this.pool.getFrame(top.assetId, t)
@@ -91,8 +94,9 @@ export class Renderer {
         this.compositor.clear(w, h)
         return
       }
+      this.canvas.style.filter = toCssFilter(top.filters)
       try {
-        this.compositor.draw(frame, w, h)
+        this.compositor.draw(frame, w, h, top.fit ?? 'contain')
       } finally {
         frame.close()
       }

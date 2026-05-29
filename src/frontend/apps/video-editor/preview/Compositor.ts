@@ -89,7 +89,12 @@ export class Compositor {
     this.uScaleLoc = gl.getUniformLocation(program, 'u_scale')
   }
 
-  draw(frame: VideoFrame, canvasW: number, canvasH: number): void {
+  draw(
+    frame: VideoFrame,
+    canvasW: number,
+    canvasH: number,
+    fit: 'contain' | 'cover' = 'contain',
+  ): void {
     const gl = this.gl
     gl.viewport(0, 0, canvasW, canvasH)
     gl.clearColor(0, 0, 0, 1)
@@ -108,18 +113,20 @@ export class Compositor {
       frame as unknown as TexImageSource,
     )
 
-    // Contain scaling: keep aspect, fit inside canvas, letterbox.
     const fW = frame.displayWidth
     const fH = frame.displayHeight
     const canvasAspect = canvasW / canvasH
     const frameAspect = fW / fH
     let scaleX = 1
     let scaleY = 1
-    if (frameAspect > canvasAspect) {
-      // Limited by width.
-      scaleY = canvasAspect / frameAspect
+    if (fit === 'cover') {
+      // Fill the canvas, cropping overflow (one axis > 1 → clipped by viewport).
+      if (frameAspect > canvasAspect) scaleX = frameAspect / canvasAspect
+      else scaleY = canvasAspect / frameAspect
     } else {
-      scaleX = frameAspect / canvasAspect
+      // Contain: keep aspect, fit inside canvas, letterbox.
+      if (frameAspect > canvasAspect) scaleY = canvasAspect / frameAspect
+      else scaleX = frameAspect / canvasAspect
     }
     gl.uniform2f(this.uScaleLoc, scaleX, scaleY)
 

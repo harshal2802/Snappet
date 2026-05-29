@@ -17,7 +17,8 @@ export default function Clip({ clip }: Props) {
   const isSelected =
     selection?.kind === 'clip' && selection.id === clip.id
 
-  const dur = clip.outSec - clip.inSec
+  const speed = clip.speed ?? 1
+  const dur = (clip.outSec - clip.inSec) / speed // timeline duration
   const left = clip.startSec * zoom
   const width = Math.max(8, dur * zoom)
 
@@ -44,13 +45,15 @@ export default function Clip({ clip }: Props) {
       selectClip(clip.id)
     },
     onDragMove: (dxSec) => {
-      // Dragging the in-handle shifts both startSec on the timeline and inSec on the asset
-      // so the trailing portion stays put visually.
-      const newIn = inAtDragStart.current + dxSec
+      // Dragging the in-handle shifts both startSec on the timeline and inSec on the
+      // asset so the trailing portion stays put. dxSec is timeline time; source time
+      // moves by dxSec * speed.
+      const srcDelta = dxSec * speed
+      const newIn = inAtDragStart.current + srcDelta
       const clampedIn = Math.max(0, Math.min(newIn, clip.outSec - 0.05))
-      const delta = clampedIn - inAtDragStart.current
+      const appliedTimelineDelta = (clampedIn - inAtDragStart.current) / speed
       trimClip(clip.id, 'in', clampedIn)
-      moveClip(clip.id, startAtDragStart.current + delta)
+      moveClip(clip.id, startAtDragStart.current + appliedTimelineDelta)
     },
   })
 
@@ -61,7 +64,7 @@ export default function Clip({ clip }: Props) {
       selectClip(clip.id)
     },
     onDragMove: (dxSec) => {
-      trimClip(clip.id, 'out', outAtDragStart.current + dxSec)
+      trimClip(clip.id, 'out', outAtDragStart.current + dxSec * speed)
     },
   })
 

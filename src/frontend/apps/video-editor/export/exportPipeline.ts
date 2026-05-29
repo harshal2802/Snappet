@@ -7,6 +7,7 @@ import type {
 import { clipsAtTime, sourceTimeForClip, totalDurationSec } from '../state/selectors'
 import { DecoderPool } from '../preview/DecoderPool'
 import { audioBufferToChunks, mixProjectAudio } from './audioMixer'
+import { toCssFilter } from '../types/filters'
 
 export interface ExportOptions {
   width: number
@@ -185,11 +186,17 @@ export async function runExport(
           try {
             const fW = frame.displayWidth
             const fH = frame.displayHeight
-            const s = Math.min(opts.width / fW, opts.height / fH)
+            // contain = fit inside (letterbox); cover = fill + crop overflow.
+            const s =
+              top.fit === 'cover'
+                ? Math.max(opts.width / fW, opts.height / fH)
+                : Math.min(opts.width / fW, opts.height / fH)
             const dW = Math.round(fW * s)
             const dH = Math.round(fH * s)
             const dx = Math.round((opts.width - dW) / 2)
             const dy = Math.round((opts.height - dH) / 2)
+            // Same CSS-filter string as the preview canvas → WYSIWYG color.
+            ctx.filter = toCssFilter(top.filters)
             ctx.drawImage(
               frame as unknown as CanvasImageSource,
               dx,
@@ -197,6 +204,7 @@ export async function runExport(
               dW,
               dH,
             )
+            ctx.filter = 'none'
           } finally {
             frame.close()
           }

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type {
+  AspectRatio,
   AssetId,
   ClipId,
   MediaAsset,
@@ -7,10 +8,12 @@ import type {
   Track,
   TrackId,
 } from '../types/timeline'
-import { PROJECT_DEFAULTS } from '../types/timeline'
+import { ASPECT_DIMS, PROJECT_DEFAULTS } from '../types/timeline'
+import type { ClipFilters } from '../types/filters'
+import { DEFAULT_FILTERS } from '../types/filters'
 import { makeAssetFromFile, newAssetId, probeFile } from '../media/ingest'
 import { generateProxy } from '../media/proxy'
-import { totalDurationSec } from './selectors'
+import { clipSpeed, clipTimelineDuration, clipTimelineEnd, totalDurationSec } from './selectors'
 import {
   clearAll as opfsClearAll,
   deleteFile as opfsDeleteFile,
@@ -41,8 +44,10 @@ function makeDefaultProject(): Project {
     fps: PROJECT_DEFAULTS.fps,
     width: PROJECT_DEFAULTS.width,
     height: PROJECT_DEFAULTS.height,
+    aspectRatio: '16:9',
     tracks: [videoTrack, audioTrack],
     clips: {},
+    textOverlays: {},
   }
 }
 
@@ -93,6 +98,13 @@ interface EditorState {
   toggleMute: () => void
   setPlaybackRate: (r: number) => void
   toggleLoop: () => void
+  // Actions — pro (P2+)
+  setAspectRatio: (ratio: AspectRatio) => void
+  updateClipFilters: (id: ClipId, patch: Partial<ClipFilters>) => void
+  setClipFit: (id: ClipId, fit: 'contain' | 'cover') => void
+  setClipSpeed: (id: ClipId, speed: number) => void
+  setClipTransition: (id: ClipId, kind: 'fade' | 'black' | 'none', durSec: number) => void
+  duplicateClip: (id: ClipId) => void
 }
 
 // --- persistence ---
@@ -398,12 +410,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     for (const id of candidates) {
       const c = nextClips[id]
       if (!c) continue
-      const localT = playhead - c.startSec
-      if (localT <= 0.05 || localT >= c.outSec - c.inSec - 0.05) continue
-      const splitSourceTime = c.inSec + localT
-      // Shorten original.
+      const localT = playhead - c.startSec // timeline seconds into the clip
+      if (localT <= 0.05 || localT >= clipTimelineDuration(c) - 0.05) continue
+      const splitSourceTime = c.inSec + localT * clipSpeed(c)
+      // Shorten original. A leading-edge transition stays with the left part only.
       nextClips[id] = { ...c, outSec: splitSourceTime }
-      // New right-hand clip.
+      // New right-hand clip (no inherited transition-in at the cut).
       const newId = newAssetId()
       nextClips[newId] = {
         ...c,
@@ -411,6 +423,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         startSec: c.startSec + localT,
         inSec: splitSourceTime,
         outSec: c.outSec,
+        transitionInSec: undefined,
+        transitionInKind: undefined,
       }
       changed = true
     }
@@ -452,13 +466,110 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   toggleMute: () => set((s) => ({ muted: !s.muted })),
   setPlaybackRate: (r) => set({ playbackRate: Math.max(0.25, Math.min(4, r)) }),
   toggleLoop: () => set((s) => ({ loop: !s.loop })),
+
+  setAspectRatio: (ratio) => {
+    const dims = ASPECT_DIMS[ratio]
+    set((s) => ({
+      project: {
+        ...s.project,
+        aspectRatio: ratio,
+        width: dims.width,
+        height: dims.height,
+      },
+    }))
+    scheduleSaveProject(get())
+  },
+
+  updateClipFilters: (id, patch) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const filters: ClipFilters = { ...DEFAULT_FILTERS, ...clip.filters, ...patch }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, filters } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipFit: (id, fit) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, fit } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipSpeed: (id, speed) => {
+    const clamped = Math.max(0.25, Math.min(4, speed))
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, speed: clamped } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipTransition: (id, kind, durSec) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const next =
+        kind === 'none'
+          ? { ...clip, transitionInSec: undefined, transitionInKind: undefined }
+          : {
+              ...clip,
+              transitionInKind: kind,
+              transitionInSec: Math.max(0.1, Math.min(3, durSec)),
+            }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: next },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  duplicateClip: (id) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const newId = newAssetId()
+      const len = clip.outSec - clip.inSec
+      const dup = { ...clip, id: newId, startSec: clip.startSec + len }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [newId]: dup },
+        },
+        selection: { kind: 'clip', id: newId },
+      }
+    })
+    scheduleSaveProject(get())
+  },
 }))
 
 function endOfTrack(project: Project, trackId: TrackId): number {
   let end = 0
   for (const c of Object.values(project.clips)) {
     if (c.trackId !== trackId) continue
-    const ce = c.startSec + (c.outSec - c.inSec)
+    const ce = clipTimelineEnd(c)
     if (ce > end) end = ce
   }
   return end
