@@ -1,10 +1,112 @@
 import { defineConfig } from 'vite'
+import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { resolve, join } from 'node:path'
+import { catalog, SITE } from './seo/catalog'
+import { renderForPath } from './seo/render'
+import { pageUrl } from './seo/meta'
 
 // Set VITE_BASE_PATH to match your GitHub repo name, e.g. /Snappet/
 // Defaults to /Snappet/ — change this if your repo is named differently
 const base = process.env.VITE_BASE_PATH ?? '/Snappet/'
+
+// Build-time SEO/AEO prerender: write one real static HTML file per route with a
+// unique <head> + JSON-LD + crawlable body, plus sitemap.xml / robots.txt / llms.txt.
+// This is what makes the SPA visible to Google AND to AI crawlers (which don't run JS).
+function seoPrerender(): Plugin {
+  return {
+    name: 'snappet-seo-prerender',
+    apply: 'build',
+    closeBundle() {
+      const dist = resolve(process.cwd(), 'dist')
+      let template: string
+      try {
+        template = readFileSync(join(dist, 'index.html'), 'utf8')
+      } catch {
+        this.warn('seo-prerender: dist/index.html not found; skipping')
+        return
+      }
+      const today = new Date().toISOString().slice(0, 10)
+
+      const buildPage = (path: string): string => {
+        const { head, body } = renderForPath(path)
+        let html = template
+        // Strip the template's default head tags that we set per-page, so the
+        // generated file has exactly ONE title/description/canonical/OG/Twitter
+        // (a conflicting second canonical would confuse crawlers).
+        html = html
+          .replace(/<title>[\s\S]*?<\/title>\s*/i, '')
+          .replace(/<meta\s+name="description"[^>]*>\s*/gi, '')
+          .replace(/<meta\s+name="robots"[^>]*>\s*/gi, '')
+          .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')
+          .replace(/<meta\s+property="og:[^"]*"[^>]*>\s*/gi, '')
+          .replace(/<meta\s+name="twitter:[^"]*"[^>]*>\s*/gi, '')
+        // Inject our head right before </head>.
+        html = html.replace(/<\/head>/i, `    ${head}\n  </head>`)
+        // Bake crawlable content into the React mount point (React replaces it on load).
+        html = html.replace(
+          /<div id="root">\s*<\/div>/i,
+          `<div id="root">${body}</div>`,
+        )
+        return html
+      }
+
+      // Hub (overwrite dist/index.html) + every tool route.
+      writeFileSync(join(dist, 'index.html'), buildPage('/'))
+      const indexable = catalog.filter((a) => !a.noindex)
+      for (const app of catalog) {
+        const slug = app.path.replace(/^\/+/, '')
+        const dir = join(dist, slug)
+        mkdirSync(dir, { recursive: true })
+        writeFileSync(join(dir, 'index.html'), buildPage(app.path))
+      }
+
+      // sitemap.xml (indexable routes only)
+      const urls = ['/', ...indexable.map((a) => a.path)]
+      const sitemap =
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        urls
+          .map(
+            (p) =>
+              `  <url><loc>${pageUrl(p)}</loc><lastmod>${today}</lastmod>` +
+              `<changefreq>monthly</changefreq></url>`,
+          )
+          .join('\n') +
+        `\n</urlset>\n`
+      writeFileSync(join(dist, 'sitemap.xml'), sitemap)
+
+      // robots.txt — allow everyone incl. AI crawlers (we want citations).
+      const robots =
+        [
+          'User-agent: *',
+          'Allow: /',
+          '',
+          ...['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended', 'Bingbot'].flatMap(
+            (b) => [`User-agent: ${b}`, 'Allow: /', ''],
+          ),
+          `Sitemap: ${SITE.url}/sitemap.xml`,
+          '',
+        ].join('\n')
+      writeFileSync(join(dist, 'robots.txt'), robots)
+
+      // llms.txt — curated index for AI engines (emerging standard).
+      const llms =
+        `# ${SITE.name}\n> ${SITE.description}\n\n## Tools\n` +
+        indexable
+          .map((a) => `- [${a.label}](${pageUrl(a.path)}): ${a.tagline ?? a.description}`)
+          .join('\n') +
+        '\n'
+      writeFileSync(join(dist, 'llms.txt'), llms)
+
+      this.info?.(
+        `seo-prerender: wrote ${catalog.length + 1} HTML pages + sitemap/robots/llms`,
+      )
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
@@ -48,6 +150,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
     }),
+    // Must run last so its closeBundle fires after the build + PWA output exist.
+    seoPrerender(),
   ],
   base,
   build: {

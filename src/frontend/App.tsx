@@ -1,9 +1,10 @@
 import { Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import UpdatePrompt from './components/UpdatePrompt'
 import { routes } from './router/routes'
 import HubPage from './apps/hub'
+import { useSeoHead } from './seo/useSeoHead'
 
 function NotFound() {
   return (
@@ -14,6 +15,8 @@ function NotFound() {
 }
 
 export default function App() {
+  // Keep <head> (title/description/canonical/OG) correct on client-side navigation.
+  useSeoHead(useLocation().pathname)
   return (
     <>
       <Layout>
