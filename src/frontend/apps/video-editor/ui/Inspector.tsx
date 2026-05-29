@@ -157,20 +157,23 @@ export default function Inspector() {
       {/* Transition (leading edge) */}
       <Section title="Transition in">
         <div className="flex gap-1">
-          {(['none', 'fade', 'black'] as const).map((t) => (
+          {([
+            { id: 'none', label: 'None' },
+            { id: 'fade', label: 'Fade in' },
+          ] as const).map((t) => (
             <button
-              key={t}
+              key={t.id}
               onClick={() =>
-                setClipTransition(id, t, clip.transitionInSec ?? 0.5)
+                setClipTransition(id, t.id, clip.transitionInSec ?? 0.5)
               }
               className={
-                'flex-1 rounded px-1.5 py-1 text-[11px] font-medium capitalize transition ' +
-                (transition === t
+                'flex-1 rounded px-1.5 py-1 text-[11px] font-medium transition ' +
+                (transition === t.id || (t.id === 'fade' && transition === 'black')
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600')
               }
             >
-              {t === 'black' ? 'Dip' : t}
+              {t.label}
             </button>
           ))}
         </div>

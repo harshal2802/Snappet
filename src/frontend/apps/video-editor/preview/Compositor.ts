@@ -15,8 +15,10 @@ precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
 uniform sampler2D u_tex;
+uniform float u_dim; // 0 = normal, 1 = black (fade-to/from-black transition)
 void main() {
-  outColor = texture(u_tex, v_uv);
+  vec3 c = texture(u_tex, v_uv).rgb * (1.0 - u_dim);
+  outColor = vec4(c, 1.0);
 }`
 
 function compileShader(
@@ -42,6 +44,7 @@ export class Compositor {
   private vao: WebGLVertexArrayObject
   private texture: WebGLTexture
   private uScaleLoc: WebGLUniformLocation | null
+  private uDimLoc: WebGLUniformLocation | null
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
@@ -87,6 +90,7 @@ export class Compositor {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
     this.uScaleLoc = gl.getUniformLocation(program, 'u_scale')
+    this.uDimLoc = gl.getUniformLocation(program, 'u_dim')
   }
 
   draw(
@@ -94,6 +98,7 @@ export class Compositor {
     canvasW: number,
     canvasH: number,
     fit: 'contain' | 'cover' = 'contain',
+    dim = 0,
   ): void {
     const gl = this.gl
     gl.viewport(0, 0, canvasW, canvasH)
@@ -129,6 +134,7 @@ export class Compositor {
       else scaleX = frameAspect / canvasAspect
     }
     gl.uniform2f(this.uScaleLoc, scaleX, scaleY)
+    gl.uniform1f(this.uDimLoc, Math.max(0, Math.min(1, dim)))
 
     gl.bindVertexArray(this.vao)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)

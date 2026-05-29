@@ -128,6 +128,24 @@ export default function Player() {
       }
       const s = useEditorStore.getState()
       const dur = totalDurationSec(s.project)
+
+      // Modifier combos (undo/redo/duplicate) — handled before single-key shortcuts
+      // so e.g. Cmd+S doesn't trigger Split.
+      if (e.metaKey || e.ctrlKey) {
+        if (e.code === 'KeyZ') {
+          e.preventDefault()
+          if (e.shiftKey) useEditorStore.temporal.getState().redo()
+          else useEditorStore.temporal.getState().undo()
+        } else if (e.code === 'KeyY') {
+          e.preventDefault()
+          useEditorStore.temporal.getState().redo()
+        } else if (e.code === 'KeyD') {
+          e.preventDefault()
+          if (s.selection?.kind === 'clip') s.duplicateClip(s.selection.id)
+        }
+        return
+      }
+
       switch (e.code) {
         case 'Space':
         case 'KeyK':

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { temporal } from 'zundo'
 import type {
   AspectRatio,
   AssetId,
@@ -147,7 +148,9 @@ function scheduleSaveProject(state: EditorState): void {
   }, 300)
 }
 
-export const useEditorStore = create<EditorState>((set, get) => ({
+export const useEditorStore = create<EditorState>()(
+  temporal(
+    (set, get) => ({
   assets: {},
   project: makeDefaultProject(),
   sourceFiles: new Map(),
@@ -632,7 +635,35 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   selectText: (id) => set({ selection: { kind: 'text', id } }),
-}))
+    }),
+    {
+      // Track only the serializable document model. Assets, source File handles,
+      // decoders and transient UI (playhead/volume/selection) are excluded — so
+      // scrubbing never pollutes history and File handles never enter snapshots.
+      partialize: (state) => ({ project: state.project }),
+      // project is replaced by reference only on real edits, so identical-project
+      // sets (e.g. setPlayhead) are skipped.
+      equality: (a, b) => a.project === b.project,
+      limit: 100,
+      // Group a burst of sets (e.g. a clip drag) into ONE undo step by recording
+      // the pre-burst state on the leading edge and suppressing the rest.
+      handleSet: (record) => {
+        let timer: ReturnType<typeof setTimeout> | null = null
+        let armed = true
+        return ((pastState: unknown) => {
+          if (armed) {
+            ;(record as (s: unknown) => void)(pastState)
+            armed = false
+          }
+          if (timer) clearTimeout(timer)
+          timer = setTimeout(() => {
+            armed = true
+          }, 300)
+        }) as typeof record
+      },
+    },
+  ),
+)
 
 function endOfTrack(project: Project, trackId: TrackId): number {
   let end = 0

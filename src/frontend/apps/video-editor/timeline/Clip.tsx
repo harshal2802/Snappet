@@ -1,10 +1,43 @@
 import { useRef } from 'react'
 import { useEditorStore } from '../state/editorStore'
 import { useTimelineDrag } from './useTimelineDrag'
+import { clipTimelineEnd } from '../state/selectors'
 import type { Clip as ClipModel } from '../types/timeline'
 
 interface Props {
   clip: ClipModel
+}
+
+// Snap a proposed clip start to nearby edges (other clips' start/end, playhead,
+// timeline start) within a fixed screen-pixel threshold converted to seconds.
+function snapStart(
+  proposed: number,
+  durSec: number,
+  selfId: string,
+  zoom: number,
+): number {
+  const thr = 8 / zoom
+  const { project, playhead } = useEditorStore.getState()
+  const targets = [0, playhead]
+  for (const c of Object.values(project.clips)) {
+    if (c.id === selfId) continue
+    targets.push(c.startSec, clipTimelineEnd(c))
+  }
+  let best = proposed
+  let bestDist = thr
+  for (const t of targets) {
+    const dStart = Math.abs(proposed - t)
+    if (dStart < bestDist) {
+      bestDist = dStart
+      best = t
+    }
+    const dEnd = Math.abs(proposed + durSec - t)
+    if (dEnd < bestDist) {
+      bestDist = dEnd
+      best = t - durSec
+    }
+  }
+  return Math.max(0, best)
 }
 
 export default function Clip({ clip }: Props) {
@@ -33,7 +66,8 @@ export default function Clip({ clip }: Props) {
       selectClip(clip.id)
     },
     onDragMove: (dxSec) => {
-      moveClip(clip.id, startAtDragStart.current + dxSec)
+      const proposed = Math.max(0, startAtDragStart.current + dxSec)
+      moveClip(clip.id, snapStart(proposed, dur, clip.id, zoom))
     },
   })
 

@@ -70,6 +70,17 @@ export function sourceTimeForClip(clip: Clip, time: number): number {
   return clip.inSec + (time - clip.startSec) * clipSpeed(clip)
 }
 
+// Leading-edge fade-from-black amount (1 = black, 0 = full image) at a timeline time.
+export function transitionDim(clip: Clip, time: number): number {
+  const d = clip.transitionInSec
+  if (!clip.transitionInKind || !d || d <= 0) return 0
+  const into = time - clip.startSec
+  if (into < 0 || into >= d) return 0
+  const p = into / d
+  const eased = p * p * (3 - 2 * p) // smoothstep
+  return 1 - eased
+}
+
 export function formatTimecode(sec: number): string {
   if (!isFinite(sec) || sec < 0) sec = 0
   const total = Math.floor(sec * 1000)

@@ -9,6 +9,7 @@ import {
   clipsAtTime,
   sourceTimeForClip,
   totalDurationSec,
+  transitionDim,
 } from '../state/selectors'
 import { DecoderPool } from '../preview/DecoderPool'
 import { audioBufferToChunks, mixProjectAudio } from './audioMixer'
@@ -247,6 +248,9 @@ export async function runExport(
             const dy = Math.round((opts.height - dH) / 2)
             // Same CSS-filter string as the preview canvas → WYSIWYG color.
             ctx.filter = toCssFilter(top.filters)
+            // Leading-edge fade-from-black: lower opacity over the black bg.
+            const dim = transitionDim(top, t)
+            if (dim > 0) ctx.globalAlpha = 1 - dim
             ctx.drawImage(
               frame as unknown as CanvasImageSource,
               dx,
@@ -254,6 +258,7 @@ export async function runExport(
               dW,
               dH,
             )
+            ctx.globalAlpha = 1
             ctx.filter = 'none'
           } finally {
             frame.close()

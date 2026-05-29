@@ -1,5 +1,10 @@
 import type { useEditorStore } from '../state/editorStore'
-import { clipsAtTime, sourceTimeForClip, totalDurationSec } from '../state/selectors'
+import {
+  clipsAtTime,
+  sourceTimeForClip,
+  totalDurationSec,
+  transitionDim,
+} from '../state/selectors'
 import { Compositor } from './Compositor'
 import { DecoderPool } from './DecoderPool'
 import { readFile as opfsReadFile } from '../media/opfs'
@@ -95,8 +100,9 @@ export class Renderer {
         return
       }
       this.canvas.style.filter = toCssFilter(top.filters)
+      const dim = transitionDim(top, state.playhead)
       try {
-        this.compositor.draw(frame, w, h, top.fit ?? 'contain')
+        this.compositor.draw(frame, w, h, top.fit ?? 'contain', dim)
       } finally {
         frame.close()
       }

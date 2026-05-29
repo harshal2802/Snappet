@@ -1,8 +1,17 @@
+import { useStore } from 'zustand'
 import { useEditorStore } from '../state/editorStore'
 import { totalDurationSec } from '../state/selectors'
 import { ASPECT_PRESETS } from '../types/timeline'
 
 export default function Toolbar() {
+  const canUndo = useStore(
+    useEditorStore.temporal,
+    (s) => s.pastStates.length > 0,
+  )
+  const canRedo = useStore(
+    useEditorStore.temporal,
+    (s) => s.futureStates.length > 0,
+  )
   const split = useEditorStore((s) => s.splitClipAtPlayhead)
   const del = useEditorStore((s) => s.deleteSelection)
   const duplicate = useEditorStore((s) => s.duplicateClip)
@@ -18,6 +27,23 @@ export default function Toolbar() {
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+      <button
+        onClick={() => useEditorStore.temporal.getState().undo()}
+        disabled={!canUndo}
+        className="rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-700"
+        title="Undo (Ctrl/Cmd+Z)"
+      >
+        ↶
+      </button>
+      <button
+        onClick={() => useEditorStore.temporal.getState().redo()}
+        disabled={!canRedo}
+        className="rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-700"
+        title="Redo (Ctrl/Cmd+Shift+Z)"
+      >
+        ↷
+      </button>
+      <span className="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-600" />
       <button
         onClick={() => split()}
         disabled={!hasContent}
@@ -86,6 +112,19 @@ export default function Toolbar() {
           aria-label="Zoom in"
         >
           +
+        </button>
+        <button
+          onClick={() => {
+            const el = document.getElementById('ve-timeline-scroller')
+            const dur = totalDurationSec(project)
+            if (el && dur > 0) setZoom((el.clientWidth - 24) / (dur + 1))
+          }}
+          disabled={!hasContent}
+          className="rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-40 dark:hover:bg-gray-700"
+          aria-label="Fit timeline to window"
+          title="Fit to window"
+        >
+          ⤢
         </button>
       </div>
       <div className="ml-auto">
