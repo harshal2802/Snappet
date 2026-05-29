@@ -104,6 +104,7 @@ export default function Clip({ clip }: Props) {
 
   return (
     <div
+      data-clip-body
       onClick={() => selectClip(clip.id)}
       style={{ left, width }}
       className={

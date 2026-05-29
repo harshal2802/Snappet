@@ -41,6 +41,8 @@ export default function Timeline() {
       }}
       onPointerDown={(e) => {
         if (e.pointerType !== 'touch') return
+        // Fresh gesture: clear any leftover pinch flag so it can't swallow a later tap.
+        if (pointers.current.size === 0) pinched.current = false
         pointers.current.set(e.pointerId, e.clientX)
         if (pointers.current.size === 2) {
           pinch.current = { baseDist: dist(), baseZoom: zoom }

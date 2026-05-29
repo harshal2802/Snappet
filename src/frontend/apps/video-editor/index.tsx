@@ -150,7 +150,11 @@ export default function VideoEditor() {
 
         <BottomSheet
           open={propsOpen}
-          onClose={() => setPropsOpen(false)}
+          onClose={() => {
+            setPropsOpen(false)
+            // Allow re-tapping the same (still-selected) clip to reopen Properties.
+            lastSel.current = null
+          }}
           title="Properties"
           size="medium"
         >

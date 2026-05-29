@@ -72,6 +72,7 @@ function TextBlock({ overlay: o }: { overlay: TextOverlay }) {
 
   return (
     <div
+      data-clip-body
       onClick={() => selectText(o.id)}
       style={{ left: o.startSec * zoom, width: Math.max(8, dur * zoom) }}
       className={
