@@ -144,7 +144,7 @@ export default function VideoEditor() {
         >
           <div className="space-y-3">
             <Dropzone />
-            <MediaBin />
+            <MediaBin onAddClip={() => setMediaOpen(false)} />
           </div>
         </BottomSheet>
 

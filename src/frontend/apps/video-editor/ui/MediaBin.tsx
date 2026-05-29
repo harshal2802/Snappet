@@ -3,7 +3,7 @@ import { useEditorStore } from '../state/editorStore'
 import { formatTimecode } from '../state/selectors'
 import type { AssetId, MediaAsset } from '../types/timeline'
 
-export default function MediaBin() {
+export default function MediaBin({ onAddClip }: { onAddClip?: () => void } = {}) {
   const assets = useEditorStore((s) => s.assets)
   const list = Object.values(assets)
 
@@ -18,13 +18,19 @@ export default function MediaBin() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
       {list.map((a) => (
-        <AssetCard key={a.id} asset={a} />
+        <AssetCard key={a.id} asset={a} onAddClip={onAddClip} />
       ))}
     </div>
   )
 }
 
-function AssetCard({ asset }: { asset: MediaAsset }) {
+function AssetCard({
+  asset,
+  onAddClip,
+}: {
+  asset: MediaAsset
+  onAddClip?: () => void
+}) {
   const removeAsset = useEditorStore((s) => s.removeAsset)
   const addClipFromAsset = useEditorStore((s) => s.addClipFromAsset)
   const reLink = useReLink(asset.id)
@@ -34,12 +40,15 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
   const isError = asset.status === 'error'
   const isMissing = asset.status === 'missing'
 
+  const add = (): void => {
+    if (!isReady) return
+    addClipFromAsset(asset.id, useEditorStore.getState().playhead)
+    onAddClip?.()
+  }
+
   return (
     <div
-      onDoubleClick={() => {
-        if (isReady)
-          addClipFromAsset(asset.id, useEditorStore.getState().playhead)
-      }}
+      onDoubleClick={add}
       draggable={isReady}
       onDragStart={(e) => {
         if (isReady) e.dataTransfer.setData('text/x-snappet-asset', asset.id)
@@ -71,6 +80,20 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
             {isError ? 'Error' : 'Re-link needed'}
           </div>
         )}
+        {/* Explicit Add — touch devices can't use HTML5 drag-and-drop. Visible on
+            mobile, on hover for desktop. */}
+        {isReady && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              add()
+            }}
+            className="absolute bottom-1 right-1 flex h-8 items-center gap-0.5 rounded-md bg-blue-600/90 px-2 text-xs font-semibold text-white shadow opacity-100 transition hover:bg-blue-600 md:opacity-0 md:group-hover:opacity-100"
+            aria-label={`Add ${asset.name} to timeline`}
+          >
+            ＋ Add
+          </button>
+        )}
       </div>
       <div className="space-y-1 p-2">
         <div
@@ -93,7 +116,7 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
               e.stopPropagation()
               void removeAsset(asset.id)
             }}
-            className="rounded p-1 text-gray-400 opacity-0 transition group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40 dark:hover:text-red-300"
+            className="flex h-8 w-8 items-center justify-center rounded text-gray-400 opacity-100 transition hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40 dark:hover:text-red-300 md:opacity-0 md:group-hover:opacity-100"
             title="Remove"
             aria-label={`Remove ${asset.name}`}
           >

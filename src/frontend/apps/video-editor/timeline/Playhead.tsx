@@ -24,11 +24,14 @@ export default function Playhead() {
       style={{ left: playhead * zoom }}
     >
       <div className="absolute top-0 bottom-0 w-px bg-red-500" />
+      {/* Grab head: large transparent hit column with a visible knob on top */}
       <div
         {...drag}
-        className="pointer-events-auto absolute -left-2 -top-1 h-3 w-4 cursor-ew-resize rounded-sm bg-red-500 shadow"
+        className="ve-grab pointer-events-auto absolute -top-1 bottom-0 -left-5 flex w-10 cursor-ew-resize justify-center"
         aria-label="Playhead"
-      />
+      >
+        <span className="h-4 w-4 rounded-sm bg-red-500 shadow" />
+      </div>
     </div>
   )
 }

@@ -306,7 +306,7 @@ export default function Player() {
           <button
             onClick={togglePlay}
             aria-label={isPlaying ? 'Pause' : 'Play'}
-            className="rounded p-1 hover:bg-white/15"
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded hover:bg-white/15"
           >
             {isPlaying ? '⏸' : '▶'}
           </button>
@@ -314,7 +314,7 @@ export default function Player() {
             onClick={() => stepFrame(-1)}
             aria-label="Previous frame"
             title="Previous frame (←)"
-            className="rounded p-1 text-xs hover:bg-white/15"
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded text-xs hover:bg-white/15"
           >
             ⏮|
           </button>
@@ -322,7 +322,7 @@ export default function Player() {
             onClick={() => stepFrame(1)}
             aria-label="Next frame"
             title="Next frame (→)"
-            className="rounded p-1 text-xs hover:bg-white/15"
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded text-xs hover:bg-white/15"
           >
             |⏭
           </button>
@@ -331,7 +331,7 @@ export default function Player() {
           <button
             onClick={toggleMute}
             aria-label={muted ? 'Unmute' : 'Mute'}
-            className="rounded p-1 hover:bg-white/15"
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded hover:bg-white/15"
           >
             {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
           </button>
@@ -357,7 +357,7 @@ export default function Player() {
               aria-label="Toggle loop"
               title="Loop"
               className={
-                'rounded p-1 hover:bg-white/15 ' + (loop ? 'text-blue-400' : '')
+                'inline-flex h-9 min-w-9 items-center justify-center rounded hover:bg-white/15 ' + (loop ? 'text-blue-400' : '')
               }
             >
               🔁
@@ -367,7 +367,7 @@ export default function Player() {
             <div className="relative">
               <button
                 onClick={() => setSpeedOpen((v) => !v)}
-                className="rounded px-2 py-1 text-xs font-medium hover:bg-white/15"
+                className="inline-flex h-9 items-center justify-center rounded px-2 text-xs font-medium hover:bg-white/15"
                 aria-label="Playback speed"
                 title="Playback speed (J / L)"
               >
@@ -399,7 +399,7 @@ export default function Player() {
               onClick={toggleFullscreen}
               aria-label="Toggle fullscreen"
               title="Fullscreen (F)"
-              className="rounded p-1 hover:bg-white/15"
+              className="inline-flex h-9 min-w-9 items-center justify-center rounded hover:bg-white/15"
             >
               {isFs || pseudoFs ? '🡼' : '⛶'}
             </button>

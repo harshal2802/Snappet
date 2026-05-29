@@ -125,21 +125,25 @@ export default function Clip({ clip }: Props) {
       <div className="pointer-events-none absolute inset-x-0 top-0 truncate bg-black/40 px-1 text-[10px] font-medium text-white">
         {asset?.name ?? clip.assetId}
       </div>
-      {/* In handle */}
+      {/* In handle — wide hit area on touch, slim visual bar */}
       <div
         {...inDrag}
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-white/40 hover:bg-white/70"
-      />
+        className="ve-grab absolute left-0 top-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center md:w-2"
+      >
+        <span className="h-full w-2 bg-white/50 hover:bg-white/80 md:w-full" />
+      </div>
       {/* Body */}
       <div
         {...bodyDrag}
-        className="absolute inset-x-2 inset-y-0 cursor-grab active:cursor-grabbing"
+        className="ve-grab absolute inset-x-4 inset-y-0 cursor-grab active:cursor-grabbing md:inset-x-2"
       />
       {/* Out handle */}
       <div
         {...outDrag}
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-white/40 hover:bg-white/70"
-      />
+        className="ve-grab absolute right-0 top-0 bottom-0 flex w-4 cursor-ew-resize items-center justify-center md:w-2"
+      >
+        <span className="h-full w-2 bg-white/50 hover:bg-white/80 md:w-full" />
+      </div>
     </div>
   )
 }
