@@ -3,3 +3,9 @@ dist/
 dev-dist/
 .DS_Store
 *.local
+
+# iCloud / Finder duplicate artifacts (project lives under ~/Desktop which syncs).
+# Filenames are kebab-case with no spaces, so these patterns only catch duplicates.
+* [0-9].*
+* copy.*
+*\ copy
