@@ -5,6 +5,7 @@ import type {
   ClipId,
   MediaAsset,
   Project,
+  TextOverlay,
   Track,
   TrackId,
 } from '../types/timeline'
@@ -51,7 +52,10 @@ function makeDefaultProject(): Project {
   }
 }
 
-export type Selection = { kind: 'clip'; id: ClipId } | null
+export type Selection =
+  | { kind: 'clip'; id: ClipId }
+  | { kind: 'text'; id: string }
+  | null
 
 interface EditorState {
   // Data
@@ -105,6 +109,11 @@ interface EditorState {
   setClipSpeed: (id: ClipId, speed: number) => void
   setClipTransition: (id: ClipId, kind: 'fade' | 'black' | 'none', durSec: number) => void
   duplicateClip: (id: ClipId) => void
+  // Text overlays (P4)
+  addTextOverlay: (atSec?: number) => void
+  updateTextOverlay: (id: string, patch: Partial<TextOverlay>) => void
+  removeTextOverlay: (id: string) => void
+  selectText: (id: string) => void
 }
 
 // --- persistence ---
@@ -436,15 +445,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   deleteSelection: () => {
     const sel = get().selection
-    if (sel?.kind !== 'clip') return
-    set((s) => {
-      const { [sel.id]: _, ...rest } = s.project.clips
-      return {
-        project: { ...s.project, clips: rest },
-        selection: null,
-      }
-    })
-    scheduleSaveProject(get())
+    if (sel?.kind === 'clip') {
+      set((s) => {
+        const { [sel.id]: _, ...rest } = s.project.clips
+        return { project: { ...s.project, clips: rest }, selection: null }
+      })
+      scheduleSaveProject(get())
+    } else if (sel?.kind === 'text') {
+      get().removeTextOverlay(sel.id)
+    }
   },
 
   selectClip: (id) => set({ selection: id ? { kind: 'clip', id } : null }),
@@ -551,7 +560,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const clip = s.project.clips[id]
       if (!clip) return s
       const newId = newAssetId()
-      const len = clip.outSec - clip.inSec
+      const len = clipTimelineDuration(clip)
       const dup = { ...clip, id: newId, startSec: clip.startSec + len }
       return {
         project: {
@@ -563,6 +572,66 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     })
     scheduleSaveProject(get())
   },
+
+  addTextOverlay: (atSec) => {
+    const { playhead, project } = get()
+    const start = atSec ?? playhead
+    const id = newAssetId()
+    const overlay: TextOverlay = {
+      id,
+      text: 'Your text',
+      startSec: start,
+      endSec: start + 3,
+      x: 0.5,
+      y: 0.5,
+      fontSize: 0.08,
+      color: '#ffffff',
+      bg: false,
+      align: 'center',
+      bold: true,
+    }
+    set({
+      project: {
+        ...project,
+        textOverlays: { ...(project.textOverlays ?? {}), [id]: overlay },
+      },
+      selection: { kind: 'text', id },
+    })
+    scheduleSaveProject(get())
+  },
+
+  updateTextOverlay: (id, patch) => {
+    set((s) => {
+      const cur = s.project.textOverlays?.[id]
+      if (!cur) return s
+      return {
+        project: {
+          ...s.project,
+          textOverlays: {
+            ...(s.project.textOverlays ?? {}),
+            [id]: { ...cur, ...patch },
+          },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  removeTextOverlay: (id) => {
+    set((s) => {
+      const { [id]: _gone, ...rest } = s.project.textOverlays ?? {}
+      return {
+        project: { ...s.project, textOverlays: rest },
+        selection:
+          s.selection?.kind === 'text' && s.selection.id === id
+            ? null
+            : s.selection,
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  selectText: (id) => set({ selection: { kind: 'text', id } }),
 }))
 
 function endOfTrack(project: Project, trackId: TrackId): number {

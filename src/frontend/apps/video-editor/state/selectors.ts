@@ -1,4 +1,4 @@
-import type { Clip, Project, Track } from '../types/timeline'
+import type { Clip, Project, TextOverlay, Track } from '../types/timeline'
 
 // A clip's duration ON THE TIMELINE accounts for its playback speed:
 // faster clips occupy less timeline time. Source span is (outSec - inSec).
@@ -50,6 +50,17 @@ export function clipsAtTime(
     const tb = project.tracks.find((t) => t.id === b.trackId)?.index ?? 0
     return ta - tb
   })
+  return out
+}
+
+export function activeTextOverlays(
+  project: Project,
+  time: number,
+): TextOverlay[] {
+  const out: TextOverlay[] = []
+  for (const t of Object.values(project.textOverlays ?? {})) {
+    if (time >= t.startSec && time < t.endSec) out.push(t)
+  }
   return out
 }
 

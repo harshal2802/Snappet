@@ -6,6 +6,7 @@ export default function Toolbar() {
   const split = useEditorStore((s) => s.splitClipAtPlayhead)
   const del = useEditorStore((s) => s.deleteSelection)
   const duplicate = useEditorStore((s) => s.duplicateClip)
+  const addText = useEditorStore((s) => s.addTextOverlay)
   const zoom = useEditorStore((s) => s.zoomPxPerSec)
   const setZoom = useEditorStore((s) => s.setZoom)
   const project = useEditorStore((s) => s.project)
@@ -26,8 +27,15 @@ export default function Toolbar() {
         ✂ Split
       </button>
       <button
+        onClick={() => addText()}
+        className="rounded px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+        title="Add text overlay"
+      >
+        T+ Text
+      </button>
+      <button
         onClick={() => selection?.kind === 'clip' && duplicate(selection.id)}
-        disabled={!selection}
+        disabled={selection?.kind !== 'clip'}
         className="rounded px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-200 dark:hover:bg-gray-700"
         title="Duplicate clip (Ctrl/Cmd+D)"
       >

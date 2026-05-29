@@ -92,6 +92,10 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
   outH = outH - (outH % 2)
 
   const fps = probe.fps || 30
+  // mp4-muxer requires an integer frameRate; the probed fps is often fractional
+  // (e.g. 29.97). Per-frame timing still comes from each source frame's timestamp,
+  // so this only affects the track's nominal rate metadata.
+  const muxerFps = Math.max(1, Math.round(fps))
   const durationSec = probe.durationSec
   const totalFrames = Math.max(1, Math.round(durationSec * fps))
 
@@ -110,7 +114,7 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
       codec: 'avc',
       width: outW,
       height: outH,
-      frameRate: fps,
+      frameRate: muxerFps,
     },
     fastStart: 'in-memory',
   })
@@ -126,7 +130,7 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
     width: outW,
     height: outH,
     bitrate: targetBitrate,
-    framerate: fps,
+    framerate: muxerFps,
   })
 
   // Compose downsizing on an OffscreenCanvas; convert canvas -> VideoFrame.
