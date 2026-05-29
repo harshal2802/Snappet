@@ -6,6 +6,27 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-05-29] Hub: local-only usage tracking → popularity sort + dashboard
+
+**Decision**: The hub tracks how often each tool is opened **on the user's own device**
+(`localStorage` key `snappet:usage:v1`, `{ count, last }` per path), recorded on navigation
+in `App.tsx`. The hub sorts by **Popular** (count) / Recent / A–Z (default Popular, persisted
+in `snappet:hub:sort`), shows a per-card open-count badge, and renders a **Dashboard** panel
+(total opens, tools-used-of-N, Most used with mini bars, Recently used, Reset stats). Source
+of truth `lib/usage.ts`.
+
+**Why**: User wanted a centralized dashboard with apps sorted by popularity. With no backend
+(see "No backend, fully client-side"), global cross-user popularity is impossible, so
+"popularity" = the individual's own usage — which is also the more useful personalization.
+
+**Trade-offs / scope of "no analytics"**: This is **on-device only** — counts never leave the
+browser and nothing is transmitted, so it does not violate the no-analytics/privacy stance;
+it is personal state like other localStorage prefs. Cleared via the dashboard's Reset (and by
+clearing site data). Not synced across devices.
+
+**Don't suggest**: server-side or third-party analytics to compute popularity; sending usage
+anywhere.
+
 ## [2026-05-28] Video editor: extract codec description via mp4box's `DataStream` (imported, not global)
 
 **Decision**: To configure a `VideoDecoder`, the avcC/hvcC codec description bytes are

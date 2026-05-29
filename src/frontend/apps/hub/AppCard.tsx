@@ -12,14 +12,23 @@ const categoryStyles: Record<AppCategory, string> = {
 
 interface AppCardProps {
   route: AppRoute
+  count?: number
 }
 
-export default function AppCard({ route }: AppCardProps) {
+export default function AppCard({ route, count = 0 }: AppCardProps) {
   return (
     <Link
       to={route.path}
-      className="group flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="group relative flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
+      {count > 0 && (
+        <span
+          className="absolute right-2 top-2 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+          title={`Opened ${count} time${count === 1 ? '' : 's'}`}
+        >
+          {count}×
+        </span>
+      )}
       <span className="text-4xl mb-3" role="img" aria-label={route.label}>
         {route.icon}
       </span>
