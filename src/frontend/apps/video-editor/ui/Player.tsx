@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PreviewCanvas from '../preview/PreviewCanvas'
+import { AudioEngine } from '../preview/AudioEngine'
 import { useEditorStore } from '../state/editorStore'
 import { formatTimecode, totalDurationSec } from '../state/selectors'
 
@@ -114,6 +115,48 @@ export default function Player() {
       if (hideTimer.current) clearTimeout(hideTimer.current)
     }
   }, [isPlaying, pokeControls])
+
+  // --- audio preview (Web Audio) ---
+  useEffect(() => {
+    const engine = new AudioEngine((id) =>
+      useEditorStore.getState().sourceFiles.get(id),
+    )
+    let anchorPlayhead = 0
+    let anchorWall = 0
+    let anchorRate = 1
+    const reschedule = (st: ReturnType<typeof useEditorStore.getState>): void => {
+      anchorPlayhead = st.playhead
+      anchorWall = performance.now()
+      anchorRate = st.playbackRate
+      void engine.play(st.project, st.playhead, st.playbackRate, st.volume, st.muted)
+    }
+    const unsub = useEditorStore.subscribe((st, prev) => {
+      if (st.volume !== prev.volume || st.muted !== prev.muted) {
+        engine.setVolume(st.volume, st.muted)
+      }
+      if (st.isPlaying && !prev.isPlaying) {
+        reschedule(st)
+        return
+      }
+      if (!st.isPlaying && prev.isPlaying) {
+        engine.stop()
+        return
+      }
+      if (st.isPlaying) {
+        if (st.playbackRate !== prev.playbackRate) {
+          reschedule(st)
+          return
+        }
+        const expected =
+          anchorPlayhead + ((performance.now() - anchorWall) / 1000) * anchorRate
+        if (Math.abs(st.playhead - expected) > 0.3) reschedule(st)
+      }
+    })
+    return () => {
+      unsub()
+      engine.dispose()
+    }
+  }, [])
 
   // --- keyboard shortcuts ---
   useEffect(() => {
