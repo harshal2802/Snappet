@@ -45,5 +45,15 @@ build green at every commit, deployed via PR → main → GitHub Pages.
 - zundo + non-serializable state — strict `partialize`.
 
 ## Status
-- P1–P6 — in progress (this chain). Deferred to later: keyframe animation, beat snapping,
-  auto-captions, masks, chroma key, templates, filmstrip thumbnails, blurred-fill background.
+- P1 player + fullscreen — shipped
+- P2 aspect ratios + filters/adjustments + fit + speed — shipped
+- P3 audio preview (Web Audio) — shipped
+- P4 text overlays (preview DOM + export raster + timeline row) — shipped
+- P5 transitions (fade-from-black) — shipped (true crossfade deferred: needs 2 decoders)
+- P6 undo/redo (zundo) + snapping + duplicate + fit-zoom + shortcuts — shipped
+- Also fixed a live bug: fractional-fps proxy crash (mp4-muxer integer frameRate).
+- Post-review fixes: undo/load + reset history safety, audio-decode-before-anchor sync,
+  keyboard target guard.
+- Deferred to later chains: keyframe animation, beat snapping, auto-captions, masks,
+  chroma key, templates, filmstrip thumbnails, blurred-fill background, true crossfade,
+  pitch-preserved speed.
