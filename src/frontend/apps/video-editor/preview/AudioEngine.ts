@@ -89,18 +89,25 @@ export class AudioEngine {
     this.stop()
     this.setVolume(volume, muted)
 
-    const now = ctx.currentTime + 0.04
     const rate = globalRate > 0 ? globalRate : 1
 
-    for (const clip of Object.values(project.clips)) {
-      const file = this.getFile(clip.assetId)
-      if (!file) continue
-      const buf = await this.decode(clip.assetId)
-      if (!buf) continue
+    // Decode every needed buffer FIRST. Capturing the schedule anchor before an
+    // awaited decode would let a slow first-time decodeAudioData push the anchor
+    // into the past, starting clips immediately and desyncing from the video.
+    const candidates = Object.values(project.clips).filter((c) => {
+      if (!this.getFile(c.assetId)) return false
+      return playheadSec < c.startSec + clipTimelineDuration(c)
+    })
+    const decoded = await Promise.all(
+      candidates.map((c) => this.decode(c.assetId)),
+    )
 
-      const tlDur = clipTimelineDuration(clip)
-      const clipEnd = clip.startSec + tlDur
-      if (playheadSec >= clipEnd) continue // already past
+    const now = ctx.currentTime + 0.04
+
+    for (let i = 0; i < candidates.length; i++) {
+      const clip = candidates[i]
+      const buf = decoded[i]
+      if (!buf) continue
 
       const spd = clipSpeed(clip)
       const intoTimeline = Math.max(0, playheadSec - clip.startSec)

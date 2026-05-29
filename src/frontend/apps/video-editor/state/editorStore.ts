@@ -299,6 +299,8 @@ export const useEditorStore = create<EditorState>()(
       playhead: 0,
       isPlaying: false,
     })
+    // Reset is not an undoable edit — drop history so Ctrl+Z can't resurrect cleared clips.
+    useEditorStore.temporal.getState().clear()
   },
 
   rehydrateFromOpfs: async () => {
@@ -334,6 +336,8 @@ export const useEditorStore = create<EditorState>()(
         /* keep default */
       }
       set({ assets, project, hydrated: true })
+      // Loading the saved project must not be undoable (would wipe it back to empty).
+      useEditorStore.temporal.getState().clear()
     } catch {
       set({ hydrated: true })
     }

@@ -161,11 +161,12 @@ export default function Player() {
   // --- keyboard shortcuts ---
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      const tgt = e.target as HTMLElement
+      const tgt = e.target
       if (
-        tgt instanceof HTMLInputElement ||
-        tgt instanceof HTMLTextAreaElement ||
-        tgt.isContentEditable
+        tgt instanceof HTMLElement &&
+        (tgt instanceof HTMLInputElement ||
+          tgt instanceof HTMLTextAreaElement ||
+          tgt.isContentEditable)
       ) {
         return
       }
