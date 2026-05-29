@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useEditorStore } from '../state/editorStore'
 import Clip from './Clip'
 import type { Track as TrackModel } from '../types/timeline'
@@ -7,11 +8,15 @@ interface Props {
 }
 
 export default function Track({ track }: Props) {
-  const clips = useEditorStore((s) =>
-    Object.values(s.project.clips).filter((c) => c.trackId === track.id),
+  // Subscribe to the stable clips map (only changes when clips change) and derive
+  // this track's clips in a memo — filtering inside the selector would allocate a
+  // new array on every store update and re-render the track on each playhead tick.
+  const clipMap = useEditorStore((s) => s.project.clips)
+  const clips = useMemo(
+    () => Object.values(clipMap).filter((c) => c.trackId === track.id),
+    [clipMap, track.id],
   )
   const addClipFromAsset = useEditorStore((s) => s.addClipFromAsset)
-  const playhead = useEditorStore((s) => s.playhead)
 
   return (
     <div
@@ -23,7 +28,8 @@ export default function Track({ track }: Props) {
         const assetId = e.dataTransfer.getData('text/x-snappet-asset')
         if (assetId) {
           e.preventDefault()
-          addClipFromAsset(assetId, playhead)
+          // Read playhead lazily so the track doesn't re-subscribe to it.
+          addClipFromAsset(assetId, useEditorStore.getState().playhead)
         }
       }}
       className="relative h-12 border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800"

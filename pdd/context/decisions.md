@@ -1,10 +1,47 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-05-27
+**Last updated**: 2026-05-28
 
 A log of significant technical decisions and the reasoning behind them.
 
 ---
+
+## [2026-05-28] Video editor: extract codec description via mp4box's `DataStream` (imported, not global)
+
+**Decision**: To configure a `VideoDecoder`, the avcC/hvcC codec description bytes are
+extracted by serializing the parsed mp4box box with `new DataStream(undefined, 0, DataStream.BIG_ENDIAN)`
+and stripping the 8-byte box header (`.slice(8)`). `DataStream` is **imported from `'mp4box'`**,
+not read from `globalThis`. On a decoder seek, always reconfigure with the track's **real**
+codec string (`entry.codec`), never a hardcoded `avc1.*`.
+
+**Why**: The MVP's `extractDescription` read `globalThis.DataStream`, which mp4box's UMD bundle
+never assigns (it only does `exports.DataStream = …`). So the description was always `undefined`,
+and `VideoDecoder.configure` for AVCC/HVCC streams silently produced no frames — proxy generation,
+preview, and export were all broken. Separately, the seek path hardcoded `avc1.…`, so HEVC
+originals (the iPhone default) failed to export. Both are fixed.
+
+**How to apply**: Any WebCodecs decode path that demuxes with mp4box must import `DataStream`
+and pass the track's actual codec to `configure`. Guard: if the description can't be read for an
+`avc1/avc3/hvc1/hev1` track, fail loudly rather than emitting a blank proxy.
+
+**Don't suggest**: Relying on `globalThis.DataStream`; assuming all input is H.264.
+
+---
+
+## [2026-05-28] Video editor: synchronous WebCodecs output callbacks + captured error state
+
+**Decision**: `VideoDecoder`/`VideoEncoder` output callbacks must be **synchronous** (no `await`
+inside). Backpressure is applied in the sample-feed loop on `decodeQueueSize`/`encodeQueueSize`.
+Codec `error` callbacks store the error in a captured variable that is rethrown at the next
+`await` point — they never `throw` from inside the callback.
+
+**Why**: WebCodecs does not await an async output callback between frames, so awaiting inside lets
+the next frame's callback interleave — racing on the shared compositing canvas and frame counter,
+which corrupts pixels and emits out-of-order timestamps the encoder rejects. And `throw` inside an
+error callback runs on a separate task, so it can't reject the orchestrating promise (the pipeline
+hangs). Capture-and-rethrow surfaces a clean error.
+
+**Don't suggest**: `async` output callbacks; throwing from a WebCodecs `error` callback.
 
 ## [2026-05-28] Workout app Phase 6: Dashboard tab
 
