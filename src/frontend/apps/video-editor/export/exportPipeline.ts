@@ -18,6 +18,66 @@ import type { TextOverlay } from '../types/timeline'
 
 type Ctx2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D
 
+// Pick the smallest AVC level that fits width×height×fps. The MVP hardcoded
+// Baseline 3.1 (avc1.42E01F), whose max frame is 1280×720 — so 1080p/1080p60
+// exports failed to configure ("VideoEncoder is not configured" at encode time).
+function avcLevelHex(width: number, height: number, fps: number): string {
+  const mbF = Math.ceil(width / 16) * Math.ceil(height / 16)
+  const mbS = mbF * Math.max(1, fps)
+  // [levelCode, maxMBperFrame, maxMBperSecond]
+  const levels: Array<[number, number, number]> = [
+    [0x1f, 3600, 108000], // 3.1
+    [0x20, 5120, 216000], // 3.2
+    [0x28, 8192, 245760], // 4.0
+    [0x29, 8192, 245760], // 4.1
+    [0x2a, 8704, 522240], // 4.2
+    [0x32, 22080, 589824], // 5.0
+    [0x33, 36864, 983040], // 5.1
+    [0x34, 36864, 2073600], // 5.2
+  ]
+  for (const [code, maxF, maxS] of levels) {
+    if (mbF <= maxF && mbS <= maxS) return code.toString(16).padStart(2, '0')
+  }
+  return '34'
+}
+
+// Choose a supported H.264 codec string for these dimensions. Tries common
+// profiles (Main/High/Baseline) at the required level and verifies with
+// isConfigSupported where available; falls back to Main at the computed level.
+async function pickAvcCodec(
+  width: number,
+  height: number,
+  fps: number,
+  bitrate: number,
+): Promise<string> {
+  const lvl = avcLevelHex(width, height, fps)
+  const candidates = [
+    `avc1.4d00${lvl}`, // Main
+    `avc1.6400${lvl}`, // High
+    `avc1.4200${lvl}`, // Baseline
+  ]
+  const VE = VideoEncoder as unknown as {
+    isConfigSupported?: (c: VideoEncoderConfig) => Promise<{ supported?: boolean }>
+  }
+  if (typeof VE.isConfigSupported === 'function') {
+    for (const codec of candidates) {
+      try {
+        const res = await VE.isConfigSupported({
+          codec,
+          width,
+          height,
+          bitrate,
+          framerate: fps,
+        })
+        if (res?.supported) return codec
+      } catch {
+        /* try next */
+      }
+    }
+  }
+  return candidates[0]
+}
+
 // Draw active text overlays into the output frame. Coordinates are normalized so
 // this matches the DOM preview layer (TextOverlayLayer) 1:1.
 function drawTextOverlays(
@@ -160,13 +220,20 @@ export async function runExport(
     fastStart: 'in-memory',
   })
 
-  // Video encoder.
+  // Video encoder. Pick an AVC profile/level that actually fits the output size
+  // (Baseline 3.1 maxes out at 720p, which broke 1080p exports).
+  const videoCodec = await pickAvcCodec(
+    opts.width,
+    opts.height,
+    opts.fps,
+    opts.videoBitrate,
+  )
   const videoEncoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
     error: onCodecError,
   })
   videoEncoder.configure({
-    codec: 'avc1.42E01F',
+    codec: videoCodec,
     width: opts.width,
     height: opts.height,
     bitrate: opts.videoBitrate,
