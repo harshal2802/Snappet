@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-b_b5hs1k.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-CxN3IA2n.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>JSON Explorer &amp; Formatter — Free Online Tool | Snappet</title>
+    <meta name="description" content="The Snappet JSON Explorer is a free online JSON formatter, validator, and viewer that pretty-prints, minifies, and lets you explore JSON as a collapsible…">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/json-explorer/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="JSON Explorer &amp; Formatter — Free Online">
+    <meta property="og:description" content="The Snappet JSON Explorer is a free online JSON formatter, validator, and viewer that pretty-prints, minifies, and lets you explore JSON as a collapsible…">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/json-explorer/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JSON Explorer &amp; Formatter — Free Online">
+    <meta name="twitter:description" content="The Snappet JSON Explorer is a free online JSON formatter, validator, and viewer that pretty-prints, minifies, and lets you explore JSON as a collapsible…">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"JSON Explorer & Formatter — Snappet","url":"https://harshal2802.github.io/Snappet/json-explorer/","description":"The Snappet JSON Explorer is a free online JSON formatter, validator, and viewer that pretty-prints, minifies, and lets you explore JSON as a collapsible tree.","applicationCategory":"DeveloperApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["Format (pretty-print) and minify JSON","Validate with clear error messages","Collapsible tree explorer","Diff two JSON documents; one-click copy"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"JSON Explorer & Formatter","item":"https://harshal2802.github.io/Snappet/json-explorer/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is my JSON sent to a server?","acceptedAnswer":{"@type":"Answer","text":"No. All parsing, formatting, and diffing happen locally in your browser — your data never leaves your device."}},{"@type":"Question","name":"Can it validate JSON?","acceptedAnswer":{"@type":"Answer","text":"Yes. It validates as you type and highlights syntax errors with the line and position."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>JSON Explorer &amp; Formatter</h1><p>The Snappet JSON Explorer is a free online JSON formatter, validator, and viewer that pretty-prints, minifies, and lets you explore JSON as a collapsible tree.</p><h2>Features</h2><ul><li>Format (pretty-print) and minify JSON</li><li>Validate with clear error messages</li><li>Collapsible tree explorer</li><li>Diff two JSON documents; one-click copy</li></ul><h2>Frequently asked questions</h2><h3>Is my JSON sent to a server?</h3><p>No. All parsing, formatting, and diffing happen locally in your browser — your data never leaves your device.</p><h3>Can it validate JSON?</h3><p>Yes. It validates as you type and highlights syntax errors with the line and position.</p><h2>More Developer Tools tools</h2><ul><li><a href="https://harshal2802.github.io/Snappet/regex-playground/">Regex Playground</a></li><li><a href="https://harshal2802.github.io/Snappet/code-snapshot/">Code Snapshot</a></li><li><a href="https://harshal2802.github.io/Snappet/color-picker/">Color Picker &amp; Converter</a></li></ul><p>Loading the JSON Explorer &amp; Formatter…</p></main></div>
+  </body>
+</html>

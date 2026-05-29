@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-b_b5hs1k.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-CxN3IA2n.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>Video Editor — Free Online Tool | Snappet</title>
+    <meta name="description" content="Snappet Video Editor is a free, 100% client-side video editor that trims, splits, sequences, adds text and filters, and exports MP4 — entirely in your…">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/video-editor/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="Video Editor — Free Online">
+    <meta property="og:description" content="Snappet Video Editor is a free, 100% client-side video editor that trims, splits, sequences, adds text and filters, and exports MP4 — entirely in your…">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/video-editor/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Video Editor — Free Online">
+    <meta name="twitter:description" content="Snappet Video Editor is a free, 100% client-side video editor that trims, splits, sequences, adds text and filters, and exports MP4 — entirely in your…">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Video Editor — Snappet","url":"https://harshal2802.github.io/Snappet/video-editor/","description":"Snappet Video Editor is a free, 100% client-side video editor that trims, splits, sequences, adds text and filters, and exports MP4 — entirely in your browser, with no upload.","applicationCategory":"MultimediaApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["Trim, split, and sequence clips on a timeline","Text overlays, filters, speed, transitions, and aspect-ratio presets","Full preview player with fullscreen and audio","Export MP4 via WebCodecs — your video never leaves your device"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"Video Editor","item":"https://harshal2802.github.io/Snappet/video-editor/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is the video editor really free with no watermark?","acceptedAnswer":{"@type":"Answer","text":"Yes. Snappet Video Editor is free and exports without a watermark or sign-up."}},{"@type":"Question","name":"Are my videos uploaded to a server?","acceptedAnswer":{"@type":"Answer","text":"No. Editing, preview, and MP4 export all run locally using WebCodecs; your footage never leaves your device."}},{"@type":"Question","name":"Which browsers are supported?","acceptedAnswer":{"@type":"Answer","text":"Modern Chromium browsers (Chrome/Edge), Safari 17+, and Firefox 130+ that support the WebCodecs API."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>Video Editor</h1><p>Snappet Video Editor is a free, 100% client-side video editor that trims, splits, sequences, adds text and filters, and exports MP4 — entirely in your browser, with no upload.</p><h2>Features</h2><ul><li>Trim, split, and sequence clips on a timeline</li><li>Text overlays, filters, speed, transitions, and aspect-ratio presets</li><li>Full preview player with fullscreen and audio</li><li>Export MP4 via WebCodecs — your video never leaves your device</li></ul><h2>Frequently asked questions</h2><h3>Is the video editor really free with no watermark?</h3><p>Yes. Snappet Video Editor is free and exports without a watermark or sign-up.</p><h3>Are my videos uploaded to a server?</h3><p>No. Editing, preview, and MP4 export all run locally using WebCodecs; your footage never leaves your device.</p><h3>Which browsers are supported?</h3><p>Modern Chromium browsers (Chrome/Edge), Safari 17+, and Firefox 130+ that support the WebCodecs API.</p><p>Loading the Video Editor…</p></main></div>
+  </body>
+</html>

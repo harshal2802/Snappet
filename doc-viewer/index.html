@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-b_b5hs1k.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-CxN3IA2n.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>Document Viewer — Free Online Tool | Snappet</title>
+    <meta name="description" content="The Snappet Document Viewer is a free, private, in-browser PDF and image viewer with OCR that extracts selectable text — your files never leave your device.">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/doc-viewer/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="Document Viewer — Free Online">
+    <meta property="og:description" content="The Snappet Document Viewer is a free, private, in-browser PDF and image viewer with OCR that extracts selectable text — your files never leave your device.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/doc-viewer/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Document Viewer — Free Online">
+    <meta name="twitter:description" content="The Snappet Document Viewer is a free, private, in-browser PDF and image viewer with OCR that extracts selectable text — your files never leave your device.">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Document Viewer — Snappet","url":"https://harshal2802.github.io/Snappet/doc-viewer/","description":"The Snappet Document Viewer is a free, private, in-browser PDF and image viewer with OCR that extracts selectable text — your files never leave your device.","applicationCategory":"UtilitiesApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["View PDFs and images with zoom and paging","OCR text extraction from scans and images","100% client-side — files stay on your device","No upload, no sign-up"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"Document Viewer","item":"https://harshal2802.github.io/Snappet/doc-viewer/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Are my documents uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The viewer and OCR run entirely in your browser; your files are never sent to a server."}},{"@type":"Question","name":"Can it extract text from a scanned PDF or photo?","acceptedAnswer":{"@type":"Answer","text":"Yes. Built-in OCR recognizes text in images and scanned documents so you can copy it."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>Document Viewer</h1><p>The Snappet Document Viewer is a free, private, in-browser PDF and image viewer with OCR that extracts selectable text — your files never leave your device.</p><h2>Features</h2><ul><li>View PDFs and images with zoom and paging</li><li>OCR text extraction from scans and images</li><li>100% client-side — files stay on your device</li><li>No upload, no sign-up</li></ul><h2>Frequently asked questions</h2><h3>Are my documents uploaded anywhere?</h3><p>No. The viewer and OCR run entirely in your browser; your files are never sent to a server.</p><h3>Can it extract text from a scanned PDF or photo?</h3><p>Yes. Built-in OCR recognizes text in images and scanned documents so you can copy it.</p><h2>More Utilities tools</h2><ul><li><a href="https://harshal2802.github.io/Snappet/password-generator/">Password Generator</a></li><li><a href="https://harshal2802.github.io/Snappet/qr-code/">QR Code Generator</a></li><li><a href="https://harshal2802.github.io/Snappet/tally-counter/">Tally Counter</a></li><li><a href="https://harshal2802.github.io/Snappet/random-picker/">Random Picker</a></li></ul><p>Loading the Document Viewer…</p></main></div>
+  </body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-b_b5hs1k.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-CxN3IA2n.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>Workout — Free Online Tool | Snappet</title>
+    <meta name="description" content="Snappet Workout is a free exercise library and workout tracker with 800+ exercises, photos, and step-by-step instructions — build routines and log sessions…">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/workout/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="Workout — Free Online">
+    <meta property="og:description" content="Snappet Workout is a free exercise library and workout tracker with 800+ exercises, photos, and step-by-step instructions — build routines and log sessions…">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/workout/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Workout — Free Online">
+    <meta name="twitter:description" content="Snappet Workout is a free exercise library and workout tracker with 800+ exercises, photos, and step-by-step instructions — build routines and log sessions…">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Workout — Snappet","url":"https://harshal2802.github.io/Snappet/workout/","description":"Snappet Workout is a free exercise library and workout tracker with 800+ exercises, photos, and step-by-step instructions — build routines and log sessions in your browser.","applicationCategory":"HealthApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["800+ exercises with photos and instructions","Filter by muscle group, equipment, and sport","Build custom routines and log workouts","Progress dashboard — all stored on your device"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"Workout","item":"https://harshal2802.github.io/Snappet/workout/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many exercises are included?","acceptedAnswer":{"@type":"Answer","text":"Over 800 exercises, each with images and how-to instructions, filterable by muscle, equipment, and sport."}},{"@type":"Question","name":"Is the workout tracker free?","acceptedAnswer":{"@type":"Answer","text":"Yes. It is completely free, requires no sign-up, and stores your routines and history locally on your device."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>Workout</h1><p>Snappet Workout is a free exercise library and workout tracker with 800+ exercises, photos, and step-by-step instructions — build routines and log sessions in your browser.</p><h2>Features</h2><ul><li>800+ exercises with photos and instructions</li><li>Filter by muscle group, equipment, and sport</li><li>Build custom routines and log workouts</li><li>Progress dashboard — all stored on your device</li></ul><h2>Frequently asked questions</h2><h3>How many exercises are included?</h3><p>Over 800 exercises, each with images and how-to instructions, filterable by muscle, equipment, and sport.</p><h3>Is the workout tracker free?</h3><p>Yes. It is completely free, requires no sign-up, and stores your routines and history locally on your device.</p><p>Loading the Workout…</p></main></div>
+  </body>
+</html>

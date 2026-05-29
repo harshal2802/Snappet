@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-b_b5hs1k.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-CxN3IA2n.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>Expense Splitter — Free Online Tool | Snappet</title>
+    <meta name="description" content="The Snappet Expense Splitter is a free browser tool for sharing group expenses fairly — track who paid what and see exactly who owes whom.">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/expense-splitter/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="Expense Splitter — Free Online">
+    <meta property="og:description" content="The Snappet Expense Splitter is a free browser tool for sharing group expenses fairly — track who paid what and see exactly who owes whom.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/expense-splitter/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Expense Splitter — Free Online">
+    <meta name="twitter:description" content="The Snappet Expense Splitter is a free browser tool for sharing group expenses fairly — track who paid what and see exactly who owes whom.">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Expense Splitter — Snappet","url":"https://harshal2802.github.io/Snappet/expense-splitter/","description":"The Snappet Expense Splitter is a free browser tool for sharing group expenses fairly — track who paid what and see exactly who owes whom.","applicationCategory":"UtilitiesApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["Add people and itemized expenses","Unequal / custom split amounts","Automatic \"who owes whom\" settle-up","Saved locally — your data stays on your device"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"Expense Splitter","item":"https://harshal2802.github.io/Snappet/expense-splitter/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can I split expenses unequally?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can assign custom amounts per person for each expense, not just an even split."}},{"@type":"Question","name":"Does it store my data anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is saved in your browser (localStorage); nothing is uploaded to a server."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>Expense Splitter</h1><p>The Snappet Expense Splitter is a free browser tool for sharing group expenses fairly — track who paid what and see exactly who owes whom.</p><h2>Features</h2><ul><li>Add people and itemized expenses</li><li>Unequal / custom split amounts</li><li>Automatic &quot;who owes whom&quot; settle-up</li><li>Saved locally — your data stays on your device</li></ul><h2>Frequently asked questions</h2><h3>Can I split expenses unequally?</h3><p>Yes. You can assign custom amounts per person for each expense, not just an even split.</p><h3>Does it store my data anywhere?</h3><p>No. Everything is saved in your browser (localStorage); nothing is uploaded to a server.</p><h2>More Calculators tools</h2><ul><li><a href="https://harshal2802.github.io/Snappet/tip-calculator/">Tip Calculator</a></li><li><a href="https://harshal2802.github.io/Snappet/age-calculator/">Age Calculator</a></li><li><a href="https://harshal2802.github.io/Snappet/unit-converter/">Unit Converter</a></li></ul><p>Loading the Expense Splitter…</p></main></div>
+  </body>
+</html>
