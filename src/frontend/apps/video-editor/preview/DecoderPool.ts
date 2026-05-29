@@ -26,9 +26,12 @@ interface DecoderEntry {
   // Presentation timestamp (µs) of the most recently fed sample, used to decide
   // whether a request can be served by decoding forward or needs a backward seek.
   lastDecodedUs: number
+  // True after a flush()/initial configure: the decoder now REQUIRES the next
+  // decoded chunk to be a keyframe, so we must reset+start from a keyframe.
+  needsKeyframe: boolean
 }
 
-const RING_CAPACITY = 12
+const RING_CAPACITY = 24
 const MAX_DECODERS = 3
 
 type SourceLoader = (assetId: AssetId) => Promise<Blob | undefined>
@@ -157,6 +160,8 @@ export class DecoderPool {
       lastUsed: performance.now(),
       nextSampleIdx: 0,
       lastDecodedUs: -1,
+      // Fresh configure() → the first decoded chunk must be a keyframe.
+      needsKeyframe: true,
     }
     currentEntryRing = entry.ringBuffer
 
@@ -165,6 +170,7 @@ export class DecoderPool {
         codec: demuxed.codec,
         codedWidth: demuxed.width,
         codedHeight: demuxed.height,
+        optimizeForLatency: true,
         ...(demuxed.description ? { description: demuxed.description } : {}),
       })
     } catch (e) {
@@ -208,60 +214,91 @@ export class DecoderPool {
       }
     }
 
-    // Decide forward-continue vs. backward-seek. findInRing already failed, so a
-    // forward request (target ahead of what we've decoded) just needs more
-    // frames; a backward request needs a decoder reset to the keyframe. Decoders
-    // can't run in reverse.
+    const tick = (): Promise<void> =>
+      new Promise((r) => setTimeout(r, 0))
+
+    // Forward-continue is only valid if the decoder is mid-stream AND doesn't owe a
+    // keyframe (a prior flush()/configure() requires the next chunk to be a keyframe).
     const canDecodeForward =
-      entry.nextSampleIdx >= 0 && targetUs >= entry.lastDecodedUs
+      entry.nextSampleIdx >= 0 &&
+      targetUs >= entry.lastDecodedUs &&
+      !entry.needsKeyframe
 
     let startIdx: number
     if (canDecodeForward) {
-      // Skip ahead to the nearest keyframe if one sits between us and the target.
+      // Skip ahead to a nearer keyframe if one sits between us and the target.
       startIdx = Math.max(entry.nextSampleIdx, keyIdx)
     } else {
-      // Backward (or first) seek: reset, reconfigure with the REAL codec
-      // (avc/hevc/vp9/av1 — never assume H.264), and start from the keyframe.
+      // Backward / first / post-flush seek: reset, reconfigure with the REAL codec
+      // (avc/hevc/vp9/av1 — never assume H.264), and start from a keyframe.
       try {
         entry.decoder.reset()
         entry.decoder.configure({
           codec: entry.codec,
           codedWidth: entry.width,
           codedHeight: entry.height,
+          optimizeForLatency: true,
           ...(entry.description ? { description: entry.description } : {}),
         })
       } catch {
         entry.nextSampleIdx = -1
+        entry.needsKeyframe = true
         return
       }
       for (const f of entry.ringBuffer) f.close()
       entry.ringBuffer.length = 0
       startIdx = keyIdx
+      entry.needsKeyframe = true // the next decode (the keyframe at startIdx) clears it
     }
 
-    // Decode from startIdx up to ~6 frames past target.
-    const endTargetUs = targetUs + (1_000_000 / entry.fps) * 6
+    // Decode from startIdx until the target frame lands in the ring, or up to a few
+    // frames past target. We do NOT flush per call — flush() forces a keyframe on the
+    // next decode and would break forward continuation. optimizeForLatency lets frames
+    // emit as they decode; we just yield to let the output callback run.
+    const endTargetUs = targetUs + (1_000_000 / entry.fps) * 8
     for (let i = startIdx; i < entry.samples.length; i++) {
       const s = entry.samples[i]
+      const isKey = s.is_sync
+      // After a (re)configure, the first chunk MUST be a keyframe; skip until one.
+      if (entry.needsKeyframe && !isKey) continue
       const ts = (s.cts * 1_000_000) / s.timescale
       const chunk = new EncodedVideoChunk({
-        type: s.is_sync ? 'key' : 'delta',
+        type: isKey ? 'key' : 'delta',
         timestamp: ts,
         duration: (s.duration * 1_000_000) / s.timescale,
         data: s.data,
       })
-      entry.decoder.decode(chunk)
+      try {
+        entry.decoder.decode(chunk)
+      } catch {
+        entry.nextSampleIdx = -1
+        entry.needsKeyframe = true
+        return
+      }
+      entry.needsKeyframe = false
       entry.nextSampleIdx = i + 1
       entry.lastDecodedUs = ts
-      if (ts > endTargetUs) break
-      // Yield occasionally so the output handler can run.
-      if ((i - startIdx) % 8 === 7) {
-        await new Promise((r) => setTimeout(r, 0))
+      if ((i - startIdx) % 6 === 5) {
+        await tick()
+        if (this.findInRing(entry, targetUs)) return
       }
+      if (ts > endTargetUs) break
     }
-    // Give the decoder a tick to produce frames. flush() drains pending decodes
-    // without dropping configuration, so the next forward request can continue.
-    await entry.decoder.flush().catch(() => undefined)
+
+    // Let in-flight outputs arrive (no flush).
+    for (let t = 0; t < 12 && !this.findInRing(entry, targetUs); t++) {
+      await tick()
+    }
+    // Only if we ran out of samples and still don't have the frame do we flush to
+    // drain the reorder buffer — then the decoder owes a keyframe next time.
+    if (
+      entry.nextSampleIdx >= entry.samples.length &&
+      !this.findInRing(entry, targetUs)
+    ) {
+      await entry.decoder.flush().catch(() => undefined)
+      entry.needsKeyframe = true
+      entry.nextSampleIdx = -1
+    }
   }
 }
 
