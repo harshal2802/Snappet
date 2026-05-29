@@ -1,3 +1,55 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---- Video editor mobile UX ---- */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scoped to the editor so other mini-apps are unaffected. */
+.ve-root {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Kill the 300ms double-tap delay + accidental page zoom on editor controls. */
+.ve-root button,
+.ve-root [role='button'],
+.ve-root input[type='range'] {
+  touch-action: manipulation;
+}
+/* Draggable timeline elements take over the gesture and never show iOS callouts. */
+.ve-grab {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ve-root *,
+  .ve-root *::before,
+  .ve-root *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Touch-friendly toolbar buttons on phones. */
+@media (max-width: 767px) {
+  .ve-toolbar button {
+    min-height: 40px;
+  }
+}

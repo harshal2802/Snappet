@@ -102,8 +102,11 @@ export default function ExportDialog({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-gray-800">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+      <div
+        className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl motion-safe:animate-[slideUp_200ms_ease-out] dark:bg-gray-800 sm:rounded-lg sm:motion-safe:animate-none"
+        style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+      >
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Export video
         </h2>

@@ -13,31 +13,46 @@ interface DragOpts {
   onDragEnd?: () => void
 }
 
+// Pointer-based drag with a small movement threshold: the drag only "commits" after
+// the pointer moves >THRESHOLD px, so a tap selects a clip without nudging it, and a
+// quick touch isn't misread as a drag.
+const THRESHOLD_PX = 6
+
 export function useTimelineDrag(opts: DragOpts): DragHandlers {
-  const ref = useRef<{ x0: number; pointerId: number; dragging: boolean }>({
+  const ref = useRef<{
+    x0: number
+    pointerId: number
+    down: boolean
+    dragging: boolean
+  }>({
     x0: 0,
     pointerId: -1,
+    down: false,
     dragging: false,
   })
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // Only respond to primary button or touch.
       if (e.button !== 0 && e.pointerType === 'mouse') return
       ref.current.x0 = e.clientX
       ref.current.pointerId = e.pointerId
-      ref.current.dragging = true
+      ref.current.down = true
+      ref.current.dragging = false
       ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-      opts.onDragStart?.()
       e.stopPropagation()
     },
-    [opts],
+    [],
   )
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!ref.current.dragging || e.pointerId !== ref.current.pointerId) return
+      if (!ref.current.down || e.pointerId !== ref.current.pointerId) return
       const dxPx = e.clientX - ref.current.x0
+      if (!ref.current.dragging) {
+        if (Math.abs(dxPx) < THRESHOLD_PX) return
+        ref.current.dragging = true
+        opts.onDragStart?.()
+      }
       opts.onDragMove(dxPx / opts.pxPerSec)
     },
     [opts],
@@ -45,10 +60,12 @@ export function useTimelineDrag(opts: DragOpts): DragHandlers {
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!ref.current.dragging || e.pointerId !== ref.current.pointerId) return
+      if (!ref.current.down || e.pointerId !== ref.current.pointerId) return
+      const wasDragging = ref.current.dragging
+      ref.current.down = false
       ref.current.dragging = false
       ;(e.currentTarget as Element).releasePointerCapture(e.pointerId)
-      opts.onDragEnd?.()
+      if (wasDragging) opts.onDragEnd?.()
     },
     [opts],
   )

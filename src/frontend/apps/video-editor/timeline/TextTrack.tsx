@@ -72,6 +72,7 @@ function TextBlock({ overlay: o }: { overlay: TextOverlay }) {
 
   return (
     <div
+      data-clip-body
       onClick={() => selectText(o.id)}
       style={{ left: o.startSec * zoom, width: Math.max(8, dur * zoom) }}
       className={
@@ -83,18 +84,22 @@ function TextBlock({ overlay: o }: { overlay: TextOverlay }) {
     >
       <div
         {...left}
-        className="absolute left-0 top-0 bottom-0 z-10 w-2 cursor-ew-resize bg-white/40 hover:bg-white/70"
-      />
+        className="ve-grab absolute left-0 top-0 bottom-0 z-10 flex w-4 cursor-ew-resize items-center justify-center md:w-2"
+      >
+        <span className="h-full w-2 bg-white/50 md:w-full" />
+      </div>
       <div
         {...body}
-        className="absolute inset-x-2 inset-y-0 flex cursor-grab items-center truncate bg-purple-500/80 px-2 text-white active:cursor-grabbing"
+        className="ve-grab absolute inset-x-4 inset-y-0 flex cursor-grab items-center truncate bg-purple-500/80 px-2 text-white active:cursor-grabbing md:inset-x-2"
       >
         T {o.text || ' '}
       </div>
       <div
         {...right}
-        className="absolute right-0 top-0 bottom-0 z-10 w-2 cursor-ew-resize bg-white/40 hover:bg-white/70"
-      />
+        className="ve-grab absolute right-0 top-0 bottom-0 z-10 flex w-4 cursor-ew-resize items-center justify-center md:w-2"
+      >
+        <span className="h-full w-2 bg-white/50 md:w-full" />
+      </div>
     </div>
   )
 }

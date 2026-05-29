@@ -33,12 +33,12 @@ export default function PreviewCanvas() {
   }, [playhead])
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg bg-black shadow-md">
+    <div className="relative mx-auto w-fit max-w-full overflow-hidden rounded-lg bg-black shadow-md">
       <canvas
         ref={canvasRef}
         width={project.width}
         height={project.height}
-        className="block h-auto w-full"
+        className="block h-auto max-h-[58dvh] w-auto max-w-full md:max-h-[68vh]"
         style={{ aspectRatio: `${project.width} / ${project.height}` }}
       />
       <TextOverlayLayer />
