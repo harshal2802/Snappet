@@ -27,4 +27,10 @@ per commit, deployed via PR → main → Pages.
 - Pinch handler must not interfere with single-pointer drag (track pointer count).
 
 ## Status
-- M1–M3 — in progress (this chain).
+- M1 responsive layout + bottom sheets + ConfirmDialog + safe areas/viewport — shipped
+- M2 touch targets + timeline gestures (threshold, pan-x, pinch) + MediaBin touch add — shipped
+- M3 ExportDialog bottom sheet + reduced-motion — shipped
+- Post-review fixes: reopen Properties on re-tap; clip-tap no longer moves playhead
+  (data-clip-body guard, also fixes a pre-existing desktop bug).
+- Deferred: long-press-to-reorder, haptics (navigator.vibrate), filmstrip thumbnails,
+  pinch zoom-to-cursor anchoring (currently scales only).
