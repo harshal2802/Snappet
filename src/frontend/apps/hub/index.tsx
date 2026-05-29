@@ -1,10 +1,21 @@
-import { useState, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { routes } from '../../router/routes'
 import type { AppCategory } from '../../router/routes'
+import { useLocalStorage } from '../../hooks/useLocalStorage'
+import { clearUsage, loadUsage } from '../../lib/usage'
+import type { UsageMap } from '../../lib/usage'
 import AppCard from './AppCard'
+import Dashboard from './Dashboard'
 
 const ALL = 'All' as const
 type Filter = typeof ALL | AppCategory
+
+type SortMode = 'popular' | 'recent' | 'az'
+const SORTS: { id: SortMode; label: string }[] = [
+  { id: 'popular', label: 'Popular' },
+  { id: 'recent', label: 'Recent' },
+  { id: 'az', label: 'A–Z' },
+]
 
 const CATEGORIES: AppCategory[] = [
   'Utilities',
@@ -27,8 +38,12 @@ const categoryChipStyles: Record<AppCategory, string> = {
 export default function HubPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<Filter>(ALL)
+  const [sort, setSort] = useLocalStorage<SortMode>('snappet:hub:sort', 'popular')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [displayQuery, setDisplayQuery] = useState('')
+  // Read once per hub mount (the hub remounts when you return from a tool, so it's
+  // always fresh). Reset updates this state directly.
+  const [usage, setUsage] = useState<UsageMap>(loadUsage)
 
   function handleSearch(value: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -36,6 +51,11 @@ export default function HubPage() {
       setSearchQuery(value)
     }, 150)
     setDisplayQuery(value)
+  }
+
+  function resetUsage() {
+    clearUsage()
+    setUsage({})
   }
 
   const filtered = routes.filter((route) => {
@@ -49,8 +69,28 @@ export default function HubPage() {
     return matchesCategory && matchesSearch
   })
 
+  // Stable sort (V8 keeps insertion order on ties → unused tools keep catalog order).
+  const sorted = useMemo(() => {
+    const list = [...filtered]
+    if (sort === 'az') {
+      list.sort((a, b) => a.label.localeCompare(b.label))
+    } else if (sort === 'recent') {
+      list.sort((a, b) => (usage[b.path]?.last ?? 0) - (usage[a.path]?.last ?? 0))
+    } else {
+      list.sort((a, b) => {
+        const ca = usage[a.path]?.count ?? 0
+        const cb = usage[b.path]?.count ?? 0
+        if (cb !== ca) return cb - ca
+        return (usage[b.path]?.last ?? 0) - (usage[a.path]?.last ?? 0)
+      })
+    }
+    return list
+  }, [filtered, sort, usage])
+
+  const showDashboard = activeCategory === ALL && searchQuery === ''
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Hero */}
       <div className="text-center pt-6 pb-2">
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100 mb-3">
@@ -60,6 +100,11 @@ export default function HubPage() {
           Fast, focused tools for everyday tasks
         </p>
       </div>
+
+      {/* Usage dashboard (only once you've used something) */}
+      {showDashboard && (
+        <Dashboard routes={routes} usage={usage} onReset={resetUsage} />
+      )}
 
       {/* Controls */}
       <div className="space-y-4">
@@ -73,46 +118,74 @@ export default function HubPage() {
           className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
         />
 
-        {/* Category chips */}
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
-          <button
-            onClick={() => setActiveCategory(ALL)}
-            aria-pressed={activeCategory === ALL}
-            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-              activeCategory === ALL
-                ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-            }`}
-          >
-            All
-          </button>
-          {CATEGORIES.map((cat) => (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Category chips */}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              aria-pressed={activeCategory === cat}
+              onClick={() => setActiveCategory(ALL)}
+              aria-pressed={activeCategory === ALL}
               className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                activeCategory === cat
-                  ? categoryChipStyles[cat]
+                activeCategory === ALL
+                  ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100'
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
             >
-              {cat}
+              All
             </button>
-          ))}
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                aria-pressed={activeCategory === cat}
+                className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  activeCategory === cat
+                    ? categoryChipStyles[cat]
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort */}
+          <div
+            className="flex items-center gap-0.5 rounded-full border border-gray-300 dark:border-gray-600 p-0.5"
+            role="group"
+            aria-label="Sort tools"
+          >
+            {SORTS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSort(s.id)}
+                aria-pressed={sort === s.id}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  sort === s.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Result count */}
         <p className="text-xs text-gray-400 dark:text-gray-500">
-          Showing {filtered.length} of {routes.length} tool{routes.length !== 1 ? 's' : ''}
+          Showing {sorted.length} of {routes.length} tool{routes.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Grid */}
-      {filtered.length > 0 ? (
+      {sorted.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((route) => (
-            <AppCard key={route.path} route={route} />
+          {sorted.map((route) => (
+            <AppCard
+              key={route.path}
+              route={route}
+              count={usage[route.path]?.count ?? 0}
+            />
           ))}
         </div>
       ) : (
