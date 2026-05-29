@@ -262,7 +262,10 @@ export default function Player() {
       style={pseudoFs ? { height: '100dvh' } : undefined}
     >
       <div
-        className={pseudoFs ? 'flex h-full w-full items-center justify-center' : ''}
+        className={
+          'flex w-full justify-center ' +
+          (pseudoFs ? 'h-full items-center' : '')
+        }
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
       >
