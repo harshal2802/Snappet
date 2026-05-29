@@ -75,4 +75,14 @@ declare module 'mp4box' {
   }
 
   export function createFile(keepMdatData?: boolean): MP4File
+
+  // Minimal DataStream surface: enough to serialize a parsed box back to bytes.
+  // Endianness flags follow mp4box's (inverted) convention: BIG_ENDIAN === false.
+  export class DataStream {
+    constructor(arrayBuffer?: ArrayBuffer, byteOffset?: number, endianness?: boolean)
+    static BIG_ENDIAN: boolean
+    static LITTLE_ENDIAN: boolean
+    buffer: ArrayBuffer
+    endianness: boolean
+  }
 }

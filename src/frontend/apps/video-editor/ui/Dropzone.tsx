@@ -9,9 +9,8 @@ export default function Dropzone() {
   const onFiles = useCallback(
     (files: FileList | File[] | null) => {
       if (!files) return
-      const arr = Array.from(files).filter(
-        (f) => f.type.startsWith('video/') || f.type.startsWith('image/'),
-      )
+      // v1 (M1–M3) handles video only; image/audio overlays land in M4.
+      const arr = Array.from(files).filter((f) => f.type.startsWith('video/'))
       if (arr.length === 0) return
       void ingestFiles(arr)
     },
@@ -42,7 +41,7 @@ export default function Dropzone() {
         🎞️
       </div>
       <div className="font-medium text-gray-900 dark:text-gray-100">
-        Drop videos or photos here
+        Drop videos here
       </div>
       <div className="text-sm text-gray-500 dark:text-gray-400">
         or click to pick from your device
@@ -50,7 +49,7 @@ export default function Dropzone() {
       <input
         ref={inputRef}
         type="file"
-        accept="video/*,image/*"
+        accept="video/*"
         multiple
         className="hidden"
         onChange={(e) => onFiles(e.target.files)}

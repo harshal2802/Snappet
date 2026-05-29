@@ -152,8 +152,14 @@ None pending — issue #48 + this turn's exchange locked all major decisions:
 
 ## Status
 
-- M1 — in progress (this PR)
-- M2 — in progress (this PR)
-- M3 — in progress (this PR)
+- M1 — shipped (#48/#49)
+- M2 — shipped (#48/#49)
+- M3 — shipped (#48/#49)
+- M1–M3 hardening — deep review fix pass (2026-05-28): fixed the critical mp4box
+  `DataStream` codec-description bug (decode was fully broken), real-codec seek
+  reconfigure (HEVC/iPhone export), synchronous WebCodecs output callbacks,
+  captured-and-rethrown codec errors, incremental forward decode (no per-frame
+  keyframe re-seek), graceful audio-encoder fallback, probe timeout, video-only
+  ingest scope, and timeline re-render perf. See `decisions.md` [2026-05-28].
 - M4 — deferred (future PR)
 - M5 — deferred (future PR)

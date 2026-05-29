@@ -72,9 +72,23 @@ export async function runExport(
     sampleRate,
   )
 
-  const hasAudio = Object.values(project.clips).some(
-    (c) => assets[c.assetId]?.hasAudio,
-  )
+  // Only mux/encode audio if any clip has it AND this browser exposes AudioEncoder.
+  // (A browser can ship VideoEncoder without AudioEncoder; export should still
+  // succeed, just video-only, rather than throwing a ReferenceError.)
+  const audioEncoderAvailable = typeof AudioEncoder === 'function'
+  const hasAudio =
+    audioEncoderAvailable &&
+    Object.values(project.clips).some((c) => assets[c.assetId]?.hasAudio)
+
+  // WebCodecs reports async failures via the error callback (a separate task);
+  // throwing there can't reject runExport. Capture and rethrow at an await point.
+  let fatalError: Error | null = null
+  const onCodecError = (e: DOMException | Error): void => {
+    if (!fatalError) fatalError = e instanceof Error ? e : new Error(String(e))
+  }
+  const throwIfFatal = (): void => {
+    if (fatalError) throw new ExportError(fatalError.message)
+  }
 
   const muxer = new Muxer({
     target: new ArrayBufferTarget(),
@@ -97,9 +111,7 @@ export async function runExport(
   // Video encoder.
   const videoEncoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-    error: (e) => {
-      throw e
-    },
+    error: onCodecError,
   })
   videoEncoder.configure({
     codec: 'avc1.42E01F',
@@ -114,9 +126,7 @@ export async function runExport(
   if (hasAudio) {
     audioEncoder = new AudioEncoder({
       output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-      error: (e) => {
-        throw e
-      },
+      error: onCodecError,
     })
     audioEncoder.configure({
       codec: 'mp4a.40.2',
@@ -159,6 +169,7 @@ export async function runExport(
   try {
     for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
       if (signal.aborted) throw new ExportError('Export cancelled')
+      throwIfFatal()
 
       const t = frameIdx / opts.fps
       const active = clipsAtTime(project, t, 'video')
@@ -220,6 +231,7 @@ export async function runExport(
 
     await videoEncoder.flush()
     videoEncoder.close()
+    throwIfFatal()
 
     // Now feed audio.
     const audioBuffer = await audioPromise
@@ -238,6 +250,7 @@ export async function runExport(
       }
       await audioEncoder.flush()
       audioEncoder.close()
+      throwIfFatal()
     } else if (audioEncoder) {
       // We declared audio in the muxer but mixing produced nothing — close cleanly.
       audioEncoder.close()

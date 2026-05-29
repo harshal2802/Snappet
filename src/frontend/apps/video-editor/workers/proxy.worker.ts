@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { createFile } from 'mp4box'
+import { createFile, DataStream } from 'mp4box'
 import type {
   MP4ArrayBuffer,
   MP4File,
@@ -57,34 +57,17 @@ function extractDescription(
     (entry.vpcC as { write: (s: unknown) => void } | undefined) ??
     (entry.av1C as { write: (s: unknown) => void } | undefined)
   if (!descBox) return undefined
-  // Build a temporary DataStream-like writer to capture the box bytes.
-  // mp4box exposes DataStream globally inside the bundle; recreate the
-  // minimal subset we need by collecting bytes through write methods.
-  // Simpler: ask mp4box for the file's DataStream via dynamic import.
-  // Fall back: many real-world clips have avcC.SPS/.PPS arrays — pack manually.
+  // Serialize the parsed avcC/hvcC/... box back to bytes via mp4box's DataStream
+  // (imported directly — it is NOT attached to globalThis in the ESM bundle).
+  // VideoDecoder wants the box payload without the 8-byte (size + type) header.
   try {
-    // Try mp4box's bundled DataStream (it's attached to globalThis via module side effects).
-    const g = globalThis as unknown as {
-      DataStream?: new (
-        buf?: ArrayBuffer,
-        offset?: number,
-        endianness?: number,
-      ) => {
-        buffer: ArrayBuffer
-        endianness: number
-      }
-    }
-    if (g.DataStream) {
-      const ds = new g.DataStream(undefined, 0, 0 /* BIG_ENDIAN */)
-      descBox.write(ds)
-      // Skip the 8-byte box header (size + type) for VideoDecoder.
-      const u8 = new Uint8Array(ds.buffer)
-      return u8.subarray(8)
-    }
+    const ds = new DataStream(undefined, 0, DataStream.BIG_ENDIAN)
+    descBox.write(ds)
+    const u8 = new Uint8Array(ds.buffer)
+    return u8.byteLength > 8 ? u8.slice(8) : undefined
   } catch {
-    /* fall through */
+    return undefined
   }
-  return undefined
 }
 
 async function runProxy(init: ProxyWorkerInit): Promise<void> {
@@ -112,6 +95,14 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
   const durationSec = probe.durationSec
   const totalFrames = Math.max(1, Math.round(durationSec * fps))
 
+  // WebCodecs surfaces async failures through the error callback, which runs on
+  // a separate task — throwing there can't reject runProxy. Capture instead and
+  // rethrow at the next await point so the worker reports a clean error.
+  let fatalError: Error | null = null
+  const onCodecError = (e: DOMException | Error): void => {
+    if (!fatalError) fatalError = e instanceof Error ? e : new Error(String(e))
+  }
+
   // Set up the encoder + muxer first so we can route decoded frames straight through.
   const muxer = new Muxer({
     target: new ArrayBufferTarget(),
@@ -128,9 +119,7 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
     output: (chunk, meta) => {
       muxer.addVideoChunk(chunk, meta)
     },
-    error: (e) => {
-      throw e
-    },
+    error: onCodecError,
   })
   encoder.configure({
     codec: 'avc1.42E01F', // H.264 baseline 3.1
@@ -145,12 +134,22 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (!ctx) throw new Error('OffscreenCanvas 2D context unavailable')
 
-  let thumbnailDataUrl: string | undefined
+  // Thumbnail is captured synchronously from the first frame into this canvas,
+  // then encoded to a data URL after the decode loop (keeps the output callback
+  // synchronous — see below).
+  const thumbCanvas = new OffscreenCanvas(256, 144)
+  const thumbCtx = thumbCanvas.getContext('2d')
+  let thumbCaptured = false
   let framesEncoded = 0
   let lastReportedProgress = 0
 
+  // The output callback MUST be synchronous: WebCodecs does not await it between
+  // frames, so any `await` inside lets the next frame's callback interleave —
+  // racing on the shared canvas and frame counter, which corrupts pixels and
+  // produces out-of-order timestamps. Backpressure is applied in the sample-feed
+  // loop instead (on both decode and encode queue sizes).
   const decoder = new VideoDecoder({
-    output: async (frame) => {
+    output: (frame) => {
       try {
         // Draw scaled into target canvas; preserve aspect with letterboxing.
         ctx.fillStyle = 'black'
@@ -164,29 +163,21 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
         const dy = Math.round((outH - dH) / 2)
         ctx.drawImage(frame, dx, dy, dW, dH)
 
-        // Capture thumbnail from the first frame.
-        if (!thumbnailDataUrl) {
-          const thumbCanvas = new OffscreenCanvas(256, 144)
-          const thumbCtx = thumbCanvas.getContext('2d')
-          if (thumbCtx) {
-            thumbCtx.fillStyle = 'black'
-            thumbCtx.fillRect(0, 0, 256, 144)
-            const ts = Math.min(256 / fW, 144 / fH)
-            const tw = Math.round(fW * ts)
-            const th = Math.round(fH * ts)
-            thumbCtx.drawImage(
-              frame,
-              Math.round((256 - tw) / 2),
-              Math.round((144 - th) / 2),
-              tw,
-              th,
-            )
-            const blob = await thumbCanvas.convertToBlob({
-              type: 'image/jpeg',
-              quality: 0.7,
-            })
-            thumbnailDataUrl = await blobToDataUrl(blob)
-          }
+        // Capture thumbnail pixels from the first frame (sync draw only).
+        if (!thumbCaptured && thumbCtx) {
+          thumbCtx.fillStyle = 'black'
+          thumbCtx.fillRect(0, 0, 256, 144)
+          const ts = Math.min(256 / fW, 144 / fH)
+          const tw = Math.round(fW * ts)
+          const th = Math.round(fH * ts)
+          thumbCtx.drawImage(
+            frame,
+            Math.round((256 - tw) / 2),
+            Math.round((144 - th) / 2),
+            tw,
+            th,
+          )
+          thumbCaptured = true
         }
 
         const newFrame = new VideoFrame(canvas, {
@@ -194,10 +185,6 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
           duration: Math.round(1_000_000 / fps),
         })
         try {
-          // Backpressure: don't let the encoder queue blow up.
-          while (encoder.encodeQueueSize > 8) {
-            await new Promise((r) => setTimeout(r, 0))
-          }
           const isKey = framesEncoded % 60 === 0
           encoder.encode(newFrame, { keyFrame: isKey })
         } finally {
@@ -214,12 +201,17 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
         frame.close()
       }
     },
-    error: (e) => {
-      throw e
-    },
+    error: onCodecError,
   })
 
   const description = extractDescription(probe.mp4, probe.videoTrack.id)
+  // avc/hevc samples are length-prefixed (AVCC/HVCC); without the codec
+  // description the decoder assumes Annex-B and silently emits no frames.
+  if (!description && /^(avc1|avc3|hvc1|hev1)/i.test(probe.videoTrack.codec)) {
+    throw new Error(
+      `Could not read codec parameters for ${probe.videoTrack.codec}. The file may use an unsupported profile.`,
+    )
+  }
   decoder.configure({
     codec: probe.videoTrack.codec,
     codedWidth: srcWidth,
@@ -229,6 +221,7 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
 
   // Stream samples to the decoder.
   for (const sample of probe.samples) {
+    if (fatalError) throw fatalError
     const chunk = new EncodedVideoChunk({
       type: sample.is_sync ? 'key' : 'delta',
       timestamp: (sample.cts * 1_000_000) / sample.timescale,
@@ -236,8 +229,10 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
       data: sample.data,
     })
     decoder.decode(chunk)
-    // Drain the decoder queue every so often.
-    while (decoder.decodeQueueSize > 16) {
+    // Bound both queues: the encoder runs synchronously off decoder output, so
+    // throttling the feed here keeps total in-flight frames (and memory) capped.
+    while (decoder.decodeQueueSize > 16 || encoder.encodeQueueSize > 16) {
+      if (fatalError) throw fatalError
       await new Promise((r) => setTimeout(r, 0))
     }
   }
@@ -246,7 +241,26 @@ async function runProxy(init: ProxyWorkerInit): Promise<void> {
   decoder.close()
   await encoder.flush()
   encoder.close()
+  if (fatalError) throw fatalError
+  if (framesEncoded === 0) {
+    throw new Error('Decoder produced no frames — the file may be corrupt or use an unsupported codec.')
+  }
   muxer.finalize()
+
+  // Encode the captured thumbnail now that the decode loop is done (async work
+  // kept out of the per-frame output callback).
+  let thumbnailDataUrl: string | undefined
+  if (thumbCaptured) {
+    try {
+      const tBlob = await thumbCanvas.convertToBlob({
+        type: 'image/jpeg',
+        quality: 0.7,
+      })
+      thumbnailDataUrl = await blobToDataUrl(tBlob)
+    } catch {
+      /* thumbnail is best-effort */
+    }
+  }
 
   const buf = (muxer.target as ArrayBufferTarget).buffer
   const proxyPath = `proxies/${assetId}.mp4`

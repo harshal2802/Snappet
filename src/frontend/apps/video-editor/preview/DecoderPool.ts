@@ -1,4 +1,4 @@
-import { createFile } from 'mp4box'
+import { createFile, DataStream } from 'mp4box'
 import type {
   MP4ArrayBuffer,
   MP4File,
@@ -12,6 +12,7 @@ interface DecoderEntry {
   samples: MP4Sample[]
   keyframeIndices: number[]
   description?: Uint8Array
+  codec: string
   fps: number
   width: number
   height: number
@@ -19,7 +20,12 @@ interface DecoderEntry {
   // Decoded frames buffered by timestamp microseconds.
   ringBuffer: VideoFrame[]
   lastUsed: number
-  configured: boolean
+  // Index of the next sample to feed the decoder; -1 means the decoder needs
+  // a (re)configure + keyframe before it can decode again.
+  nextSampleIdx: number
+  // Presentation timestamp (µs) of the most recently fed sample, used to decide
+  // whether a request can be served by decoding forward or needs a backward seek.
+  lastDecodedUs: number
 }
 
 const RING_CAPACITY = 12
@@ -142,13 +148,15 @@ export class DecoderPool {
         .map((s, i) => (s.is_sync ? i : -1))
         .filter((i) => i >= 0),
       description: demuxed.description,
+      codec: demuxed.codec,
       fps: demuxed.fps,
       width: demuxed.width,
       height: demuxed.height,
       timescale: demuxed.timescale,
       ringBuffer: [],
       lastUsed: performance.now(),
-      configured: false,
+      nextSampleIdx: 0,
+      lastDecodedUs: -1,
     }
     currentEntryRing = entry.ringBuffer
 
@@ -159,7 +167,6 @@ export class DecoderPool {
         codedHeight: demuxed.height,
         ...(demuxed.description ? { description: demuxed.description } : {}),
       })
-      entry.configured = true
     } catch (e) {
       console.warn('VideoDecoder.configure failed:', e)
       return null
@@ -189,7 +196,7 @@ export class DecoderPool {
     entry: DecoderEntry,
     targetUs: number,
   ): Promise<void> {
-    // Find keyframe index ≤ target.
+    // Keyframe index ≤ target (random-access point we'd have to start from).
     let keyIdx = 0
     for (let i = entry.keyframeIndices.length - 1; i >= 0; i--) {
       const idx = entry.keyframeIndices[i]
@@ -201,27 +208,40 @@ export class DecoderPool {
       }
     }
 
-    // Reset state. Closing+reopening would lose the configured state — instead
-    // just flush and continue decoding from the keyframe.
-    try {
-      entry.decoder.reset()
-      entry.decoder.configure({
-        codec: entry.samples[0]
-          ? `avc1.${getAvcProfileFromDescription(entry.description)}`
-          : 'avc1.42E01F',
-        codedWidth: entry.width,
-        codedHeight: entry.height,
-        ...(entry.description ? { description: entry.description } : {}),
-      })
-    } catch {
-      /* ignore reconfigure errors */
-    }
-    for (const f of entry.ringBuffer) f.close()
-    entry.ringBuffer.length = 0
+    // Decide forward-continue vs. backward-seek. findInRing already failed, so a
+    // forward request (target ahead of what we've decoded) just needs more
+    // frames; a backward request needs a decoder reset to the keyframe. Decoders
+    // can't run in reverse.
+    const canDecodeForward =
+      entry.nextSampleIdx >= 0 && targetUs >= entry.lastDecodedUs
 
-    // Decode from keyframe up to ~6 frames past target.
+    let startIdx: number
+    if (canDecodeForward) {
+      // Skip ahead to the nearest keyframe if one sits between us and the target.
+      startIdx = Math.max(entry.nextSampleIdx, keyIdx)
+    } else {
+      // Backward (or first) seek: reset, reconfigure with the REAL codec
+      // (avc/hevc/vp9/av1 — never assume H.264), and start from the keyframe.
+      try {
+        entry.decoder.reset()
+        entry.decoder.configure({
+          codec: entry.codec,
+          codedWidth: entry.width,
+          codedHeight: entry.height,
+          ...(entry.description ? { description: entry.description } : {}),
+        })
+      } catch {
+        entry.nextSampleIdx = -1
+        return
+      }
+      for (const f of entry.ringBuffer) f.close()
+      entry.ringBuffer.length = 0
+      startIdx = keyIdx
+    }
+
+    // Decode from startIdx up to ~6 frames past target.
     const endTargetUs = targetUs + (1_000_000 / entry.fps) * 6
-    for (let i = keyIdx; i < entry.samples.length; i++) {
+    for (let i = startIdx; i < entry.samples.length; i++) {
       const s = entry.samples[i]
       const ts = (s.cts * 1_000_000) / s.timescale
       const chunk = new EncodedVideoChunk({
@@ -231,29 +251,18 @@ export class DecoderPool {
         data: s.data,
       })
       entry.decoder.decode(chunk)
+      entry.nextSampleIdx = i + 1
+      entry.lastDecodedUs = ts
       if (ts > endTargetUs) break
       // Yield occasionally so the output handler can run.
-      if ((i - keyIdx) % 8 === 7) {
+      if ((i - startIdx) % 8 === 7) {
         await new Promise((r) => setTimeout(r, 0))
       }
     }
-    // Give the decoder a tick to produce frames.
+    // Give the decoder a tick to produce frames. flush() drains pending decodes
+    // without dropping configuration, so the next forward request can continue.
     await entry.decoder.flush().catch(() => undefined)
   }
-}
-
-// Decode AVC profile from avcC description; default to baseline 3.1 if unparseable.
-function getAvcProfileFromDescription(desc?: Uint8Array): string {
-  if (desc && desc.length >= 4) {
-    // avcC layout: [configurationVersion, AVCProfileIndication, profile_compat, AVCLevelIndication, ...]
-    const profile = desc[1]
-    const compat = desc[2]
-    const level = desc[3]
-    return [profile, compat, level]
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-  return '42E01F'
 }
 
 interface DemuxAllResult {
@@ -375,23 +384,11 @@ function extractDescription(
     (entry.av1C as { write: (s: unknown) => void } | undefined)
   if (!descBox) return undefined
   try {
-    const g = globalThis as unknown as {
-      DataStream?: new (
-        buf?: ArrayBuffer,
-        offset?: number,
-        endianness?: number,
-      ) => {
-        buffer: ArrayBuffer
-      }
-    }
-    if (g.DataStream) {
-      const ds = new g.DataStream(undefined, 0, 0)
-      descBox.write(ds)
-      const u8 = new Uint8Array(ds.buffer)
-      return u8.subarray(8)
-    }
+    const ds = new DataStream(undefined, 0, DataStream.BIG_ENDIAN)
+    descBox.write(ds)
+    const u8 = new Uint8Array(ds.buffer)
+    return u8.byteLength > 8 ? u8.slice(8) : undefined
   } catch {
-    /* ignore */
+    return undefined
   }
-  return undefined
 }

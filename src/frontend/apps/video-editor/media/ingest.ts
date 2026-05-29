@@ -104,10 +104,26 @@ async function probeViaVideoElement(file: File): Promise<ProbeResult> {
   return await new Promise<ProbeResult>((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const video = document.createElement('video')
+    let settled = false
+    const cleanup = (): void => {
+      clearTimeout(timer)
+      URL.revokeObjectURL(url)
+    }
+    // Some files never fire loadedmetadata or error (unsupported container);
+    // don't let ingest hang on them.
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(new Error('Timed out reading video metadata'))
+    }, 15_000)
+
     video.preload = 'metadata'
     video.muted = true
     video.src = url
     video.onloadedmetadata = () => {
+      if (settled) return
+      settled = true
       const out: ProbeResult = {
         durationSec: isFinite(video.duration) ? video.duration : 0,
         width: video.videoWidth,
@@ -115,11 +131,13 @@ async function probeViaVideoElement(file: File): Promise<ProbeResult> {
         fps: 30,
         hasAudio: true, // We can't reliably detect this; assume yes and let export handle silence.
       }
-      URL.revokeObjectURL(url)
+      cleanup()
       resolve(out)
     }
     video.onerror = () => {
-      URL.revokeObjectURL(url)
+      if (settled) return
+      settled = true
+      cleanup()
       reject(new Error('Failed to read video metadata'))
     }
   })

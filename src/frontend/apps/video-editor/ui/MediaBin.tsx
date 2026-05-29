@@ -27,7 +27,6 @@ export default function MediaBin() {
 function AssetCard({ asset }: { asset: MediaAsset }) {
   const removeAsset = useEditorStore((s) => s.removeAsset)
   const addClipFromAsset = useEditorStore((s) => s.addClipFromAsset)
-  const playhead = useEditorStore((s) => s.playhead)
   const reLink = useReLink(asset.id)
 
   const isReady = asset.status === 'ready'
@@ -38,7 +37,8 @@ function AssetCard({ asset }: { asset: MediaAsset }) {
   return (
     <div
       onDoubleClick={() => {
-        if (isReady) addClipFromAsset(asset.id, playhead)
+        if (isReady)
+          addClipFromAsset(asset.id, useEditorStore.getState().playhead)
       }}
       draggable={isReady}
       onDragStart={(e) => {
@@ -128,7 +128,7 @@ function useReLink(id: AssetId): () => void {
     if (!inputRef.current) {
       const el = document.createElement('input')
       el.type = 'file'
-      el.accept = 'video/*,image/*'
+      el.accept = 'video/*'
       el.onchange = () => {
         const f = el.files?.[0]
         if (f) void relinkAsset(id, f)
