@@ -7,6 +7,10 @@ interface Props {
   children: React.ReactNode
   // 'medium' peeks ~half height; 'large' is near-full. Content scrolls within.
   size?: 'medium' | 'large'
+  // modal=true dims + blocks the background (default). modal=false leaves the
+  // preview/timeline visible and interactive behind the sheet (e.g. tweak a filter
+  // and watch the preview update) — only the sheet itself captures input.
+  modal?: boolean
 }
 
 // Mobile bottom sheet: slides up from the bottom, safe-area padded, scrim-dismissable,
@@ -17,6 +21,7 @@ export default function BottomSheet({
   title,
   children,
   size = 'medium',
+  modal = true,
 }: Props) {
   useEffect(() => {
     if (!open) return
@@ -24,32 +29,40 @@ export default function BottomSheet({
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
+    // Only lock background scroll for modal sheets.
     const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    if (modal) document.body.style.overflow = 'hidden'
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+      if (modal) document.body.style.overflow = prev
     }
-  }, [open, onClose])
+  }, [open, onClose, modal])
 
   if (!open) return null
 
   const maxH = size === 'large' ? '88dvh' : '60dvh'
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-      {/* Scrim */}
-      <button
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40 motion-safe:animate-[fadeIn_150ms_ease-out]"
-      />
+    <div
+      className={
+        'fixed inset-0 z-[100] flex flex-col justify-end ' +
+        (modal ? '' : 'pointer-events-none')
+      }
+    >
+      {/* Scrim (modal only) */}
+      {modal && (
+        <button
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute inset-0 bg-black/40 motion-safe:animate-[fadeIn_150ms_ease-out]"
+        />
+      )}
       {/* Sheet */}
       <div
         role="dialog"
-        aria-modal="true"
+        aria-modal={modal}
         aria-label={title}
-        className="relative flex max-h-[88dvh] flex-col rounded-t-2xl bg-white shadow-2xl motion-safe:animate-[slideUp_200ms_ease-out] dark:bg-gray-900"
+        className="pointer-events-auto relative flex max-h-[88dvh] flex-col rounded-t-2xl bg-white shadow-2xl ring-1 ring-black/10 motion-safe:animate-[slideUp_200ms_ease-out] dark:bg-gray-900 dark:ring-white/10"
         style={{ maxHeight: maxH }}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">

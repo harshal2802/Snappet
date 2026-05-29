@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { detectCapabilities, isEditorSupported } from './support/caps'
 import { useIsMobile } from './support/useMediaQuery'
 import UnsupportedBrowser from './support/UnsupportedBrowser'
@@ -28,19 +28,17 @@ export default function VideoEditor() {
   const [mediaOpen, setMediaOpen] = useState(false)
   const [propsOpen, setPropsOpen] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
-  const lastSel = useRef<string | null>(null)
 
   useEffect(() => {
     if (supported) void rehydrate()
   }, [supported, rehydrate])
 
-  // On mobile, surface a clip/text's controls the moment it's selected.
+  // Selecting a clip should NOT take over the screen — it just highlights the clip
+  // and enables the toolbar + bottom "Edit" button. Only auto-CLOSE Properties when
+  // the selection is cleared (e.g. after delete) so a stale sheet doesn't linger.
   useEffect(() => {
-    const id = selection?.id ?? null
-    if (isMobile && id && id !== lastSel.current) setPropsOpen(true)
-    if (!id) setPropsOpen(false)
-    lastSel.current = id
-  }, [selection, isMobile])
+    if (!selection) setPropsOpen(false)
+  }, [selection])
 
   if (!supported) {
     return <UnsupportedBrowser caps={caps} />
@@ -150,13 +148,10 @@ export default function VideoEditor() {
 
         <BottomSheet
           open={propsOpen}
-          onClose={() => {
-            setPropsOpen(false)
-            // Allow re-tapping the same (still-selected) clip to reopen Properties.
-            lastSel.current = null
-          }}
+          onClose={() => setPropsOpen(false)}
           title="Properties"
           size="medium"
+          modal={false}
         >
           <Inspector />
         </BottomSheet>

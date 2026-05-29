@@ -419,18 +419,22 @@ export const useEditorStore = create<EditorState>()(
   },
 
   splitClipAtPlayhead: () => {
-    const { playhead, project, selection } = get()
-    const candidates = selection?.kind === 'clip' ? [selection.id] : Object.keys(project.clips)
+    // Razor at the playhead: cut EVERY clip the playhead currently sits inside,
+    // regardless of what's selected. (Gating to the selected clip made Split
+    // silently no-op whenever the playhead wasn't inside that exact clip.)
+    const { playhead, project } = get()
     let changed = false
+    let lastLeftId: ClipId | null = null
     const nextClips = { ...project.clips }
-    for (const id of candidates) {
+    for (const id of Object.keys(project.clips)) {
       const c = nextClips[id]
       if (!c) continue
       const localT = playhead - c.startSec // timeline seconds into the clip
       if (localT <= 0.05 || localT >= clipTimelineDuration(c) - 0.05) continue
       const splitSourceTime = c.inSec + localT * clipSpeed(c)
-      // Shorten original. A leading-edge transition stays with the left part only.
+      // Shorten original (left part); a leading-edge transition stays with it.
       nextClips[id] = { ...c, outSec: splitSourceTime }
+      lastLeftId = id
       // New right-hand clip (no inherited transition-in at the cut).
       const newId = newAssetId()
       nextClips[newId] = {
@@ -445,7 +449,11 @@ export const useEditorStore = create<EditorState>()(
       changed = true
     }
     if (changed) {
-      set((s) => ({ project: { ...s.project, clips: nextClips } }))
+      set((s) => ({
+        project: { ...s.project, clips: nextClips },
+        // Keep the left part selected so the user has a clear anchor post-cut.
+        selection: lastLeftId ? { kind: 'clip', id: lastLeftId } : s.selection,
+      }))
       scheduleSaveProject(get())
     }
   },
