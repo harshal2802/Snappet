@@ -10,6 +10,7 @@ import type {
 import { PROJECT_DEFAULTS } from '../types/timeline'
 import { makeAssetFromFile, newAssetId, probeFile } from '../media/ingest'
 import { generateProxy } from '../media/proxy'
+import { totalDurationSec } from './selectors'
 import {
   clearAll as opfsClearAll,
   deleteFile as opfsDeleteFile,
@@ -61,6 +62,11 @@ interface EditorState {
   zoomPxPerSec: number
   exportDialogOpen: boolean
   hydrated: boolean
+  // Player
+  volume: number
+  muted: boolean
+  playbackRate: number
+  loop: boolean
   // Actions — M1
   ingestFiles: (files: FileList | File[]) => Promise<void>
   removeAsset: (id: AssetId) => Promise<void>
@@ -76,10 +82,17 @@ interface EditorState {
   deleteSelection: () => void
   selectClip: (id: ClipId | null) => void
   setPlayhead: (sec: number) => void
+  stepFrame: (dir: 1 | -1) => void
   play: () => void
   pause: () => void
+  togglePlay: () => void
   setZoom: (pxPerSec: number) => void
   setExportDialogOpen: (open: boolean) => void
+  // Player actions
+  setVolume: (v: number) => void
+  toggleMute: () => void
+  setPlaybackRate: (r: number) => void
+  toggleLoop: () => void
 }
 
 // --- persistence ---
@@ -123,6 +136,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   zoomPxPerSec: 100,
   exportDialogOpen: false,
   hydrated: false,
+  volume: 1,
+  muted: false,
+  playbackRate: 1,
+  loop: false,
 
   ingestFiles: async (filesIn) => {
     const files = Array.from(filesIn)
@@ -419,10 +436,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectClip: (id) => set({ selection: id ? { kind: 'clip', id } : null }),
 
   setPlayhead: (sec) => set({ playhead: Math.max(0, sec) }),
+  stepFrame: (dir) => {
+    const { playhead, project } = get()
+    const fps = project.fps || 30
+    const dur = totalDurationSec(project)
+    const next = Math.max(0, Math.min(dur, playhead + dir / fps))
+    set({ playhead: next, isPlaying: false })
+  },
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
+  togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
   setZoom: (px) => set({ zoomPxPerSec: Math.max(10, Math.min(800, px)) }),
   setExportDialogOpen: (open) => set({ exportDialogOpen: open }),
+  setVolume: (v) => set({ volume: Math.max(0, Math.min(1, v)), muted: v <= 0 }),
+  toggleMute: () => set((s) => ({ muted: !s.muted })),
+  setPlaybackRate: (r) => set({ playbackRate: Math.max(0.25, Math.min(4, r)) }),
+  toggleLoop: () => set((s) => ({ loop: !s.loop })),
 }))
 
 function endOfTrack(project: Project, trackId: TrackId): number {

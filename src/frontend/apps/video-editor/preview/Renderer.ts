@@ -53,10 +53,14 @@ export class Renderer {
       const dt = Math.min(0.1, (now - this.lastFrameTime) / 1000) // cap 100ms
       this.lastFrameTime = now
       const dur = totalDurationSec(state.project)
-      const next = state.playhead + dt
+      const next = state.playhead + dt * state.playbackRate
       if (dur > 0 && next >= dur) {
-        state.setPlayhead(dur)
-        state.pause()
+        if (state.loop) {
+          state.setPlayhead(0)
+        } else {
+          state.setPlayhead(dur)
+          state.pause()
+        }
       } else {
         state.setPlayhead(next)
       }

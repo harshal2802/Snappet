@@ -5,9 +5,8 @@ import Dropzone from './ui/Dropzone'
 import MediaBin from './ui/MediaBin'
 import Timeline from './timeline/Timeline'
 import Toolbar from './ui/Toolbar'
-import Transport from './ui/Transport'
 import Inspector from './ui/Inspector'
-import PreviewCanvas from './preview/PreviewCanvas'
+import Player from './ui/Player'
 import ExportDialog from './ui/ExportDialog'
 import { useEditorStore } from './state/editorStore'
 import { totalDurationSec } from './state/selectors'
@@ -65,8 +64,7 @@ export default function VideoEditor() {
           <MediaBin />
         </aside>
         <main className="space-y-3">
-          <PreviewCanvas />
-          <Transport />
+          <Player />
         </main>
         <aside>
           <Inspector />
