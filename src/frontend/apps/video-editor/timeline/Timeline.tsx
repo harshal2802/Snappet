@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useEditorStore } from '../state/editorStore'
 import { totalDurationSec } from '../state/selectors'
 import Track from './Track'
+import TextTrack from './TextTrack'
 import Ruler from './Ruler'
 import Playhead from './Playhead'
 
@@ -18,6 +19,7 @@ export default function Timeline() {
   return (
     <div
       ref={scrollerRef}
+      id="ve-timeline-scroller"
       onWheel={(e) => {
         if (e.metaKey || e.ctrlKey) {
           e.preventDefault()
@@ -43,6 +45,7 @@ export default function Timeline() {
         {project.tracks.map((t) => (
           <Track key={t.id} track={t} />
         ))}
+        <TextTrack />
         <Playhead />
       </div>
     </div>

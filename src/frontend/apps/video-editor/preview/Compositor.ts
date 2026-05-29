@@ -15,8 +15,10 @@ precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
 uniform sampler2D u_tex;
+uniform float u_dim; // 0 = normal, 1 = black (fade-to/from-black transition)
 void main() {
-  outColor = texture(u_tex, v_uv);
+  vec3 c = texture(u_tex, v_uv).rgb * (1.0 - u_dim);
+  outColor = vec4(c, 1.0);
 }`
 
 function compileShader(
@@ -42,6 +44,7 @@ export class Compositor {
   private vao: WebGLVertexArrayObject
   private texture: WebGLTexture
   private uScaleLoc: WebGLUniformLocation | null
+  private uDimLoc: WebGLUniformLocation | null
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl
@@ -87,9 +90,16 @@ export class Compositor {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
     this.uScaleLoc = gl.getUniformLocation(program, 'u_scale')
+    this.uDimLoc = gl.getUniformLocation(program, 'u_dim')
   }
 
-  draw(frame: VideoFrame, canvasW: number, canvasH: number): void {
+  draw(
+    frame: VideoFrame,
+    canvasW: number,
+    canvasH: number,
+    fit: 'contain' | 'cover' = 'contain',
+    dim = 0,
+  ): void {
     const gl = this.gl
     gl.viewport(0, 0, canvasW, canvasH)
     gl.clearColor(0, 0, 0, 1)
@@ -108,20 +118,23 @@ export class Compositor {
       frame as unknown as TexImageSource,
     )
 
-    // Contain scaling: keep aspect, fit inside canvas, letterbox.
     const fW = frame.displayWidth
     const fH = frame.displayHeight
     const canvasAspect = canvasW / canvasH
     const frameAspect = fW / fH
     let scaleX = 1
     let scaleY = 1
-    if (frameAspect > canvasAspect) {
-      // Limited by width.
-      scaleY = canvasAspect / frameAspect
+    if (fit === 'cover') {
+      // Fill the canvas, cropping overflow (one axis > 1 → clipped by viewport).
+      if (frameAspect > canvasAspect) scaleX = frameAspect / canvasAspect
+      else scaleY = canvasAspect / frameAspect
     } else {
-      scaleX = frameAspect / canvasAspect
+      // Contain: keep aspect, fit inside canvas, letterbox.
+      if (frameAspect > canvasAspect) scaleY = canvasAspect / frameAspect
+      else scaleX = frameAspect / canvasAspect
     }
     gl.uniform2f(this.uScaleLoc, scaleX, scaleY)
+    gl.uniform1f(this.uDimLoc, Math.max(0, Math.min(1, dim)))
 
     gl.bindVertexArray(this.vao)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)

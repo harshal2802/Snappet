@@ -4,9 +4,61 @@ import type {
   MediaAsset,
   Project,
 } from '../types/timeline'
-import { clipsAtTime, sourceTimeForClip, totalDurationSec } from '../state/selectors'
+import {
+  activeTextOverlays,
+  clipsAtTime,
+  sourceTimeForClip,
+  totalDurationSec,
+  transitionDim,
+} from '../state/selectors'
 import { DecoderPool } from '../preview/DecoderPool'
 import { audioBufferToChunks, mixProjectAudio } from './audioMixer'
+import { toCssFilter } from '../types/filters'
+import type { TextOverlay } from '../types/timeline'
+
+type Ctx2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D
+
+// Draw active text overlays into the output frame. Coordinates are normalized so
+// this matches the DOM preview layer (TextOverlayLayer) 1:1.
+function drawTextOverlays(
+  ctx: Ctx2D,
+  overlays: TextOverlay[],
+  W: number,
+  H: number,
+): void {
+  for (const o of overlays) {
+    const px = Math.round(o.fontSize * H)
+    ctx.font = `${o.bold ? '700' : '400'} ${px}px system-ui, sans-serif`
+    ctx.textAlign = o.align
+    ctx.textBaseline = 'middle'
+    const lines = (o.text || ' ').split('\n')
+    const lineH = px * 1.15
+    const cx = o.x * W
+    const cy = o.y * H
+    const top = cy - ((lines.length - 1) * lineH) / 2
+    if (o.bg) {
+      let maxW = 0
+      for (const ln of lines) maxW = Math.max(maxW, ctx.measureText(ln).width)
+      const padX = px * 0.3
+      const padY = px * 0.15
+      const boxW = maxW + padX * 2
+      const boxH = lines.length * lineH + padY * 2
+      const boxX =
+        o.align === 'left' ? cx - padX : o.align === 'right' ? cx - boxW + padX : cx - boxW / 2
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'
+      ctx.fillRect(boxX, top - lineH / 2 - padY, boxW, boxH)
+    } else {
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'
+      ctx.shadowBlur = px * 0.08
+      ctx.shadowOffsetY = px * 0.03
+    }
+    ctx.fillStyle = o.color
+    lines.forEach((ln, i) => ctx.fillText(ln, cx, top + i * lineH))
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
+  }
+}
 
 export interface ExportOptions {
   width: number
@@ -185,11 +237,20 @@ export async function runExport(
           try {
             const fW = frame.displayWidth
             const fH = frame.displayHeight
-            const s = Math.min(opts.width / fW, opts.height / fH)
+            // contain = fit inside (letterbox); cover = fill + crop overflow.
+            const s =
+              top.fit === 'cover'
+                ? Math.max(opts.width / fW, opts.height / fH)
+                : Math.min(opts.width / fW, opts.height / fH)
             const dW = Math.round(fW * s)
             const dH = Math.round(fH * s)
             const dx = Math.round((opts.width - dW) / 2)
             const dy = Math.round((opts.height - dH) / 2)
+            // Same CSS-filter string as the preview canvas → WYSIWYG color.
+            ctx.filter = toCssFilter(top.filters)
+            // Leading-edge fade-from-black: lower opacity over the black bg.
+            const dim = transitionDim(top, t)
+            if (dim > 0) ctx.globalAlpha = 1 - dim
             ctx.drawImage(
               frame as unknown as CanvasImageSource,
               dx,
@@ -197,10 +258,18 @@ export async function runExport(
               dW,
               dH,
             )
+            ctx.globalAlpha = 1
+            ctx.filter = 'none'
           } finally {
             frame.close()
           }
         }
+      }
+
+      // Text overlays composite on top of the video, after filters.
+      const overlays = activeTextOverlays(project, t)
+      if (overlays.length > 0) {
+        drawTextOverlays(ctx, overlays, opts.width, opts.height)
       }
 
       const timestampUs = Math.round((frameIdx * 1_000_000) / opts.fps)

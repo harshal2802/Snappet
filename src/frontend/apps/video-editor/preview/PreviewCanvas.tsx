@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Renderer } from './Renderer'
 import { useEditorStore } from '../state/editorStore'
+import TextOverlayLayer from './TextOverlayLayer'
 
 export default function PreviewCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -40,6 +41,7 @@ export default function PreviewCanvas() {
         className="block h-auto w-full"
         style={{ aspectRatio: `${project.width} / ${project.height}` }}
       />
+      <TextOverlayLayer />
     </div>
   )
 }

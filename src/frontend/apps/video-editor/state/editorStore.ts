@@ -1,15 +1,21 @@
 import { create } from 'zustand'
+import { temporal } from 'zundo'
 import type {
+  AspectRatio,
   AssetId,
   ClipId,
   MediaAsset,
   Project,
+  TextOverlay,
   Track,
   TrackId,
 } from '../types/timeline'
-import { PROJECT_DEFAULTS } from '../types/timeline'
+import { ASPECT_DIMS, PROJECT_DEFAULTS } from '../types/timeline'
+import type { ClipFilters } from '../types/filters'
+import { DEFAULT_FILTERS } from '../types/filters'
 import { makeAssetFromFile, newAssetId, probeFile } from '../media/ingest'
 import { generateProxy } from '../media/proxy'
+import { clipSpeed, clipTimelineDuration, clipTimelineEnd, totalDurationSec } from './selectors'
 import {
   clearAll as opfsClearAll,
   deleteFile as opfsDeleteFile,
@@ -40,12 +46,17 @@ function makeDefaultProject(): Project {
     fps: PROJECT_DEFAULTS.fps,
     width: PROJECT_DEFAULTS.width,
     height: PROJECT_DEFAULTS.height,
+    aspectRatio: '16:9',
     tracks: [videoTrack, audioTrack],
     clips: {},
+    textOverlays: {},
   }
 }
 
-export type Selection = { kind: 'clip'; id: ClipId } | null
+export type Selection =
+  | { kind: 'clip'; id: ClipId }
+  | { kind: 'text'; id: string }
+  | null
 
 interface EditorState {
   // Data
@@ -61,6 +72,11 @@ interface EditorState {
   zoomPxPerSec: number
   exportDialogOpen: boolean
   hydrated: boolean
+  // Player
+  volume: number
+  muted: boolean
+  playbackRate: number
+  loop: boolean
   // Actions — M1
   ingestFiles: (files: FileList | File[]) => Promise<void>
   removeAsset: (id: AssetId) => Promise<void>
@@ -76,10 +92,29 @@ interface EditorState {
   deleteSelection: () => void
   selectClip: (id: ClipId | null) => void
   setPlayhead: (sec: number) => void
+  stepFrame: (dir: 1 | -1) => void
   play: () => void
   pause: () => void
+  togglePlay: () => void
   setZoom: (pxPerSec: number) => void
   setExportDialogOpen: (open: boolean) => void
+  // Player actions
+  setVolume: (v: number) => void
+  toggleMute: () => void
+  setPlaybackRate: (r: number) => void
+  toggleLoop: () => void
+  // Actions — pro (P2+)
+  setAspectRatio: (ratio: AspectRatio) => void
+  updateClipFilters: (id: ClipId, patch: Partial<ClipFilters>) => void
+  setClipFit: (id: ClipId, fit: 'contain' | 'cover') => void
+  setClipSpeed: (id: ClipId, speed: number) => void
+  setClipTransition: (id: ClipId, kind: 'fade' | 'black' | 'none', durSec: number) => void
+  duplicateClip: (id: ClipId) => void
+  // Text overlays (P4)
+  addTextOverlay: (atSec?: number) => void
+  updateTextOverlay: (id: string, patch: Partial<TextOverlay>) => void
+  removeTextOverlay: (id: string) => void
+  selectText: (id: string) => void
 }
 
 // --- persistence ---
@@ -113,7 +148,9 @@ function scheduleSaveProject(state: EditorState): void {
   }, 300)
 }
 
-export const useEditorStore = create<EditorState>((set, get) => ({
+export const useEditorStore = create<EditorState>()(
+  temporal(
+    (set, get) => ({
   assets: {},
   project: makeDefaultProject(),
   sourceFiles: new Map(),
@@ -123,6 +160,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   zoomPxPerSec: 100,
   exportDialogOpen: false,
   hydrated: false,
+  volume: 1,
+  muted: false,
+  playbackRate: 1,
+  loop: false,
 
   ingestFiles: async (filesIn) => {
     const files = Array.from(filesIn)
@@ -258,6 +299,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       playhead: 0,
       isPlaying: false,
     })
+    // Reset is not an undoable edit — drop history so Ctrl+Z can't resurrect cleared clips.
+    useEditorStore.temporal.getState().clear()
   },
 
   rehydrateFromOpfs: async () => {
@@ -293,6 +336,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         /* keep default */
       }
       set({ assets, project, hydrated: true })
+      // Loading the saved project must not be undoable (would wipe it back to empty).
+      useEditorStore.temporal.getState().clear()
     } catch {
       set({ hydrated: true })
     }
@@ -381,12 +426,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     for (const id of candidates) {
       const c = nextClips[id]
       if (!c) continue
-      const localT = playhead - c.startSec
-      if (localT <= 0.05 || localT >= c.outSec - c.inSec - 0.05) continue
-      const splitSourceTime = c.inSec + localT
-      // Shorten original.
+      const localT = playhead - c.startSec // timeline seconds into the clip
+      if (localT <= 0.05 || localT >= clipTimelineDuration(c) - 0.05) continue
+      const splitSourceTime = c.inSec + localT * clipSpeed(c)
+      // Shorten original. A leading-edge transition stays with the left part only.
       nextClips[id] = { ...c, outSec: splitSourceTime }
-      // New right-hand clip.
+      // New right-hand clip (no inherited transition-in at the cut).
       const newId = newAssetId()
       nextClips[newId] = {
         ...c,
@@ -394,6 +439,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         startSec: c.startSec + localT,
         inSec: splitSourceTime,
         outSec: c.outSec,
+        transitionInSec: undefined,
+        transitionInKind: undefined,
       }
       changed = true
     }
@@ -405,31 +452,228 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   deleteSelection: () => {
     const sel = get().selection
-    if (sel?.kind !== 'clip') return
-    set((s) => {
-      const { [sel.id]: _, ...rest } = s.project.clips
-      return {
-        project: { ...s.project, clips: rest },
-        selection: null,
-      }
-    })
-    scheduleSaveProject(get())
+    if (sel?.kind === 'clip') {
+      set((s) => {
+        const { [sel.id]: _, ...rest } = s.project.clips
+        return { project: { ...s.project, clips: rest }, selection: null }
+      })
+      scheduleSaveProject(get())
+    } else if (sel?.kind === 'text') {
+      get().removeTextOverlay(sel.id)
+    }
   },
 
   selectClip: (id) => set({ selection: id ? { kind: 'clip', id } : null }),
 
   setPlayhead: (sec) => set({ playhead: Math.max(0, sec) }),
+  stepFrame: (dir) => {
+    const { playhead, project } = get()
+    const fps = project.fps || 30
+    const dur = totalDurationSec(project)
+    const next = Math.max(0, Math.min(dur, playhead + dir / fps))
+    set({ playhead: next, isPlaying: false })
+  },
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
+  togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying })),
   setZoom: (px) => set({ zoomPxPerSec: Math.max(10, Math.min(800, px)) }),
   setExportDialogOpen: (open) => set({ exportDialogOpen: open }),
-}))
+  setVolume: (v) => set({ volume: Math.max(0, Math.min(1, v)), muted: v <= 0 }),
+  toggleMute: () => set((s) => ({ muted: !s.muted })),
+  setPlaybackRate: (r) => set({ playbackRate: Math.max(0.25, Math.min(4, r)) }),
+  toggleLoop: () => set((s) => ({ loop: !s.loop })),
+
+  setAspectRatio: (ratio) => {
+    const dims = ASPECT_DIMS[ratio]
+    set((s) => ({
+      project: {
+        ...s.project,
+        aspectRatio: ratio,
+        width: dims.width,
+        height: dims.height,
+      },
+    }))
+    scheduleSaveProject(get())
+  },
+
+  updateClipFilters: (id, patch) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const filters: ClipFilters = { ...DEFAULT_FILTERS, ...clip.filters, ...patch }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, filters } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipFit: (id, fit) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, fit } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipSpeed: (id, speed) => {
+    const clamped = Math.max(0.25, Math.min(4, speed))
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: { ...clip, speed: clamped } },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  setClipTransition: (id, kind, durSec) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const next =
+        kind === 'none'
+          ? { ...clip, transitionInSec: undefined, transitionInKind: undefined }
+          : {
+              ...clip,
+              transitionInKind: kind,
+              transitionInSec: Math.max(0.1, Math.min(3, durSec)),
+            }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [id]: next },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  duplicateClip: (id) => {
+    set((s) => {
+      const clip = s.project.clips[id]
+      if (!clip) return s
+      const newId = newAssetId()
+      const len = clipTimelineDuration(clip)
+      const dup = { ...clip, id: newId, startSec: clip.startSec + len }
+      return {
+        project: {
+          ...s.project,
+          clips: { ...s.project.clips, [newId]: dup },
+        },
+        selection: { kind: 'clip', id: newId },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  addTextOverlay: (atSec) => {
+    const { playhead, project } = get()
+    const start = atSec ?? playhead
+    const id = newAssetId()
+    const overlay: TextOverlay = {
+      id,
+      text: 'Your text',
+      startSec: start,
+      endSec: start + 3,
+      x: 0.5,
+      y: 0.5,
+      fontSize: 0.08,
+      color: '#ffffff',
+      bg: false,
+      align: 'center',
+      bold: true,
+    }
+    set({
+      project: {
+        ...project,
+        textOverlays: { ...(project.textOverlays ?? {}), [id]: overlay },
+      },
+      selection: { kind: 'text', id },
+    })
+    scheduleSaveProject(get())
+  },
+
+  updateTextOverlay: (id, patch) => {
+    set((s) => {
+      const cur = s.project.textOverlays?.[id]
+      if (!cur) return s
+      return {
+        project: {
+          ...s.project,
+          textOverlays: {
+            ...(s.project.textOverlays ?? {}),
+            [id]: { ...cur, ...patch },
+          },
+        },
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  removeTextOverlay: (id) => {
+    set((s) => {
+      const { [id]: _gone, ...rest } = s.project.textOverlays ?? {}
+      return {
+        project: { ...s.project, textOverlays: rest },
+        selection:
+          s.selection?.kind === 'text' && s.selection.id === id
+            ? null
+            : s.selection,
+      }
+    })
+    scheduleSaveProject(get())
+  },
+
+  selectText: (id) => set({ selection: { kind: 'text', id } }),
+    }),
+    {
+      // Track only the serializable document model. Assets, source File handles,
+      // decoders and transient UI (playhead/volume/selection) are excluded — so
+      // scrubbing never pollutes history and File handles never enter snapshots.
+      partialize: (state) => ({ project: state.project }),
+      // project is replaced by reference only on real edits, so identical-project
+      // sets (e.g. setPlayhead) are skipped.
+      equality: (a, b) => a.project === b.project,
+      limit: 100,
+      // Group a burst of sets (e.g. a clip drag) into ONE undo step by recording
+      // the pre-burst state on the leading edge and suppressing the rest.
+      handleSet: (record) => {
+        let timer: ReturnType<typeof setTimeout> | null = null
+        let armed = true
+        return ((pastState: unknown) => {
+          if (armed) {
+            ;(record as (s: unknown) => void)(pastState)
+            armed = false
+          }
+          if (timer) clearTimeout(timer)
+          timer = setTimeout(() => {
+            armed = true
+          }, 300)
+        }) as typeof record
+      },
+    },
+  ),
+)
 
 function endOfTrack(project: Project, trackId: TrackId): number {
   let end = 0
   for (const c of Object.values(project.clips)) {
     if (c.trackId !== trackId) continue
-    const ce = c.startSec + (c.outSec - c.inSec)
+    const ce = clipTimelineEnd(c)
     if (ce > end) end = ce
   }
   return end
