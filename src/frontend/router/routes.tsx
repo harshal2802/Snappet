@@ -1,183 +1,40 @@
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
+import { catalog } from '../seo/catalog'
+import type { AppCategory, AppMeta } from '../seo/catalog'
 
-export type AppCategory =
-  | 'Utilities'
-  | 'Calculators'
-  | 'Productivity'
-  | 'Developer Tools'
-  | 'Creative'
-  | 'Health'
+export type { AppCategory }
 
-export interface AppRoute {
-  path: string
-  label: string
-  description: string
-  category: AppCategory
-  icon: string
+export interface AppRoute extends AppMeta {
   component: ComponentType
 }
 
-// Add new mini-apps here — lazy-loaded automatically
-export const routes: AppRoute[] = [
-  {
-    path: '/example',
-    label: 'Example',
-    description: 'A placeholder mini-app — replace with a real tool.',
-    category: 'Utilities',
-    icon: '🔧',
-    component: lazy(() => import('../apps/example')),
-  },
-  {
-    path: '/tip-calculator',
-    label: 'Tip Calculator',
-    description: 'Calculate tip and split the bill among friends.',
-    category: 'Calculators',
-    icon: '💰',
-    component: lazy(() => import('../apps/tip-calculator')),
-  },
-  {
-    path: '/expense-splitter',
-    label: 'Expense Splitter',
-    description: 'Split bills and expenses across a group with custom amounts.',
-    category: 'Calculators',
-    icon: '🧾',
-    component: lazy(() => import('../apps/expense-splitter')),
-  },
-  {
-    path: '/kanban-board',
-    label: 'Kanban Board',
-    description: 'Organize tasks with a drag-and-drop kanban board.',
-    category: 'Productivity',
-    icon: '📋',
-    component: lazy(() => import('../apps/kanban-board')),
-  },
-  {
-    path: '/json-explorer',
-    label: 'JSON Explorer & Formatter',
-    description: 'Format, minify, validate, explore, and diff JSON — collapsible tree, char/line counts, one-click copy.',
-    category: 'Developer Tools',
-    icon: '🔍',
-    component: lazy(() => import('../apps/json-explorer')),
-  },
-  {
-    path: '/regex-playground',
-    label: 'Regex Playground',
-    description: 'Test, debug, and understand regular expressions in real time.',
-    category: 'Developer Tools',
-    icon: '🔤',
-    component: lazy(() => import('../apps/regex-playground')),
-  },
-  {
-    path: '/code-snapshot',
-    label: 'Code Snapshot',
-    description: 'Generate beautiful code screenshots with customizable themes.',
-    category: 'Developer Tools',
-    icon: '📸',
-    component: lazy(() => import('../apps/code-snapshot')),
-  },
-  {
-    path: '/markdown-editor',
-    label: 'Markdown Editor',
-    description: 'Write and preview Markdown with live rendering and export.',
-    category: 'Productivity',
-    icon: '📝',
-    component: lazy(() => import('../apps/markdown-editor')),
-  },
-  {
-    path: '/doc-viewer',
-    label: 'Document Viewer',
-    description: 'View PDFs and images with full-featured viewer and OCR text extraction.',
-    category: 'Utilities',
-    icon: '📄',
-    component: lazy(() => import('../apps/doc-viewer')),
-  },
-  {
-    path: '/age-calculator',
-    label: 'Age Calculator',
-    description: 'Calculate your exact age, days until your next birthday, and more.',
-    category: 'Calculators',
-    icon: '🎂',
-    component: lazy(() => import('../apps/age-calculator')),
-  },
-  {
-    path: '/pomodoro-timer',
-    label: 'Pomodoro Timer',
-    description: 'Focus timer with 25-min work sessions and short/long breaks.',
-    category: 'Productivity',
-    icon: '🍅',
-    component: lazy(() => import('../apps/pomodoro-timer')),
-  },
-  {
-    path: '/color-picker',
-    label: 'Color Picker & Converter',
-    description: 'Convert between HEX, RGB, and HSL with a live preview and contrast checker.',
-    category: 'Developer Tools',
-    icon: '🎨',
-    component: lazy(() => import('../apps/color-picker')),
-  },
-  {
-    path: '/password-generator',
-    label: 'Password Generator',
-    description: 'Generate strong passwords with custom length, character sets, and a live strength meter.',
-    category: 'Utilities',
-    icon: '🔑',
-    component: lazy(() => import('../apps/password-generator')),
-  },
-  {
-    path: '/qr-code',
-    label: 'QR Code Generator',
-    description: 'Generate scannable QR codes for text, URLs, WiFi, and contacts.',
-    category: 'Utilities',
-    icon: '📲',
-    component: lazy(() => import('../apps/qr-code')),
-  },
-  {
-    path: '/tally-counter',
-    label: 'Tally Counter',
-    description: 'Count things on the go with a giant tap-anywhere counter.',
-    category: 'Utilities',
-    icon: '🔢',
-    component: lazy(() => import('../apps/tally-counter')),
-  },
-  {
-    path: '/random-picker',
-    label: 'Random Picker',
-    description: 'Flip a coin, roll dice, pick from a list, or generate a random number.',
-    category: 'Utilities',
-    icon: '🎲',
-    component: lazy(() => import('../apps/random-picker')),
-  },
-  {
-    path: '/stopwatch',
-    label: 'Stopwatch',
-    description: 'Time anything with lap splits — workouts, cooking, intervals.',
-    category: 'Productivity',
-    icon: '⏱️',
-    component: lazy(() => import('../apps/stopwatch')),
-  },
-  {
-    path: '/unit-converter',
-    label: 'Unit Converter',
-    description: 'Convert length, weight, temperature, volume, speed, time, and data.',
-    category: 'Calculators',
-    icon: '📐',
-    component: lazy(() => import('../apps/unit-converter')),
-  },
-  {
-    path: '/workout',
-    label: 'Workout',
-    description: 'Browse 800+ exercises with photos and how-to instructions.',
-    category: 'Health',
-    icon: '💪',
-    component: lazy(() => import('../apps/workout')),
-  },
-  {
-    path: '/video-editor',
-    label: 'Video Editor',
-    description: 'Browser-only video editor — trim, sequence, and export. Strictly client-side.',
-    category: 'Creative',
-    icon: '🎬',
-    component: lazy(() => import('../apps/video-editor')),
-  },
-]
+// Lazy loaders keyed by path. Metadata lives in seo/catalog.ts (single source of
+// truth shared with SEO + the build-time prerenderer); this map only wires each
+// path to its component bundle.
+const loaders: Record<string, () => Promise<{ default: ComponentType }>> = {
+  '/example': () => import('../apps/example'),
+  '/tip-calculator': () => import('../apps/tip-calculator'),
+  '/expense-splitter': () => import('../apps/expense-splitter'),
+  '/kanban-board': () => import('../apps/kanban-board'),
+  '/json-explorer': () => import('../apps/json-explorer'),
+  '/regex-playground': () => import('../apps/regex-playground'),
+  '/code-snapshot': () => import('../apps/code-snapshot'),
+  '/markdown-editor': () => import('../apps/markdown-editor'),
+  '/doc-viewer': () => import('../apps/doc-viewer'),
+  '/age-calculator': () => import('../apps/age-calculator'),
+  '/pomodoro-timer': () => import('../apps/pomodoro-timer'),
+  '/color-picker': () => import('../apps/color-picker'),
+  '/password-generator': () => import('../apps/password-generator'),
+  '/qr-code': () => import('../apps/qr-code'),
+  '/tally-counter': () => import('../apps/tally-counter'),
+  '/random-picker': () => import('../apps/random-picker'),
+  '/stopwatch': () => import('../apps/stopwatch'),
+  '/unit-converter': () => import('../apps/unit-converter'),
+  '/workout': () => import('../apps/workout'),
+  '/video-editor': () => import('../apps/video-editor'),
+}
+
+export const routes: AppRoute[] = catalog
+  .filter((m) => loaders[m.path])
+  .map((m) => ({ ...m, component: lazy(loaders[m.path]) }))
