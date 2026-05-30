@@ -1,10 +1,48 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-05-28
+**Last updated**: 2026-05-30
 
 A log of significant technical decisions and the reasoning behind them.
 
 ---
+
+## [2026-05-30] Native app lives in a SEPARATE repo (`snappet-mobile`), not this one
+
+**Decision**: The native iOS + Android app — whose flagship is **workout-tracking + HR-driven
+auto-highlight reels** (the "Snappet daily-app suite" thesis) — will live in a **new, separate
+repository** (`snappet-mobile`), **not** inside this web repo. Inside that repo, iOS and Android
+stay together (`/ios`, `/android`) as one mobile monorepo, **iOS-first**. This web repo (`Snappet`)
+remains the **home of the product brain**: the PDD docs, the deep-research issue
+([#60](https://github.com/harshal2802/Snappet/issues/60)), brand assets, and the **shared
+"Snappet Core" data-schema spec** (`pdd/context/snappet-core-schema.md`) that both web and native
+reference as the single source of truth. Initiative plan: `pdd/prompts/features/native-mobile/PLAN-snappet-mobile.md`.
+
+**Why**: The native app is a different lifecycle, not a port. (1) **Release model clashes** — this
+repo auto-deploys to GitHub Pages *on merge to `main`*; native apps ship through App Store / Play
+Store *review cycles* with signing, TestFlight, and provisioning. Co-locating them makes the
+"merge → site is live" pipeline fragile (every native commit needs path-filtering) and forces
+store-signing secrets next to a public web repo. (2) **Toolchains don't overlap** — Swift/Kotlin +
+Xcode/Gradle vs TypeScript/Vite/npm. (3) **Almost no shared code** — the research found the
+WebCodecs video editor does *not* port to native, and the HealthKit/watchOS/AVFoundation/Wear
+OS/Media3 surfaces share nothing with the web; the only real shared artifact is the *data schema*,
+which a spec (not a codebase) captures. (4) **Risk isolation** — the web hub is a shipping product;
+the native app is greenfield R&D whose core premise (does a user's own HR pick highlights they
+prefer?) is *unproven* (Phase-0 spike). Keep the experiment from destabilizing the stable product.
+
+**Trade-offs**: Loses single-repo atomic changes across web+native and one unified issue tracker —
+mitigated by keeping the product brain (research, schema spec, decisions) here and having
+`snappet-mobile`'s README link back. If the stack were ever **Capacitor** (wrap the existing web
+app in a native shell), the calculus flips to monorepo — but the research deliberately chose native
+Swift *because* health/watch/video need native, which is what rules Capacitor (and thus the
+monorepo) out.
+
+**How to apply**: New native work → `snappet-mobile` repo. Product thinking, schema changes, and
+cross-platform decisions → here. The Snappet Core schema is versioned in this repo; native consumes
+it as a copied/generated spec, not a runtime import.
+
+**Don't suggest**: Adding `/ios` or `/android` (or an Xcode/Gradle project) to this repo; a
+Capacitor wrapper of the existing PWA as the native strategy; importing native code into the web
+build or vice versa; putting store-signing secrets in this repo.
 
 ## [2026-05-29] Hub: local-only usage tracking → popularity sort + dashboard
 
