@@ -1,7 +1,7 @@
 # Project: Snappet
 
-**Last updated**: 2026-03-30
-**Type**: Frontend / Web app
+**Last updated**: 2026-05-30
+**Type**: Frontend / Web app (+ a planned native `snappet-mobile` app — see Native initiative below)
 
 ## What we're building
 
@@ -38,6 +38,19 @@ Everyday users, students, professionals, and developers who need quick, no-insta
 - No feature creep within a mini-app — each app does one thing, not three
 - Do not suggest class components or non-TypeScript code
 - Do not add analytics, tracking, or third-party scripts unless explicitly asked
+
+## Native initiative (separate repo — `snappet-mobile`)
+
+A native iOS + Android app is being planned whose flagship is **workout-tracking + HR-driven
+auto-highlight reels**, and which carries the broader **"daily-app suite"** thesis (mini-apps sharing
+one on-device data layer → a unified daily home). It lives in a **separate repo** (`snappet-mobile`,
+iOS-first) — see the [2026-05-30] entry in `decisions.md` for why. **This** repo stays the product
+brain: deep research in GitHub issue [#60](https://github.com/harshal2802/Snappet/issues/60), the
+initiative plan at `pdd/prompts/features/native-mobile/PLAN-snappet-mobile.md`, and the shared
+**Snappet Core** data-schema spec at `pdd/context/snappet-core-schema.md` (referenced by both web and
+native). The web-app constraints below ("no backend", "client-side only", etc.) describe **this web
+hub**; the native app has its own platform constraints (HealthKit/Health Connect, on-device only) and
+does not change the web hub's rules.
 
 ## Current state
 
