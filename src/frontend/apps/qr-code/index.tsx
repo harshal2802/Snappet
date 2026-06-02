@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'qrcode'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -266,12 +268,15 @@ export default function QrCodeGenerator() {
             Generate scannable QR codes for text, URLs, WiFi, and contacts.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="shrink-0 mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="shrink-0 mt-1 flex items-center gap-2">
+          <GuidedTour appId="qr-code" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Format tab bar */}
@@ -279,6 +284,7 @@ export default function QrCodeGenerator() {
         role="tablist"
         aria-label="QR code content format"
         className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl"
+        data-tour="format"
       >
         {FORMATS.map((f) => {
           const active = format === f.id
@@ -301,7 +307,7 @@ export default function QrCodeGenerator() {
       </div>
 
       {/* Format-specific inputs */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="content">
         {format === 'text' && (
           <div>
             <label htmlFor="qr-text" className={LABEL}>
@@ -466,7 +472,7 @@ export default function QrCodeGenerator() {
       </div>
 
       {/* Error correction level */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="level">
         <div className="flex items-center justify-between mb-2">
           <span className={LABEL}>Error correction</span>
           <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -500,7 +506,7 @@ export default function QrCodeGenerator() {
       </div>
 
       {/* QR preview — white-on-white in both themes so cameras can read it. */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white p-5 sm:p-6 shadow-sm flex flex-col items-center gap-4">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white p-5 sm:p-6 shadow-sm flex flex-col items-center gap-4" data-tour="preview">
         {dataUrl ? (
           <img
             src={dataUrl}
@@ -522,7 +528,7 @@ export default function QrCodeGenerator() {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2" data-tour="actions">
         <button
           onClick={handleDownload}
           disabled={!dataUrl}

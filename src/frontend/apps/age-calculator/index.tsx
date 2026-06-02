@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 interface AgeParts {
   years: number
@@ -156,16 +158,20 @@ export default function AgeCalculator() {
             Pick your birthdate to see your exact age, next birthday, and more.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="age-calculator" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            data-tour="reset"
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Date input */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="birthdate">
         <label
           htmlFor="age-calc-birthdate"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
@@ -193,6 +199,7 @@ export default function AgeCalculator() {
       </div>
 
       {/* Stats */}
+      <div data-tour="results">
       {stats ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className={STAT_CARD}>
@@ -247,6 +254,7 @@ export default function AgeCalculator() {
           </p>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 type Phase = 'work' | 'short-break' | 'long-break'
 
@@ -260,12 +262,16 @@ export default function PomodoroTimer() {
             25-min focus blocks with short and long breaks.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="pomodoro-timer" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            data-tour="reset"
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Phase label */}
@@ -275,12 +281,12 @@ export default function PomodoroTimer() {
       </div>
 
       {/* Progress ring */}
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center" data-tour="timer">
         <ProgressRing remainingMs={remainingMs} totalMs={totalMs} phase={state.phase} />
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3" data-tour="controls">
         {isRunning ? (
           <button
             onClick={handlePause}
@@ -305,7 +311,7 @@ export default function PomodoroTimer() {
       </div>
 
       {/* Session pips */}
-      <div className="flex flex-col items-center gap-1.5">
+      <div className="flex flex-col items-center gap-1.5" data-tour="sessions">
         <div className="flex items-center gap-1.5">
           {Array.from({ length: SESSIONS_UNTIL_LONG }).map((_, i) => (
             <span

@@ -13,6 +13,8 @@ import BottomSheet from './ui/BottomSheet'
 import ConfirmDialog from './ui/ConfirmDialog'
 import { useEditorStore } from './state/editorStore'
 import { totalDurationSec } from './state/selectors'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 export default function VideoEditor() {
   const caps = useMemo(() => detectCapabilities(), [])
@@ -59,13 +61,16 @@ export default function VideoEditor() {
           Strictly client-side · WebCodecs · Your media never leaves the device.
         </p>
       </div>
-      <button
-        onClick={() => setConfirmReset(true)}
-        className="flex h-10 items-center rounded-md px-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
-        title="Remove all assets"
-      >
-        ↺ Reset
-      </button>
+      <div className="flex items-center gap-2">
+        <GuidedTour appId="video-editor" steps={tourSteps} />
+        <button
+          onClick={() => setConfirmReset(true)}
+          className="flex h-10 items-center rounded-md px-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-red-400"
+          title="Remove all assets"
+        >
+          ↺ Reset
+        </button>
+      </div>
     </header>
   )
 

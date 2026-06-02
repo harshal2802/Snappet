@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 interface Settings {
   length: number
@@ -192,17 +194,20 @@ export default function PasswordGenerator() {
             Generate strong passwords with cryptographically secure randomness.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="password-generator" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Password display */}
       <div className={CARD}>
-        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-4 py-4 mb-3">
+        <div className="rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-4 py-4 mb-3" data-tour="password">
           <p
             className="font-mono text-lg sm:text-xl text-gray-900 dark:text-gray-100 break-all select-all"
             aria-label="Generated password"
@@ -210,7 +215,7 @@ export default function PasswordGenerator() {
             {password || '—'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" data-tour="actions">
           <button
             onClick={handleCopy}
             disabled={!password}
@@ -227,7 +232,7 @@ export default function PasswordGenerator() {
         </div>
 
         {/* Strength bar */}
-        <div className="mt-4 space-y-1">
+        <div className="mt-4 space-y-1" data-tour="strength">
           <div className="flex items-center justify-between text-xs">
             <span className={`font-semibold ${TIER_TEXT[tier]}`}>{tier}</span>
             <span className="text-gray-400 dark:text-gray-500 font-mono">
@@ -246,7 +251,7 @@ export default function PasswordGenerator() {
       {/* Settings */}
       <div className={CARD}>
         <div className="space-y-4">
-          <div>
+          <div data-tour="length">
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="pwd-length"
@@ -273,7 +278,7 @@ export default function PasswordGenerator() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" data-tour="charsets">
             <Toggle
               label="Uppercase (A–Z)"
               checked={settings.upper}

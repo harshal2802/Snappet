@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 /* ── Types ── */
 
@@ -126,7 +128,7 @@ interface TabsProps {
 
 function Tabs({ active, onChange }: TabsProps) {
   return (
-    <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl overflow-x-auto">
+    <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl overflow-x-auto" data-tour="tabs">
       {TABS.map((t) => (
         <button
           key={t.key}
@@ -151,13 +153,13 @@ function History({ items }: HistoryProps) {
   const [open, setOpen] = useState(false)
   if (items.length === 0) {
     return (
-      <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+      <p className="text-xs text-gray-400 dark:text-gray-500 text-center" data-tour="history">
         No history yet — your last 5 results will appear here.
       </p>
     )
   }
   return (
-    <div>
+    <div data-tour="history">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
@@ -209,6 +211,7 @@ function CoinTab() {
         <div
           className="min-h-[6rem] flex items-center justify-center"
           aria-live="polite"
+          data-tour="result"
         >
           {spinning ? (
             <div className="text-6xl animate-spin tabular-nums select-none">
@@ -224,7 +227,7 @@ function CoinTab() {
             </div>
           )}
         </div>
-        <button onClick={flip} disabled={spinning} className={PRIMARY_BTN}>
+        <button onClick={flip} disabled={spinning} className={PRIMARY_BTN} data-tour="action">
           {spinning ? 'Flipping…' : 'Flip'}
         </button>
         <History items={history} />
@@ -587,6 +590,9 @@ export default function RandomPicker() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Flip a coin, roll dice, pick from a list, or generate a random number.
           </p>
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="random-picker" steps={tourSteps} />
         </div>
       </div>
 

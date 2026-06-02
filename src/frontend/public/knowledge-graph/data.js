@@ -149,6 +149,16 @@ const NODES = [
     desc: 'Source of truth for per-device open counts (`snappet:usage:v1`). Never leaves the browser — powers the hub sort and dashboard.',
     tags: ['usage', 'on-device', 'privacy'],
   },
+  {
+    id: 'guided-tour',
+    label: 'GuidedTour',
+    type: 'shell',
+    category: 'Core',
+    layer: 'shared',
+    file: 'src/frontend/components/GuidedTour/',
+    desc: 'Dependency-free guided-walkthrough engine: spotlight overlay + tooltip, auto-start once per device, and a per-app "? Tour" replay button. Every mini-app ships a tour (steps in apps/<app>/tour.ts, targets via data-tour attributes).',
+    tags: ['onboarding', 'walkthrough', 'a11y', 'localStorage'],
+  },
 
   // ── SEO / AEO subsystem ─────────────────────────────────────────────────
   {
@@ -668,6 +678,13 @@ const EDGES = [
   { s: 'update-prompt', t: 'pwa', type: 'uses' },
   { s: 'use-dark-mode', t: 'use-local-storage', type: 'uses' },
   { s: 'usage', t: 'use-local-storage', type: 'persists', label: 'snappet:usage:v1' },
+
+  // Guided tours — shared engine used by every mini-app (3 shown as representatives)
+  { s: 'guided-tour', t: 'react', type: 'uses' },
+  { s: 'guided-tour', t: 'use-local-storage', type: 'persists', label: 'snappet:tour:*' },
+  { s: 'tip-calculator', t: 'guided-tour', type: 'uses', label: 'tour' },
+  { s: 'workout', t: 'guided-tour', type: 'uses', label: 'tour' },
+  { s: 'video-editor', t: 'guided-tour', type: 'uses', label: 'tour' },
 
   // SEO subsystem
   { s: 'routes', t: 'catalog', type: 'uses', label: 'metadata' },

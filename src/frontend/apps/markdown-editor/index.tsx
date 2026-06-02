@@ -3,6 +3,8 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import Toolbar from './Toolbar'
 import Preview from './Preview'
 import type { ViewMode, MarkdownStats } from './types'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 const DEFAULT_MARKDOWN = `# Markdown Cheatsheet
 
@@ -167,16 +169,20 @@ export default function MarkdownEditor() {
             Write and preview Markdown with live rendering and export.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="markdown-editor" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            data-tour="reset"
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Export buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" data-tour="export">
         <button onClick={handleCopyHtml} className={EXPORT_BTN}>
           Copy HTML
         </button>
@@ -217,6 +223,7 @@ export default function MarkdownEditor() {
       {/* Toolbar */}
       <div
         className={`${viewMode === 'preview' ? 'hidden md:block' : 'block'}`}
+        data-tour="toolbar"
       >
         <Toolbar textareaRef={textareaRef} value={markdown} setValue={setMarkdown} />
       </div>
@@ -228,6 +235,7 @@ export default function MarkdownEditor() {
           className={`flex-1 ${
             viewMode === 'preview' ? 'hidden md:block' : 'block'
           }`}
+          data-tour="editor"
         >
           <textarea
             ref={textareaRef}
@@ -248,6 +256,7 @@ export default function MarkdownEditor() {
             viewMode === 'edit' ? 'hidden md:block' : 'block'
           }`}
           data-preview-content
+          data-tour="preview"
         >
           <Preview markdown={markdown} />
         </div>

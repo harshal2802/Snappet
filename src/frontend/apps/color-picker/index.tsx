@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 interface Rgb {
   r: number
@@ -305,19 +307,22 @@ export default function ColorPicker() {
             Pick or paste a color in any format — convert between HEX, RGB, and HSL instantly.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="color-picker" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Picker + format rows */}
       <div className={CARD}>
         <div className="flex flex-col sm:flex-row sm:items-start gap-5">
           {/* Native picker */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-2" data-tour="picker">
             <input
               type="color"
               value={canonicalHex}
@@ -329,7 +334,7 @@ export default function ColorPicker() {
           </div>
 
           {/* Format rows */}
-          <div className="flex-1 space-y-3 w-full">
+          <div className="flex-1 space-y-3 w-full" data-tour="formats">
             <FormatRow
               label="HEX"
               draft={hexDraft}
@@ -365,7 +370,7 @@ export default function ColorPicker() {
       </div>
 
       {/* Preview */}
-      <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm" data-tour="preview">
         <div
           className="px-6 py-10 flex flex-wrap items-center justify-around gap-6"
           style={{ backgroundColor: canonicalHex }}

@@ -26,7 +26,7 @@ export default function Toolbar() {
   const hasContent = totalDurationSec(project) > 0
 
   return (
-    <div className="ve-toolbar flex flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-white p-1.5 [scrollbar-width:none] [&>*]:shrink-0 dark:border-gray-700 dark:bg-gray-800 md:flex-wrap md:gap-2 md:p-2">
+    <div data-tour="toolbar" className="ve-toolbar flex flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-white p-1.5 [scrollbar-width:none] [&>*]:shrink-0 dark:border-gray-700 dark:bg-gray-800 md:flex-wrap md:gap-2 md:p-2">
       <button
         onClick={() => useEditorStore.temporal.getState().undo()}
         disabled={!canUndo}
@@ -127,7 +127,7 @@ export default function Toolbar() {
           ⤢
         </button>
       </div>
-      <div className="ml-auto">
+      <div className="ml-auto" data-tour="export">
         <button
           onClick={() => setExportOpen(true)}
           disabled={!hasContent}

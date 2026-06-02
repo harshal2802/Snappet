@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { explainPattern } from './explainer'
 import { COMMON_PATTERNS } from './patterns'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 import type {
   RegexFlag,
   MatchResult,
@@ -221,16 +223,19 @@ export default function RegexPlayground() {
             Test, debug, and understand regular expressions in real time.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="regex-playground" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Pattern input + flags */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="pattern">
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Pattern
@@ -253,7 +258,7 @@ export default function RegexPlayground() {
           </div>
 
           {/* Flag toggles */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-tour="flags">
             {ALL_FLAGS.map((flag) => (
               <button
                 key={flag}
@@ -280,7 +285,7 @@ export default function RegexPlayground() {
       </div>
 
       {/* Test string with highlighted matches */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="test">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -329,7 +334,7 @@ export default function RegexPlayground() {
       </div>
 
       {/* Match Details + Pattern Explanation — two columns on desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="details">
         {/* Match Details */}
         <div className={CARD}>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
@@ -422,7 +427,7 @@ export default function RegexPlayground() {
       </div>
 
       {/* Common Patterns Library */}
-      <div className={CARD}>
+      <div className={CARD} data-tour="library">
         <button
           onClick={() => setShowPatterns((prev) => !prev)}
           className="flex items-center justify-between w-full text-left"

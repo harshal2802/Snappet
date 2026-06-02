@@ -10,6 +10,8 @@ import {
   getBackground,
   getLanguageLabel,
 } from './themes'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 import type {
   SupportedLanguage,
   ThemeId,
@@ -194,12 +196,15 @@ export default function CodeSnapshot() {
             Generate beautiful code screenshots with customizable themes.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="code-snapshot" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Main layout: preview + controls */}
@@ -221,17 +226,18 @@ export default function CodeSnapshot() {
               onChange={(e) => setCode(e.target.value)}
               placeholder="Paste your code here..."
               spellCheck={false}
+              data-tour="code"
               className="w-full h-48 p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm placeholder-gray-400 dark:placeholder-gray-500 resize-y focus:outline-none"
             />
           </div>
 
           {/* Live preview */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden" data-tour="preview">
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Preview
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-2" data-tour="export">
                 <button
                   onClick={handleCopy}
                   disabled={exporting || !code.trim()}
@@ -352,7 +358,7 @@ export default function CodeSnapshot() {
 
         {/* ── Right: Controls sidebar ── */}
         <div className="lg:w-[35%] space-y-4">
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-5">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-5" data-tour="controls">
             {/* Language */}
             <ControlSection label="Language">
               <select

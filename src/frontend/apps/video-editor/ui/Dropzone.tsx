@@ -19,6 +19,7 @@ export default function Dropzone() {
 
   return (
     <div
+      data-tour="import"
       onDragOver={(e) => {
         e.preventDefault()
         setDragOver(true)

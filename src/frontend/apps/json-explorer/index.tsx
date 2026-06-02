@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import JsonTree from './JsonTree'
 import JsonDiff from './JsonDiff'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 import type { AppMode, JsonValue } from './types'
 
 const EXAMPLE_JSON = `{
@@ -143,16 +145,19 @@ export default function JsonExplorer() {
             Format, explore, and diff JSON data with a collapsible tree view.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="json-explorer" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-fit" data-tour="mode">
         <button
           onClick={() => setMode('explorer')}
           aria-pressed={mode === 'explorer'}
@@ -179,12 +184,13 @@ export default function JsonExplorer() {
               onChange={(e) => setExplorerInput(e.target.value)}
               placeholder={EXAMPLE_JSON}
               rows={10}
+              data-tour="input"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               spellCheck={false}
             />
 
             {/* Action buttons + counts */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2" data-tour="toolbar">
               <button
                 onClick={handleFormat}
                 disabled={!explorerInput.trim()}
