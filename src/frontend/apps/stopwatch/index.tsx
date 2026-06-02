@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 interface State {
   startedAt: number | null   // epoch ms; non-null = running
@@ -147,7 +149,7 @@ export default function Stopwatch() {
   return (
     <div className="max-w-md mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between" data-tour="header">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Stopwatch
@@ -156,12 +158,16 @@ export default function Stopwatch() {
             Time anything with lap splits — workouts, cooking, intervals.
           </p>
         </div>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="stopwatch" steps={tourSteps} />
+        </div>
       </div>
 
       {/* Big timer display */}
       <div
         className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-8 px-4 flex items-center justify-center"
         aria-live="polite"
+        data-tour="display"
       >
         <span className="text-7xl font-mono tabular-nums text-gray-900 dark:text-gray-100">
           {formatTime(currentElapsed)}
@@ -169,7 +175,7 @@ export default function Stopwatch() {
       </div>
 
       {/* Buttons */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-tour="controls">
         {!isRunning && !isPaused && (
           <button
             type="button"

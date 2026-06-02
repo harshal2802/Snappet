@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -416,17 +418,22 @@ export default function UnitConverter() {
   return (
     <div className="max-w-md mx-auto space-y-4">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Unit Converter
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Convert length, weight, temperature, volume, speed, time, and data.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Unit Converter
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Convert length, weight, temperature, volume, speed, time, and data.
+          </p>
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="unit-converter" steps={tourSteps} />
+        </div>
       </div>
 
       {/* Category pills */}
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Category">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Category" data-tour="categories">
         {CATEGORY_ORDER.map((c) => (
           <button
             key={c}
@@ -444,7 +451,7 @@ export default function UnitConverter() {
       {/* Converter card */}
       <div className={`${CARD} space-y-3`}>
         {/* From row */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-tour="from">
           <label
             htmlFor="from-input"
             className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
@@ -478,7 +485,7 @@ export default function UnitConverter() {
         </div>
 
         {/* Swap button */}
-        <div className="flex justify-center">
+        <div className="flex justify-center" data-tour="swap">
           <button
             type="button"
             onClick={handleSwap}
@@ -490,7 +497,7 @@ export default function UnitConverter() {
         </div>
 
         {/* To row */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5" data-tour="to">
           <label
             htmlFor="to-input"
             className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
@@ -525,7 +532,7 @@ export default function UnitConverter() {
       </div>
 
       {/* Quick presets */}
-      <div className="space-y-2">
+      <div className="space-y-2" data-tour="presets">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Quick presets
         </p>

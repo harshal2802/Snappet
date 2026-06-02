@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 interface Counter {
   id: string
@@ -141,18 +143,21 @@ export default function TallyCounter() {
             Tap to count anything, one-thumb style.
           </p>
         </div>
-        <button
-          onClick={handleResetActive}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="tally-counter" steps={tourSteps} />
+          <button
+            onClick={handleResetActive}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Active counter card */}
       <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-4">
         {/* Editable name */}
-        <div className="text-center">
+        <div className="text-center" data-tour="name">
           {renaming ? (
             <input
               ref={nameInputRef}
@@ -183,6 +188,7 @@ export default function TallyCounter() {
         <div
           aria-live="polite"
           aria-atomic="true"
+          data-tour="value"
           className="text-center text-7xl sm:text-8xl font-bold text-gray-900 dark:text-gray-100 tabular-nums py-6 select-none"
         >
           {activeCounter.value.toLocaleString()}
@@ -192,6 +198,7 @@ export default function TallyCounter() {
         <button
           onClick={handleIncrement}
           aria-label="Increment counter"
+          data-tour="increment"
           className="w-full h-[40vh] min-h-[200px] rounded-3xl bg-blue-600 dark:bg-blue-500 text-white text-7xl sm:text-8xl font-bold shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 transition-colors select-none focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 dark:focus-visible:ring-blue-700"
         >
           +
@@ -220,7 +227,7 @@ export default function TallyCounter() {
       </section>
 
       {/* Counter pills */}
-      <section className="space-y-2">
+      <section className="space-y-2" data-tour="counters">
         <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">
           Counters
         </h2>

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 import Dashboard from './Dashboard'
 import ExerciseBrowser from './ExerciseBrowser'
 import HistoryView from './HistoryView'
@@ -154,24 +156,27 @@ export default function Workout() {
     <div className="max-w-5xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
+        <div data-tour="header">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Workout</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Browse 800+ exercises and build your own routines.
           </p>
         </div>
-        {tab === 'browse' && (
-          <button
-            onClick={() => setBrowseResetCounter((c) => c + 1)}
-            className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-          >
-            ↺ Reset
-          </button>
-        )}
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="workout" steps={tourSteps} />
+          {tab === 'browse' && (
+            <button
+              onClick={() => setBrowseResetCounter((c) => c + 1)}
+              className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            >
+              ↺ Reset
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-full sm:w-fit overflow-x-auto">
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-full sm:w-fit overflow-x-auto" data-tour="tabs">
         <button
           onClick={() => setTab('dashboard')}
           aria-pressed={tab === 'dashboard'}
@@ -182,6 +187,7 @@ export default function Workout() {
         <button
           onClick={() => setTab('browse')}
           aria-pressed={tab === 'browse'}
+          data-tour="browse-tab"
           className={`${TAB_BTN_BASE} ${tab === 'browse' ? TAB_BTN_ACTIVE : TAB_BTN_INACTIVE}`}
         >
           Browse
@@ -189,6 +195,7 @@ export default function Workout() {
         <button
           onClick={() => setTab('routines')}
           aria-pressed={tab === 'routines'}
+          data-tour="routines-tab"
           className={`${TAB_BTN_BASE} ${tab === 'routines' ? TAB_BTN_ACTIVE : TAB_BTN_INACTIVE}`}
         >
           Routines
@@ -217,16 +224,18 @@ export default function Workout() {
 
       {/* Body */}
       {tab === 'dashboard' && (
-        <Dashboard
-          history={history}
-          exerciseById={exerciseById}
-          preferredUnit={preferredUnit}
-          onOpenExercise={(id) => {
-            setPendingExerciseId(id)
-            setTab('browse')
-          }}
-          onGoToRoutines={() => setTab('routines')}
-        />
+        <div data-tour="dashboard-body">
+          <Dashboard
+            history={history}
+            exerciseById={exerciseById}
+            preferredUnit={preferredUnit}
+            onOpenExercise={(id) => {
+              setPendingExerciseId(id)
+              setTab('browse')
+            }}
+            onGoToRoutines={() => setTab('routines')}
+          />
+        </div>
       )}
       {tab === 'browse' && (
         <ExerciseBrowser

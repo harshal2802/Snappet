@@ -3,6 +3,8 @@ import type { Person, Expense } from './types'
 import ExpenseCard from './ExpenseCard'
 import { calculateOwed, formatCurrency, generateId } from './utils'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 function makePerson(name: string): Person {
   return { id: generateId(), name }
@@ -106,16 +108,19 @@ export default function ExpenseSplitter() {
             Split bills across a group with custom amounts.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="expense-splitter" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* People */}
-      <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-3 shadow-sm">
+      <section data-tour="people" className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           People
         </h2>
@@ -141,7 +146,7 @@ export default function ExpenseSplitter() {
           <p className="text-xs text-red-600 dark:text-red-400">{removeError}</p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2" data-tour="add-person">
           <input
             ref={nameInputRef}
             type="text"
@@ -162,7 +167,7 @@ export default function ExpenseSplitter() {
       </section>
 
       {/* Expenses */}
-      <section className="space-y-3">
+      <section data-tour="expenses" className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
           Expenses
         </h2>
@@ -182,6 +187,7 @@ export default function ExpenseSplitter() {
         ))}
         <button
           onClick={addExpense}
+          data-tour="add-expense"
           className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           + Add expense
@@ -189,7 +195,7 @@ export default function ExpenseSplitter() {
       </section>
 
       {/* Summary */}
-      <section className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 p-5 space-y-3 shadow-sm">
+      <section data-tour="summary" className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 p-5 space-y-3 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           Summary
         </h2>

@@ -251,6 +251,7 @@ export default function Player() {
   return (
     <div
       ref={containerRef}
+      data-tour="preview"
       onMouseMove={pokeControls}
       onTouchStart={pokeControls}
       className={

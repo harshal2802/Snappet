@@ -8,6 +8,8 @@ import type {
   AnnotationColor,
   LegacyAnnotation,
 } from './types'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 import PdfViewerPane, { type PdfViewerPaneHandle } from './PdfViewerPane'
 import ImageViewerPane from './ImageViewerPane'
 import TextPanel from './TextPanel'
@@ -481,6 +483,9 @@ export default function DocViewer() {
             View PDFs and images with full-featured viewer and OCR text extraction.
           </p>
         </div>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="doc-viewer" steps={tourSteps} />
+        </div>
       </div>
 
       {/* Re-upload hint from previous session */}
@@ -493,6 +498,7 @@ export default function DocViewer() {
 
       {/* Drop zone */}
       <div
+        data-tour="dropzone"
         onClick={() => inputRef.current?.click()}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -516,7 +522,7 @@ export default function DocViewer() {
           </p>
         </div>
         <p className="text-xs text-gray-400 dark:text-gray-500">Supported: PDF, PNG, JPG</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs">
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs" data-tour="privacy">
           🔒 All OCR and processing happens in your browser. Your file never leaves your device.
         </p>
 
@@ -541,7 +547,7 @@ export default function DocViewer() {
 
       {error && <p className="text-sm text-red-600 dark:text-red-400 px-1">{error}</p>}
 
-      <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400">
+      <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-400" data-tour="features">
         {[
           '📑 Thumbnails & bookmarks',
           '🔍 Full-text search',

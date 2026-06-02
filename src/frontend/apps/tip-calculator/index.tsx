@@ -1,4 +1,6 @@
 import { useLocalStorage } from '../../hooks/useLocalStorage'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 const PRESET_TIPS = [10, 15, 18, 20, 25] as const
 type TipOption = (typeof PRESET_TIPS)[number] | 'custom'
@@ -151,7 +153,7 @@ export default function TipCalculator() {
 
   // Tip percentage controls JSX (shared between both modes)
   const tipControls = (
-    <div className="space-y-2">
+    <div className="space-y-2" data-tour="tip">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Tip Percentage
       </label>
@@ -207,16 +209,19 @@ export default function TipCalculator() {
             Calculate tip and split the bill among friends.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="tip-calculator" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl w-fit" data-tour="mode">
         <button
           onClick={switchToEqual}
           aria-pressed={splitMode === 'equal'}
@@ -246,7 +251,7 @@ export default function TipCalculator() {
         <>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-6 shadow-sm">
             {/* Bill amount */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" data-tour="bill">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bill Amount
               </label>
@@ -267,7 +272,7 @@ export default function TipCalculator() {
             {tipControls}
 
             {/* People stepper */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" data-tour="people">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Number of People
               </label>
@@ -297,7 +302,7 @@ export default function TipCalculator() {
           </div>
 
           {/* Equal results card */}
-          <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 p-6 space-y-4 shadow-sm">
+          <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 p-6 space-y-4 shadow-sm" data-tour="results">
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5">Tip / person</p>

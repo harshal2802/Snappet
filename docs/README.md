@@ -9,6 +9,7 @@ getting-started instructions, see the [root README](../README.md).
 ## Contents
 
 - [Knowledge graph](#knowledge-graph) — the hostable, interactive codebase map
+- [Guided tours](#guided-tours) — per-app onboarding walkthroughs
 - [Architecture](#architecture) — how the pieces fit together
 - [Data & privacy](#data--privacy)
 - [SEO / AEO](#seo--aeo)
@@ -55,6 +56,24 @@ node scripts/render-knowledge-graph.mjs
 
 If `@resvg/resvg-js` isn't installed, the script writes the `.svg` instead and skips
 rasterization — the committed PNGs stay valid until the model changes.
+
+## Guided tours
+
+Every mini-app has a built-in guided walkthrough. It **auto-runs once** on a user's first visit
+(remembered in `localStorage` under `snappet:tour:<appId>:v<version>`) and can be replayed anytime
+via the **`? Tour`** button in each app's header.
+
+The shared engine lives at [`src/frontend/components/GuidedTour/`](../src/frontend/components/GuidedTour/):
+
+| File | Role |
+|---|---|
+| `types.ts` | `TourStep` / `TourController` types |
+| `useTour.ts` | state machine + per-device "seen" persistence + auto-start |
+| `GuidedTour.tsx` | the inline `? Tour` button + portaled spotlight/tooltip overlay |
+
+Each app contributes a `tour.ts` (the steps) and `data-tour="<id>"` attributes on the elements to
+highlight. A step with no `target` renders as a centered card (used for the welcome step). See the
+[root README](../README.md#guided-tours) for the copy-paste pattern to add a tour to a new app.
 
 ## Architecture
 

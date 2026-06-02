@@ -37,6 +37,7 @@ get a polished tool instantly, with dark mode and a mobile-first responsive layo
 - **Dark mode everywhere** — FOUC-free, persisted, on every screen.
 - **Mobile-first** — built and tuned for phones as much as desktops.
 - **SEO + AEO ready** — every route is prerendered to static HTML with unique metadata, JSON-LD, `sitemap.xml`, `robots.txt`, and `llms.txt` so it's visible to search engines *and* AI crawlers.
+- **Guided tours** — every tool has a built-in walkthrough that auto-runs once on first visit, with a `? Tour` button to replay it anytime (see below).
 - **Interactive knowledge graph** — a hostable, dependency-free visualization of the whole codebase (see below).
 
 ## The tools
@@ -62,6 +63,42 @@ get a polished tool instantly, with dark mode and a mobile-first responsive layo
 | Document Viewer | `/doc-viewer` | Utilities | View PDFs/images with in-browser OCR |
 | Workout | `/workout` | Health | 800+ exercise library, routines, player, progress dashboard |
 | Video Editor | `/video-editor` | Creative | Trim/split/sequence + export MP4, all via WebCodecs |
+
+## Guided tours
+
+Every mini-app ships a **guided walkthrough** — a short, spotlighted tour of its key controls.
+It **auto-runs once** on a user's first visit (remembered per-device in `localStorage`), and a
+**`? Tour`** button in each app's header replays it anytime.
+
+The engine is a small, dependency-free shared component at
+[`src/frontend/components/GuidedTour/`](src/frontend/components/GuidedTour/): a spotlight overlay +
+tooltip with `Back / Next / Skip`, progress dots, keyboard control (`→`/`←`/`Esc`), focus handling,
+`prefers-reduced-motion` support, and a mobile layout that docks the tooltip to the bottom.
+
+**Adding a tour to a new app** is two small steps:
+
+1. Tag the elements you want to highlight with a `data-tour` attribute:
+   ```tsx
+   <div data-tour="bill">…</div>
+   ```
+2. Author the steps in `apps/<app>/tour.ts` and drop `<GuidedTour>` in the header:
+   ```tsx
+   // apps/<app>/tour.ts
+   import type { TourStep } from '../../components/GuidedTour'
+   export const tourSteps: TourStep[] = [
+     { title: 'Welcome', body: 'A quick tour — skip anytime.' }, // no target → centered card
+     { target: 'bill', title: 'Enter the bill', body: 'Type the total; results update live.' },
+   ]
+   ```
+   ```tsx
+   // apps/<app>/index.tsx (in the header, next to ↺ Reset)
+   import GuidedTour from '../../components/GuidedTour'
+   import { tourSteps } from './tour'
+   <GuidedTour appId="<app-slug>" steps={tourSteps} />
+   ```
+
+`appId` must match the route slug; completion is keyed to `snappet:tour:<appId>:v<version>` — bump the
+`version` prop after editing steps to re-show the tour to returning users.
 
 ## Knowledge graph
 

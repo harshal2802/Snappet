@@ -16,6 +16,8 @@ import Column from './Column'
 import CardModal from './CardModal'
 import KanbanCard from './KanbanCard'
 import { generateId } from './utils'
+import GuidedTour from '../../components/GuidedTour'
+import { tourSteps } from './tour'
 
 function createDefaultBoard(): Board {
   return [
@@ -223,12 +225,16 @@ export default function KanbanBoard() {
             Organize tasks with drag-and-drop columns and cards.
           </p>
         </div>
-        <button
-          onClick={handleReset}
-          className="mt-1 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-        >
-          ↺ Reset
-        </button>
+        <div className="mt-1 flex items-center gap-2">
+          <GuidedTour appId="kanban-board" steps={tourSteps} />
+          <button
+            onClick={handleReset}
+            data-tour="reset"
+            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            ↺ Reset
+          </button>
+        </div>
       </div>
 
       <DndContext
@@ -238,9 +244,9 @@ export default function KanbanBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none">
-          {board.map((col) => (
-            <div key={col.id} className="snap-center">
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none" data-tour="board">
+          {board.map((col, colIndex) => (
+            <div key={col.id} className="snap-center" data-tour={colIndex === 0 ? 'add-card' : undefined}>
               <Column
                 columnId={col.id}
                 title={col.title}
@@ -257,6 +263,7 @@ export default function KanbanBoard() {
           {/* Add Column Button */}
           <button
             onClick={addColumn}
+            data-tour="add-column"
             className="w-72 min-w-[18rem] flex-shrink-0 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center py-8 text-sm text-gray-500 dark:text-gray-400 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             + Add Column

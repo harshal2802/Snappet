@@ -32,6 +32,7 @@ export default function Timeline() {
     <div
       ref={scrollerRef}
       id="ve-timeline-scroller"
+      data-tour="timeline"
       onWheel={(e) => {
         if (e.metaKey || e.ctrlKey) {
           e.preventDefault()
