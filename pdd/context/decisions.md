@@ -1,10 +1,32 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-05-30
+**Last updated**: 2026-06-02
 
 A log of significant technical decisions and the reasoning behind them.
 
 ---
+
+## [2026-06-02] PWA service worker: switch from `prompt` to `autoUpdate`
+
+**Decision**: Change `vite-plugin-pwa`'s `registerType` from `'prompt'` to `'autoUpdate'`. A new
+build now activates automatically on the next page load (Workbox `skipWaiting` + `clientsClaim`)
+instead of waiting for the user to tap the in-app "Reload" banner. The `UpdatePrompt` component is
+left in place but is inert under `autoUpdate` (it renders nothing because `needRefresh` never
+becomes true), kept as a no-op safety net in case the strategy is ever reverted.
+
+**Why**: With `prompt`, returning visitors kept running the previously cached bundle until they
+explicitly accepted the update — so shipped features (e.g. the new guided tours) appeared "missing"
+to anyone with a warm service-worker cache. For a hub of small, stateless tools, silently taking the
+latest version on next load is the right trade-off and removes a recurring "why don't I see the new
+thing?" support cost.
+
+**Trade-offs**: An auto-reload can theoretically interrupt a user mid-task when a deploy lands while
+they're active; acceptable here because the tools persist their state to `localStorage`, so a reload
+doesn't lose work. Note the rollout seam: users still on the old `prompt` service worker need **one**
+more manual reload to pick up the `autoUpdate` worker; every deploy after that is automatic.
+
+**Don't suggest**: Reintroducing a mandatory manual-reload prompt; adding a custom update toast on top
+of `autoUpdate` (redundant); disabling the service worker to "fix" caching (loses offline support).
 
 ## [2026-05-30] Native app lives in a SEPARATE repo (`snappet-mobile`), not this one
 

@@ -112,7 +112,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'prompt',
+      // autoUpdate: a new build activates on the next page load (skipWaiting +
+      // clientsClaim) instead of waiting for a manual "Reload" tap — so deploys
+      // reach users without the stale-cache friction.
+      registerType: 'autoUpdate',
       // Enable the SW in dev so the install flow + update banner can be
       // exercised on localhost:5173 before deploy.
       devOptions: { enabled: true, type: 'module' },
