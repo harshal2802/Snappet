@@ -32,15 +32,35 @@ export default function Layout({ children }: LayoutProps) {
       <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
 
       <footer className="border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500 dark:text-gray-500 py-4">
-        <span>Snappet</span>
-        <span className="mx-2" aria-hidden="true">·</span>
-        {/* Static page outside the SPA — use a full anchor with the base path. */}
-        <a
-          href={`${import.meta.env.BASE_URL}knowledge-graph/`}
-          className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-        >
-          Knowledge graph
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <span>Snappet</span>
+          <span aria-hidden="true">·</span>
+          {/* Static page outside the SPA — use a full anchor with the base path. */}
+          <a
+            href={`${import.meta.env.BASE_URL}knowledge-graph/`}
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            Knowledge graph
+          </a>
+          <span aria-hidden="true">·</span>
+          <a
+            href="https://github.com/harshal2802/Snappet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            GitHub
+          </a>
+          <span aria-hidden="true">·</span>
+          <a
+            href="https://www.linkedin.com/in/harshal-chourasiya-39bb0426"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            LinkedIn
+          </a>
+        </div>
       </footer>
     </div>
   )

@@ -199,3 +199,10 @@ reference. See the `[2026-05-30]` entry in [`decisions.md`](pdd/context/decision
 - **[`docs/`](docs/)** — architecture overview, the knowledge graph, and screenshots
 - **[Knowledge graph README](src/frontend/public/knowledge-graph/README.md)** — data model + features
 - **[`pdd/`](pdd/)** — the full product brain
+
+## Connect
+
+Built by **Harshal Chourasiya**.
+
+- GitHub: [@harshal2802](https://github.com/harshal2802) · [Snappet repo](https://github.com/harshal2802/Snappet)
+- LinkedIn: [Harshal Chourasiya](https://www.linkedin.com/in/harshal-chourasiya-39bb0426)
