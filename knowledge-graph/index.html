@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Snappet — Knowledge Graph</title>
+  <meta name="description" content="An interactive, searchable map of the Snappet codebase: every mini-app, shared hook, build step, dependency, and product-brain doc, wired by the relationships that connect them." />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="Snappet — Knowledge Graph" />
+  <meta property="og:description" content="Interactive map of the Snappet codebase — apps, infrastructure, and how they connect." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="../snappet.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn menu-toggle" id="menuToggle" aria-label="Toggle filters">☰</button>
+      <div class="brand">
+        <span class="logo">◆</span>
+        <span>Snappet KG <small>· codebase map</small></span>
+      </div>
+
+      <div class="search-wrap">
+        <span class="icon">⌕</span>
+        <input id="search" type="search" placeholder="Search nodes…  ( / )" autocomplete="off" />
+      </div>
+
+      <div class="seg" id="layoutSeg" title="Layout (1 / 2 / 3)">
+        <button data-layout="force" class="active">Force</button>
+        <button data-layout="hierarchy">Hierarchy</button>
+        <button data-layout="cluster">Clusters</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <button class="btn" id="pathBtn" title="Trace the path between two nodes">↔ Trace path</button>
+      <button class="btn" id="exportBtn" title="Download the current view as PNG">⤓ PNG</button>
+      <button class="btn" id="themeBtn" title="Toggle theme (T)">☀︎</button>
+      <button class="btn" id="helpBtn" title="Help (?)">?</button>
+    </div>
+
+    <div class="body">
+      <!-- Sidebar: legend + filters -->
+      <aside class="sidebar" id="sidebar">
+        <h3>Node types</h3>
+        <div id="legend"></div>
+        <h3>Categories</h3>
+        <div id="catFilters"></div>
+        <h3>Layers</h3>
+        <div id="layerFilters"></div>
+      </aside>
+
+      <!-- Graph canvas -->
+      <div class="canvas-wrap">
+        <svg id="graph" xmlns="http://www.w3.org/2000/svg"></svg>
+
+        <!-- Detail panel -->
+        <aside class="detail" id="detail">
+          <button class="close" id="detailClose" aria-label="Close">✕</button>
+          <span class="type-pill" id="detailType"></span>
+          <h2 id="detailTitle"></h2>
+          <div class="file" id="detailFile"></div>
+          <p class="desc" id="detailDesc"></p>
+          <div class="tags" id="detailTags"></div>
+          <div id="detailRels"></div>
+          <button class="btn path-btn" id="detailPathBtn">↔ Trace a path from here…</button>
+        </aside>
+
+        <div class="hint" id="hint">
+          <kbd>scroll</kbd> zoom · <kbd>drag</kbd> pan · <kbd>click</kbd> focus · <kbd>?</kbd> help
+        </div>
+      </div>
+    </div>
+
+    <!-- Help modal -->
+    <div class="modal-bg" id="helpModal">
+      <div class="modal">
+        <button class="close" id="helpClose">✕</button>
+        <h2>Snappet Knowledge Graph</h2>
+        <p class="sub">A live map of this repository — every node is a real artifact, every edge a real relationship.</p>
+
+        <h3>What you're looking at</h3>
+        <p style="font-size:13px;line-height:1.55;color:var(--muted);margin:0">
+          Nodes are colored by <strong>type</strong> (app, hook, build step, dependency, doc…).
+          Edges show how things connect: solid = containment/usage, dashed = a localStorage write,
+          dotted = a deploy hop. Click any node to see its details and neighbors. Use
+          <em>Trace path</em> to find how two nodes are wired together.
+        </p>
+
+        <h3>Keyboard</h3>
+        <table>
+          <tr><td><kbd>/</kbd></td><td>Focus search</td></tr>
+          <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Force / Hierarchy / Cluster layout</td></tr>
+          <tr><td><kbd>T</kbd></td><td>Toggle light / dark theme</td></tr>
+          <tr><td><kbd>P</kbd></td><td>Start path-trace mode</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Clear selection / close panels</td></tr>
+          <tr><td><kbd>?</kbd></td><td>This help</td></tr>
+        </table>
+
+        <h3>Mouse</h3>
+        <table>
+          <tr><td>Scroll</td><td>Zoom in / out</td></tr>
+          <tr><td>Drag background</td><td>Pan</td></tr>
+          <tr><td>Drag node</td><td>Reposition (pins it)</td></tr>
+          <tr><td>Click node</td><td>Focus + show details</td></tr>
+        </table>
+
+        <p style="font-size:12px;color:var(--muted);margin-top:18px">
+          100% static — no build step, no backend, works offline. Deep-link a node with
+          <code>?node=&lt;id&gt;</code>. Source: <code>src/frontend/public/knowledge-graph/</code>.
+        </p>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="graph.js"></script>
+</body>
+</html>
