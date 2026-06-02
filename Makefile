@@ -1,9 +1,14 @@
 FRONTEND := src/frontend
 
-.PHONY: install dev build preview clean
+.PHONY: install dev build preview clean kg-screenshots
 
 install:
 	cd $(FRONTEND) && npm install
+
+# Render the knowledge-graph screenshots (docs/screenshots/) from the live data.js.
+kg-screenshots:
+	npm --prefix $(FRONTEND) install --no-save @resvg/resvg-js
+	node scripts/render-knowledge-graph.mjs
 
 dev:
 	cd $(FRONTEND) && npm run dev
