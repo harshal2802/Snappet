@@ -99,42 +99,65 @@ def trim(source: str, out: str, *, limit: int) -> int:
             ph = ",".join("?" * len(rows[0]))
             dc.executemany(f"INSERT INTO {t} VALUES ({ph})", rows)
 
-    # Resolve the climb uuids to keep: listed climbs, most-climbed first.
-    cap = f"LIMIT {limit}" if limit and limit > 0 else ""
-    sc.execute(
-        f"""
-        SELECT c.uuid FROM climbs c
-        JOIN climb_stats cs ON cs.climb_uuid = c.uuid
-        WHERE c.is_listed = 1
-        GROUP BY c.uuid
-        ORDER BY MAX(cs.ascensionist_count) DESC
-        {cap}
-        """
-    )
-    uuids = [r[0] for r in sc.fetchall()]
-    dc.execute("CREATE TEMP TABLE _keep (uuid TEXT PRIMARY KEY)")
-    dc.executemany("INSERT INTO _keep VALUES (?)", [(u,) for u in uuids])
+    # Diagnostics on the source catalogue.
+    sc.execute("SELECT COUNT(*) FROM climbs")
+    total_climbs = sc.fetchone()[0]
+    sc.execute("SELECT COUNT(*) FROM climbs WHERE is_listed = 1")
+    listed_climbs = sc.fetchone()[0]
 
-    keep = set(uuids)
-    for t, key in CLIMB_TABLES.items():
-        if t not in present_climb:
-            continue
-        sc.execute(f"SELECT * FROM {t}")
-        cols = [d[0] for d in sc.description]
-        key_idx = cols.index(key)
-        rows = [r for r in sc.fetchall() if r[key_idx] in keep]
-        if rows:
-            ph = ",".join("?" * len(cols))
-            dc.executemany(f"INSERT INTO {t} VALUES ({ph})", rows)
+    if limit and limit > 0:
+        # Size-constrained mode (opt-in via --limit N): keep only the most-climbed
+        # LISTED climbs. NOT the default — the default hosts the whole catalogue.
+        sc.execute(
+            f"""
+            SELECT c.uuid FROM climbs c
+            JOIN climb_stats cs ON cs.climb_uuid = c.uuid
+            WHERE c.is_listed = 1
+            GROUP BY c.uuid
+            ORDER BY MAX(cs.ascensionist_count) DESC
+            LIMIT {int(limit)}
+            """
+        )
+        keep = {r[0] for r in sc.fetchall()}
+        for t, key in CLIMB_TABLES.items():
+            if t not in present_climb:
+                continue
+            sc.execute(f"SELECT * FROM {t}")
+            cols = [d[0] for d in sc.description]
+            key_idx = cols.index(key)
+            rows = [r for r in sc.fetchall() if r[key_idx] in keep]
+            if rows:
+                ph = ",".join("?" * len(cols))
+                dc.executemany(f"INSERT INTO {t} VALUES ({ph})", rows)
+        kept = len(keep)
+    else:
+        # DEFAULT (--limit 0): keep EVERY climb — no reduction. The climb tables are
+        # copied whole, exactly like the reference tables; only the user/ascent/PII
+        # tables (never in FULL_TABLES/CLIMB_TABLES) are dropped.
+        for t in present_climb:
+            sc.execute(f"SELECT * FROM {t}")
+            cols = [d[0] for d in sc.description]
+            rows = sc.fetchall()
+            if rows:
+                ph = ",".join("?" * len(cols))
+                dc.executemany(f"INSERT INTO {t} VALUES ({ph})", rows)
+        kept = total_climbs
 
-    dc.execute("DROP TABLE _keep")
     copy_indexes(sc, dc, set(present_full + present_climb))
     dst.commit()
     dc.execute("VACUUM")
     dst.commit()
+
+    # Confirm the snappet-mobile importer's required tables survived the trim.
+    required = ["difficulty_grades", "layouts", "climbs", "climb_stats",
+                "placements", "holes", "placement_roles", "leds"]
+    missing = [t for t in required if not table_exists(dc, t)]
     src.close()
     dst.close()
-    return len(uuids)
+    print(f"  climbs: source total={total_climbs} listed={listed_climbs} kept={kept}")
+    if missing:
+        print(f"  ::warning::missing required tables for {out}: {missing}")
+    return kept
 
 
 def main() -> None:

@@ -79,6 +79,18 @@ jobs:
           echo "=== generated snapshots ==="
           ls -la src/frontend/public/board-data/ || true
 
+      - name: Guard against GitHub's 100 MB in-repo file limit
+        run: |
+          echo "Snapshot sizes:"
+          find src/frontend/public/board-data -name '*.sqlite.gz' -printf '%s\t%p\n' | sort -nr
+          largest=$(find src/frontend/public/board-data -name '*.sqlite.gz' -printf '%s\n' | sort -nr | head -1)
+          echo "largest = ${largest:-0} bytes"
+          if [ "${largest:-0}" -gt 99000000 ]; then
+            echo "::error::A snapshot exceeds ~99 MB — GitHub rejects in-repo files >100 MB."
+            echo "::error::Move src/frontend/public/board-data/*.sqlite.gz to Git LFS (see board-snapshots.yml notes)."
+            exit 1
+          fi
+
       - name: Commit snapshots
         run: |
           git config user.name "github-actions[bot]"
@@ -87,6 +99,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No snapshot changes to commit."
           else
-            git commit -m "chore(board-explorer): generate real Aurora board snapshots"
+            git commit -m "chore(board-explorer): regenerate full Aurora board snapshots (all climbs)"
             git push origin "HEAD:${{ github.ref_name }}"
           fi
