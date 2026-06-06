@@ -11,7 +11,20 @@
 
 name: Build board snapshots (manual, one-time)
 
+# Triggers, in order of how this runs:
+#  * push (to this feature branch, ONLY when this workflow file or the snapshot
+#    script changes) — lets it run a single time when added, without the file
+#    needing to be on the default branch (which workflow_dispatch requires).
+#    It will NOT loop: the snapshot commit only touches board-data/** (excluded
+#    by the paths filter) and is pushed with GITHUB_TOKEN, which GitHub refuses
+#    to let trigger another workflow run.
+#  * workflow_dispatch — for manual re-runs once this is on the default branch.
 on:
+  push:
+    branches: [claude/funny-thompson-qTcoP]
+    paths:
+      - '.github/workflows/board-snapshots.yml'
+      - 'scripts/build-board-snapshots.py'
   workflow_dispatch:
     inputs:
       boards:
@@ -22,6 +35,10 @@ on:
         description: 'Max climbs per board (0 = no cap; the app filters in-browser)'
         default: '0'
         required: true
+
+env:
+  BOARDS: 'kilter tension aurora decoy grasshopper soill touchstone'
+  LIMIT: '0'
 
 permissions:
   contents: write
@@ -45,14 +62,14 @@ jobs:
         run: |
           set -u
           rm -f src/frontend/public/board-data/*.sqlite.gz src/frontend/public/board-data/manifest.json
-          for board in ${{ github.event.inputs.boards }}; do
+          for board in ${{ github.event.inputs.boards || env.BOARDS }}; do
             echo "::group::$board"
             if python -m boardlib database "$board" "/tmp/$board.sqlite3"; then
               extra=""
               if [ "$board" = "kilter" ]; then extra="--importable-to-mobile"; fi
               python scripts/build-board-snapshots.py \
                 --board "$board" --source "/tmp/$board.sqlite3" \
-                --limit "${{ github.event.inputs.limit }}" $extra \
+                --limit "${{ github.event.inputs.limit || env.LIMIT }}" $extra \
                 || echo "::warning::trim failed for $board"
             else
               echo "::warning::download failed for $board (skipped)"
