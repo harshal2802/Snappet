@@ -1,8 +1,17 @@
 # PLAN: Board Explorer (Aurora / boardlib data)
 
-**Status**: IMPLEMENTED (rev. 3 plan; built on branch `claude/funny-thompson-qTcoP`). Remaining: real
-board snapshots + hosting/licensing sign-off (Phase-0 gate) and an in-app import verification against
-snappet-mobile. The app, worker, exporter, validator, scripts, and tests ship with a synthetic fixture.
+**Status**: IMPLEMENTED + REAL DATA SHIPPED (branch `claude/funny-thompson-qTcoP`). All phases done.
+Real snapshots for all 7 Aurora boards were generated on a GitHub-hosted runner
+(`.github/workflows/board-snapshots.yml`, manual/one-shot) and committed to `public/board-data/`:
+kilter 194,473 climbs (60 MB gz / 125 MB raw), tension 87,174 (25 MB), grasshopper 14,842, decoy
+5,403, aurora 4,691, soill/touchstone smaller. **Hosting gate resolved → in-repo** (largest file 60 MB,
+< the 100 MB GitHub limit and the 512 MB import cap; precache stays 66 entries / 3.3 MB — snapshots
+excluded). Licensing: owner approved publishing publicly. Verified: the real 125 MB Kilter snapshot
+loads in sql.js and passes the load→validate→query→mobile-compatible-export→subset integration test;
+top climbs render correctly (e.g. "You Don't Know Me" 6a/V3, 77k ascents).
+**Only remaining item**: the on-device "Import catalog file…" round-trip inside the snappet-mobile app
+(needs its iOS/Android build — can't run in the web container; export is built + tested to its
+`KilterCatalogValidator` contract).
 **Owner**: pdd
 **Route**: `/board-explorer`  ·  **Category**: `Utilities`  ·  **Icon**: 🧗
 **Research**: [`pdd/context/research/aurora-board-explorer.md`](../../context/research/aurora-board-explorer.md)
