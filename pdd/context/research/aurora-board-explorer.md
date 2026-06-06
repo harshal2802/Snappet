@@ -1,127 +1,135 @@
 # Research: Aurora Board Explorer (boardlib data) for Snappet
 
-**Date**: 2026-06-06
-**Outcome**: **Build** a new mini-app — **Board Explorer** — that loads **bundled, pre-converted
+**Date**: 2026-06-06 (rev. 2 — adds snappet-mobile import compatibility)
+**Outcome**: **Build** a new mini-app — **Board Explorer** — that loads **bundled, schema-faithful
 SQLite snapshots** of every Aurora Climbing board's public climb database (produced offline with
 [`boardlib`](https://github.com/lemeryfertitta/BoardLib)), queries them **100% in-browser** with
-`sql.js` (WASM SQLite), exposes a **full filter set** (board, layout/size, angle, grade range, min
-ascents, quality, setter, name, benchmark, listed), and **exports the filtered subset** to **CSV,
-JSON, and a downloadable `.db` SQLite file**. No backend, no credentials, no live API calls at
-runtime — the snapshots are refreshed by a maintainer-run script that wraps `boardlib`.
+`sql.js` (WASM SQLite), exposes a **full filter set**, and **exports the filtered subset** to
+**CSV**, **JSON**, and a downloadable **SQLite `.db`**. The `.db` export is **byte-compatible with
+the `snappet-mobile` "Import catalog file…" flow** (issue #42) — the same schema its
+`build_bundled_db.py` produces and its `KilterCatalogValidator` accepts. No backend, no credentials,
+no live API calls at runtime.
 
 ---
 
 ## Problem
 
-The user wants, inside Snappet, "an interface to download Aurora climbing board data as described in
-the boardlib library, with appropriate filters." Climbers using Kilter / Tension / etc. boards want
-to **browse and filter the shared climb catalogue** (by angle, difficulty, popularity, quality,
-setter…) and **take a filtered slice away** as a file they can keep or feed into other tools.
+Climbers using Kilter / Tension / etc. boards want to **browse and filter the shared climb
+catalogue** (angle, difficulty, popularity, quality, setter…) inside Snappet and **take a filtered
+slice away** as a file. A primary use of that file: **import it into the `snappet-mobile` app** so
+the phone has an offline catalog (mobile ships zero Aurora data on purpose).
 
-## What boardlib actually does (and why it can't run as-is in a browser)
+## What boardlib does (and why a browser can't replicate the download)
 
-`boardlib` is a **Python CLI**. Its `database` command:
-
-1. **Logs in** to the board's mobile API — `PUT https://api.{host}.com/sessions` with a JSON body
-   `{username, password, tou, pp, ua}`, returning `session` (a token).
+`boardlib` is a **Python CLI**. `boardlib database <board> <out.db> --username <u>`:
+1. **Logs in** — `PUT https://api.{host}.com/sessions` `{username,password,tou,pp,ua}` → `session` token.
    `HOST_BASES = {aurora: auroraboardapp, decoy: decoyboardapp, grasshopper: grasshopperboardapp,
    kilter: kilterboardapp, soill: soillboardapp, tension: tensionboardapp2, touchstone:
-   touchstoneboardapp}` → host is `api.{value}.com`.
-2. **Seeds** a base SQLite db (boardlib extracts it from the board's Android **APK**).
-3. **Syncs** shared + user tables — `POST /sync` with `Cookie: token={token}`, form-encoded table
-   names + `last_synchronized_at` watermarks; response carries `user_syncs` / `shared_syncs`.
+   touchstoneboardapp}` → host `api.{value}.com`.
+2. **Seeds** a base SQLite db (extracted from the board's Android **APK**).
+3. **Syncs** shared + user tables — `POST /sync` with `Cookie: token={token}`.
 
-The relevant **shared** tables for browsing climbs (Aurora schema):
+**Why not in-browser:** the Aurora hosts send **no CORS headers** (mobile-app endpoints), so a page
+`fetch()` is blocked; and replicating login means collecting board credentials in a static page —
+the "auth surface" the project forbids (`decisions.md` → *"No backend, fully client-side"*).
+**User decision (2026-06-06):** bundle full snapshots of **all** Aurora boards, ship the **full
+explorer**, and add a **filtered-`.db` export**.
 
-| Table | Key columns we use |
+## Aurora SQLite schema (the tables that matter)
+
+| Table | Role |
 |---|---|
-| `climbs` | `uuid`, `layout_id`, `setter_username`, `name`, `description`, `frames` (hold string), `is_listed`, `is_draft`, `edge_*` |
-| `climb_stats` | `climb_uuid`, `angle`, `display_difficulty`, `benchmark_difficulty`, `ascensionist_count`, `quality_average`, `difficulty_average` |
-| `difficulty_grades` | `difficulty` (int), `boulder_name` (e.g. `"6C+/V5"`), `is_listed` |
-| `layouts`, `products`, `product_sizes`, `sets`, `product_sizes_layouts_sets` | board-setup metadata for the layout/size filter |
+| `climbs` | `uuid, layout_id, setter_username, name, description, frames, frames_count, is_listed, is_draft, edge_left/right/bottom/top, created_at` |
+| `climb_stats` | `climb_uuid, angle, display_difficulty, benchmark_difficulty, ascensionist_count, quality_average, fa_username` |
+| `climb_cache_fields` | `climb_uuid, display_difficulty, quality_average, ascensionist_count` (denormalized cache) |
+| `beta_links` | `climb_uuid, link, is_listed` |
+| `difficulty_grades` | `difficulty (int), boulder_name` (e.g. `"6C+/V5"`) |
+| `layouts`, `products`, `product_sizes`, `sets`, `product_sizes_layouts_sets`, `products_angles` | board setup |
+| `holes`, `holds`, `placements`, `placement_roles`, `leds` | **board geometry** (hold x/y, roles/colors, LED map) |
 
-A climb's displayed grade is `difficulty_grades.boulder_name` where
-`difficulty = ROUND(climb_stats.display_difficulty)`, joined on
-`climbs.uuid = climb_stats.climb_uuid`.
+Display grade = `difficulty_grades.boulder_name` where `difficulty = ROUND(display_difficulty)`,
+joined `climbs.uuid = climb_stats.climb_uuid`. A climb's holds are encoded in `frames` (tokens split
+on `"p"`, each `"r"` → `(placement_id, role_id)`), resolved to x/y via `placements`→`holes`.
 
-### Why a pure client-side app cannot replicate the download
+## ⭐ Cross-app compatibility: import into `snappet-mobile` (the binding constraint)
 
-- **CORS.** `api.kilterboardapp.com` et al. are **mobile-app** endpoints with **no
-  `Access-Control-Allow-Origin`**. A browser `fetch()` from `harshal2802.github.io` is blocked at the
-  network layer. Not fixable client-side.
-- **Auth surface.** Replicating login means **collecting a user's board username/password** in a
-  static page and shipping them to a third party — exactly the "no auth surface" the project forbids
-  (`decisions.md` → *"No backend, fully client-side"*).
-- **Schema seeding from an APK** is not a browser operation.
+`snappet-mobile` already implements **"Import catalog file…"** (iOS Files / Android SAF) — issue #42.
+The web export **must** satisfy its existing validator + reader, verbatim:
 
-This is a hard architectural fork, surfaced to the user. **Decision (user, 2026-06-06): bundle full
-snapshots of all Aurora boards**, support **all boards**, ship the **full explorer**, and **add a
-filtered-`.db` export**.
+**`KilterCatalogValidator` (iOS `…/Features/Kilter/KilterCatalogValidator.swift`, mirrored on Android) requires:**
+- **Tables present:** `difficulty_grades, layouts, climbs, climb_stats, placements, holes,
+  placement_roles, leds`.
+- **At least one listed climb:** `SELECT COUNT(*) FROM climbs WHERE is_listed = 1` ≥ 1.
+- **Size cap:** ≤ **512 MB** (512 × 1,000,000 bytes).
+- **Version** (informational): `c{climbs}·s{stats}·g{grades}·` + FNV-1a hex of
+  `"{climbs}|{stats}|{grades}|{MAX(created_at)}"` (offset basis `0xcbf29ce484222325`, prime
+  `0x100000001b3`). The web app doesn't need to reproduce this, only to produce a file that yields one.
 
-## Constraints (Snappet standard + this app's specifics)
+**`KilterCatalog` reader also queries** (so these must be populated for a *usable* import):
+`climb_cache_fields` (by-uuid panel), `beta_links` (where `is_listed=1`), `holds`,
+`product_sizes_layouts_sets` + `leds` (LED map), `products_angles`.
 
-- **No backend / no runtime network to Aurora.** All querying is local.
-- **Static-asset budget.** The PWA precache must not balloon. Board snapshots are **large** (Kilter
-  alone is ~100k+ climbs once stats are joined). They must be **per-board, lazily fetched from
-  `public/`, gzip-compressed, and excluded from the precache manifest** — same playbook as the
-  workout app's `exercises.json` and the doc-viewer's tesseract assets.
-- **`sql.js` WASM** (~1 MB) must also be lazy-loaded with `locateFile` → `public/`, never precached.
-- **Staleness + provenance.** Bundled data is a point-in-time snapshot. Show a "data as of <date>"
-  badge per board and document the refresh path. Credit Aurora Climbing + boardlib visibly.
-- **Licensing.** Climb data is user-generated content hosted by Aurora. We ship a **derived,
-  read-only snapshot for browsing**, attributed, with a documented regeneration script so the
-  maintainer owns refreshes (not a redistribution of Aurora's app). Flag for maintainer review.
-- **TypeScript strict, Tailwind only, mobile-first, `useLocalStorage`, `↺ Reset`, guided tour** —
-  all standard.
+**`tools/kilter/build_bundled_db.py`** (mobile's own builder) is the reference implementation:
+- **Copies whole** (`FULL_TABLES`): `difficulty_grades, products, product_sizes, layouts, sets,
+  product_sizes_layouts_sets, products_angles, placement_roles, holes, holds, placements, leds`.
+- **Subsets by climb uuid** (`CLIMB_TABLES`): `climbs, climb_stats, climb_cache_fields, beta_links`.
+- **Climb filter:** `is_listed = 1 AND layout_id IN (--layouts, default 1 8) AND frames_count = 1`,
+  grouped by uuid, ordered by `MAX(climb_stats.ascensionist_count) DESC`, optional `--limit 800`.
+  `VACUUM` at the end.
 
-## Approach decision: `sql.js` over a JSON blob
+### Implications for this app (vs. rev. 1)
 
-The filtered-**`.db`** export requirement is the deciding factor. Options:
+1. **No flattened `climb_browse` table.** Snapshots and exports must keep the **real Aurora schema**.
+   The web `.db` export is a **browser-side reimplementation of `build_bundled_db.py`** where the
+   user's filters define the climb subset (then it always copies the reference/geometry tables whole).
+2. **`frames_count = 1` for importable exports.** The mobile frame decoder handles single-frame
+   climbs; keep this filter on the export (and offer it as the default "mobile-compatible" mode).
+3. **Kilter is the import target today.** Mobile only has `KilterCatalog`. Tension/Decoy/etc. exports
+   are valid Aurora-shaped dbs but mobile has no reader for their layouts yet — so the explorer marks
+   **Kilter (layouts 1 = Original, 8 = Homewall)** as "✓ importable into Snappet mobile", others as
+   "valid Aurora `.db`, mobile import not yet supported".
+4. **The export schema is now a cross-repo contract.** It is pinned to `snappet-mobile`'s
+   `KilterCatalogValidator`. Document it; if mobile's validator changes, the web export must track it.
+   (Candidate for a line in `pdd/context/snappet-core-schema.md`.)
 
-- **Bundle JSON + filter in JS + hand-roll a SQLite writer** — would need a from-scratch SQLite file
-  encoder to satisfy the `.db` export. Rejected (huge, error-prone).
-- **Bundle real `.sqlite` per board + `sql.js`** — **chosen.** `sql.js` loads the bundled db, runs
-  the filter `SELECT`, and for export we build a *new* in-memory db with only the matched climbs +
-  their referenced lookup rows and call `db.export()` → `Uint8Array` → `Blob` download. The exported
-  file is a valid, smaller Aurora-shaped SQLite that other tools (incl. boardlib consumers) can read.
-  CSV/JSON fall out of the same result set trivially.
+## Approach decision: `sql.js`, schema-faithful, replicate `build_bundled_db.py`
 
-New dependency: **`sql.js`** (`^1.x`). One WASM file, MIT, no transitive bloat — consistent with how
-`mp4box`/`pdfjs`/`tesseract.js` were added for video-editor/doc-viewer.
+`sql.js` (WASM SQLite, MIT, ~1 MB) loads the bundled board db, runs the filter `SELECT`, and for
+export opens a **fresh** `new SQL.Database()`, recreates every required table with its **original
+`CREATE TABLE` DDL** (read from the source via `sqlite_master`), copies the reference/geometry tables
+whole, inserts the filtered `climbs/climb_stats/climb_cache_fields/beta_links`, `VACUUM`s, and
+`db.export()` → `Blob` download. CSV/JSON fall out of the same filtered result set.
+
+Rejected: bundling JSON + a hand-rolled SQLite writer (can't reproduce the exact schema/DDL the mobile
+validator expects); flattening to one table (breaks geometry + the import contract).
+
+New dep: **`sql.js`** `^1.x` (one WASM file).
 
 ## Snapshot pipeline (maintainer, offline — NOT runtime)
 
-`scripts/build-board-snapshots.py` (documented, run by the maintainer who has board logins):
+Reuse mobile's proven path. `scripts/build-board-snapshots.py`:
+1. `boardlib database <board> <tmp>/<board>.db` (per board; Kilter login may be needed).
+2. **Trim while preserving schema** — same `FULL_TABLES` copied whole + `CLIMB_TABLES` subset as
+   `tools/kilter/build_bundled_db.py` (ideally import/share that script). Keep a generous climb cap
+   (or none) for the *web* snapshot since the user filters further in-browser. `VACUUM`.
+3. **gzip** → `src/frontend/public/board-data/<board>.sqlite.gz` + `public/board-data/manifest.json`
+   (`{board, climbs, layouts, generatedAt, importableToMobile}`).
 
-1. For each board: `boardlib database <board> <tmp>/<board>.db --username <user>` (prompts password).
-2. **Slim** it: keep only the columns the explorer needs; pre-join a `climb_browse` table/view
-   (`uuid, name, setter_username, layout_id, angle, grade(boulder_name), grade_int, ascents,
-   quality, benchmark, is_listed`) so the in-browser query is a simple indexed `SELECT … WHERE`.
-   Drop user/ascent PII tables. `VACUUM`.
-3. **gzip** → `src/frontend/public/board-data/<board>.sqlite.gz` + write
-   `public/board-data/manifest.json` (`{board, climbs, generatedAt, gradeScale}`).
+Runtime: `manifest.json` eager (tiny); `<board>.sqlite.gz` lazy on board select
+(`fetch` → `DecompressionStream('gzip')` → `sql.js`). **Excluded** from the PWA precache, like the
+workout `exercises.json` / tesseract assets. `sql-wasm.wasm` lives in `public/` (lazy, not precached).
 
-Runtime fetches `manifest.json` (tiny) eagerly; the per-board `.sqlite.gz` only when a board is
-selected (`fetch` → `DecompressionStream('gzip')` → `sql.js`). Snapshots are **git-LFS or
-release-asset** candidates if they exceed comfortable repo size — flag during build.
+## Filters (Aurora `explore` semantics)
 
-## Filters (map to boardlib/Aurora `explore` semantics)
-
-Board · Layout + size · **Angle** · **Grade range** (min/max via `difficulty_grades`) · **Min
-ascents** · **Min quality** (stars) · **Setter** (search) · **Name** search · **Benchmark only** ·
-**Listed/public only** · sort (popularity / quality / grade / name). Saved-filter **presets** in
-`localStorage` (`snappet:board-explorer:*`).
-
-## Alternatives considered (rejected)
-
-- **Live API via public CORS proxy** — violates no-backend/no-auth, unreliable, leaks credentials.
-- **Import-your-own `.db` only** — empty until the user runs boardlib; user chose bundled snapshots.
-- **Bundle as JSON, no SQLite** — can't satisfy the `.db` export cleanly (see above).
+Board · Layout + size · **Angle** · **Grade range** (via `difficulty_grades`) · **Min ascents** ·
+**Min quality** · **Setter** · **Name** · **Benchmark only** · **Listed only** · **Single-frame only
+(mobile-compatible)** · sort (popularity/quality/grade/name). Saved presets in `localStorage`.
 
 ## Open questions for the maintainer
 
-1. **Repo size / hosting** of the `.sqlite.gz` snapshots (in-repo vs git-LFS vs GitHub Release
-   asset fetched at runtime). Sizing happens in Phase 1.
-2. **Licensing/attribution** sign-off on shipping derived snapshots.
-3. **Refresh cadence** (manual on demand vs a scheduled Action that runs boardlib with a secret
-   login — the only place a credential would ever live, and it'd be a CI secret, never in the app).
+1. **Repo size / hosting** of `.sqlite.gz` snapshots (in-repo vs git-LFS vs Release asset). Sized in
+   Phase 0 against the **512 MB** import cap and bundle budget.
+2. **Licensing/attribution** sign-off on shipping derived snapshots (mobile sidestepped this by
+   shipping *zero* data and importing on-device — worth weighing the same stance for the web app, but
+   the user explicitly chose bundling).
+3. **Export schema contract** — record it in `snappet-core-schema.md` so web ↔ mobile can't drift.
