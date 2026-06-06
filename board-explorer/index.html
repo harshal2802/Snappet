@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Snappet" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/svg+xml" href="/Snappet/snappet.svg" />
+    <!-- apple-touch-icon and manifest <link> are auto-injected by vite-plugin-pwa -->
+    <!-- Dark mode: apply class synchronously before React mounts to prevent flash -->
+    <script>
+      if (
+        localStorage.getItem('snappet-dark-mode') === 'true' ||
+        (!localStorage.getItem('snappet-dark-mode') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches)
+      ) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
+    <!-- GitHub Pages SPA redirect: restores path encoded by 404.html -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          )
+        }
+      })(window.location)
+    </script>
+    <script type="module" crossorigin src="/Snappet/assets/index-CSiCuJpQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/Snappet/assets/index-FsMUdqN3.css">
+  <link rel="manifest" href="/Snappet/manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="icon" href="/Snappet/favicon.ico" sizes="48x48">
+<link rel="icon" href="/Snappet/snappet.svg" sizes="any" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/Snappet/apple-touch-icon-180x180.png">    <title>Board Explorer — Free Online Tool | Snappet</title>
+    <meta name="description" content="Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more,…">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="https://harshal2802.github.io/Snappet/board-explorer/">
+    <meta property="og:site_name" content="Snappet">
+    <meta property="og:title" content="Board Explorer — Free Online">
+    <meta property="og:description" content="Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more,…">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://harshal2802.github.io/Snappet/board-explorer/">
+    <meta property="og:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Board Explorer — Free Online">
+    <meta name="twitter:description" content="Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more,…">
+    <meta name="twitter:image" content="https://harshal2802.github.io/Snappet/pwa-512x512.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Board Explorer — Snappet","url":"https://harshal2802.github.io/Snappet/board-explorer/","description":"Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more, then export the slice as CSV, JSON, or a SQLite database.","applicationCategory":"UtilitiesApplication","operatingSystem":"Web","browserRequirements":"Requires a modern web browser with JavaScript.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"featureList":["Filter climbs by board, layout, angle, grade range, ascents, quality, setter, name, and benchmark","Sortable, paged results — everything queried locally with in-browser SQLite (sql.js)","Export the filtered set as CSV, JSON, or a SQLite .db","The Kilter .db imports directly into the Snappet mobile app — your data never leaves your device"],"publisher":{"@type":"Organization","name":"Snappet","url":"https://harshal2802.github.io/Snappet/"}}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://harshal2802.github.io/Snappet/"},{"@type":"ListItem","position":2,"name":"Board Explorer","item":"https://harshal2802.github.io/Snappet/board-explorer/"}]}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Where does the climbing-board data come from?","acceptedAnswer":{"@type":"Answer","text":"It is downloaded from Aurora Climbing boards with the open-source boardlib tool and bundled as a snapshot. The app queries that snapshot entirely in your browser; nothing is uploaded."}},{"@type":"Question","name":"Can I use the downloaded database in the Snappet phone app?","acceptedAnswer":{"@type":"Answer","text":"Yes. Export the Kilter set as a SQLite .db and use \"Import catalog file…\" in the Snappet mobile app — the schema matches what its importer expects."}},{"@type":"Question","name":"Is my data uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The board data is processed locally with WebAssembly SQLite; filtering and export all happen on your device."}}]}</script>
+  </head>
+  <body>
+    <div id="root"><main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,sans-serif;line-height:1.55;color:#111"><p><a href="https://harshal2802.github.io/Snappet/">← All Snappet tools</a></p><h1>Board Explorer</h1><p>Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more, then export the slice as CSV, JSON, or a SQLite database.</p><h2>Features</h2><ul><li>Filter climbs by board, layout, angle, grade range, ascents, quality, setter, name, and benchmark</li><li>Sortable, paged results — everything queried locally with in-browser SQLite (sql.js)</li><li>Export the filtered set as CSV, JSON, or a SQLite .db</li><li>The Kilter .db imports directly into the Snappet mobile app — your data never leaves your device</li></ul><h2>Frequently asked questions</h2><h3>Where does the climbing-board data come from?</h3><p>It is downloaded from Aurora Climbing boards with the open-source boardlib tool and bundled as a snapshot. The app queries that snapshot entirely in your browser; nothing is uploaded.</p><h3>Can I use the downloaded database in the Snappet phone app?</h3><p>Yes. Export the Kilter set as a SQLite .db and use &quot;Import catalog file…&quot; in the Snappet mobile app — the schema matches what its importer expects.</p><h3>Is my data uploaded anywhere?</h3><p>No. The board data is processed locally with WebAssembly SQLite; filtering and export all happen on your device.</p><h2>More Utilities tools</h2><ul><li><a href="https://harshal2802.github.io/Snappet/doc-viewer/">Document Viewer</a></li><li><a href="https://harshal2802.github.io/Snappet/password-generator/">Password Generator</a></li><li><a href="https://harshal2802.github.io/Snappet/qr-code/">QR Code Generator</a></li><li><a href="https://harshal2802.github.io/Snappet/tally-counter/">Tally Counter</a></li><li><a href="https://harshal2802.github.io/Snappet/random-picker/">Random Picker</a></li></ul><p>Loading the Board Explorer…</p></main></div>
+  </body>
+</html>
