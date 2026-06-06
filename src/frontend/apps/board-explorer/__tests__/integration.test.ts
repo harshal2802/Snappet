@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { resolve } from 'node:path'
 import { buildListingSql, buildCountSql } from '../query'
@@ -14,7 +14,8 @@ import { getSQL } from './helpers'
 const FIXTURE = resolve(process.cwd(), 'public/board-data/kilter.sqlite.gz')
 
 describe('kilter fixture (real snapshot) integration', () => {
-  it('loads, validates, queries, and exports a filtered importable catalog', async () => {
+  // Skip gracefully if the snapshot isn't materialized (shallow/partial clone).
+  it.skipIf(!existsSync(FIXTURE))('loads, validates, queries, and exports a filtered importable catalog', async () => {
     const SQL = await getSQL()
     const bytes = gunzipSync(readFileSync(FIXTURE))
     const db = new SQL.Database(new Uint8Array(bytes))
