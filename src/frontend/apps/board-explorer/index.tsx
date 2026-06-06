@@ -155,6 +155,8 @@ function Explorer() {
   }
 
   const busy = exporting !== null
+  const selectedEntry = manifest?.find((b) => b.board === selectedBoard)
+  const selectedSizeMb = selectedEntry ? Math.round(selectedEntry.sizeBytesGz / 1_000_000) : 0
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
@@ -215,7 +217,11 @@ function Explorer() {
       </div>
 
       {boardError && <Banner ok={false}>Couldn't load this board: {boardError}</Banner>}
-      {boardLoading && <p className="text-sm text-gray-400 py-8 text-center">Loading board data…</p>}
+      {boardLoading && (
+        <p className="text-sm text-gray-400 py-8 text-center">
+          Loading board data…{selectedSizeMb >= 1 && ` (downloading ~${selectedSizeMb} MB, once)`}
+        </p>
+      )}
 
       {meta && !boardLoading && (
         <>

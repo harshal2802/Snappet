@@ -127,8 +127,13 @@ Board · Layout + size · **Angle** · **Grade range** (via `difficulty_grades`)
 
 ## Open questions for the maintainer
 
-1. **Repo size / hosting** of `.sqlite.gz` snapshots (in-repo vs git-LFS vs Release asset). Sized in
-   Phase 0 against the **512 MB** import cap and bundle budget.
+1. **Repo size / hosting** — RESOLVED (2026-06-06): full all-climbs snapshots are committed **in-repo,
+   served same-origin by Pages**. Largest is kilter at **81 MB gz** (344,504 climbs) — under GitHub's
+   100 MB file limit. **GitHub Release assets were evaluated and rejected**: their cross-origin
+   responses carry no `Access-Control-Allow-Origin`, so a browser `fetch()` from the Pages origin is
+   CORS-blocked. **Git LFS** is the fallback only if a board ever exceeds 100 MB (deploy would need
+   `lfs: true` so the build materializes real bytes into `dist`); the snapshot workflow prints sizes
+   and hard-fails before any >99 MB push to signal the switch.
 2. **Licensing/attribution** sign-off on shipping derived snapshots (mobile sidestepped this by
    shipping *zero* data and importing on-device — worth weighing the same stance for the web app, but
    the user explicitly chose bundling).
