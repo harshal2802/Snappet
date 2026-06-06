@@ -1,0 +1,82 @@
+{
+  "generatedAt": "2026-06-06",
+  "boards": [
+    {
+      "board": "kilter",
+      "label": "Kilter Board",
+      "file": "kilter.sqlite.gz",
+      "climbs": 344504,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": true,
+      "sizeBytesGz": 81108848,
+      "sizeBytesRaw": 172687360
+    },
+    {
+      "board": "tension",
+      "label": "Tension Board",
+      "file": "tension.sqlite.gz",
+      "climbs": 128762,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 30699115,
+      "sizeBytesRaw": 61845504
+    },
+    {
+      "board": "aurora",
+      "label": "Aurora Board",
+      "file": "aurora.sqlite.gz",
+      "climbs": 6709,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 2108856,
+      "sizeBytesRaw": 4431872
+    },
+    {
+      "board": "decoy",
+      "label": "Decoy Board",
+      "file": "decoy.sqlite.gz",
+      "climbs": 8046,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 1976030,
+      "sizeBytesRaw": 4378624
+    },
+    {
+      "board": "grasshopper",
+      "label": "Grasshopper Board",
+      "file": "grasshopper.sqlite.gz",
+      "climbs": 21504,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 5062303,
+      "sizeBytesRaw": 10584064
+    },
+    {
+      "board": "soill",
+      "label": "Soill Board",
+      "file": "soill.sqlite.gz",
+      "climbs": 1609,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 354992,
+      "sizeBytesRaw": 921600
+    },
+    {
+      "board": "touchstone",
+      "label": "Touchstone Board",
+      "file": "touchstone.sqlite.gz",
+      "climbs": 1528,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 368935,
+      "sizeBytesRaw": 909312
+    }
+  ]
+}

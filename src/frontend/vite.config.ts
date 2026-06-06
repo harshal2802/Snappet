@@ -146,6 +146,10 @@ export default defineConfig({
       workbox: {
         // Precache build output: HTML, JS, CSS, SVG, PNG, woff/woff2.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
+        // Defensive: keep the large board snapshots + sql.js WASM out of the
+        // precache even if the allowlist above is ever widened. They're fetched
+        // lazily by the Board Explorer (see apps/board-explorer/db.ts).
+        globIgnores: ['**/board-data/**', '**/sql-wasm.wasm'],
         // SPA navigation fallback so deep links work offline.
         navigateFallback: `${base}index.html`,
         // Don't intercept the GH Pages 404 redirect path or the SW script itself.

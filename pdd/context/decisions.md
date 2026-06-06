@@ -6,6 +6,47 @@ A log of significant technical decisions and the reasoning behind them.
 
 ---
 
+## [2026-06-06] Board Explorer: bundled SQLite snapshots + sql.js (no live Aurora API), export pinned to snappet-mobile's importer
+
+**Decision**: Ship a **Board Explorer** mini-app (`/board-explorer`) that reads **bundled, gzipped,
+schema-faithful SQLite snapshots** of Aurora climbing boards (the data `boardlib` produces), queries
+them **in a Web Worker via sql.js** (WASM SQLite), and exports the filtered set to **CSV / JSON / a
+SQLite `.db`**. There is **no runtime call to the Aurora API**. The `.db` export is a browser-side
+reimplementation of `snappet-mobile/tools/kilter/build_bundled_db.py` whose schema satisfies that
+repo's `KilterCatalogValidator` (issue #42), so a Kilter export imports straight into the mobile
+app's "Import catalog file…" flow. Snapshots are generated offline by `scripts/build-board-snapshots.py`
+(maintainer-run, wraps boardlib); a synthetic, zero-Aurora-data fixture
+(`scripts/build-board-fixture.py`) ships as the bundled sample so the app works out of the box.
+Full plan: `pdd/prompts/features/aurora-board-explorer/PLAN-aurora-board-explorer.md`.
+
+**Why**: `boardlib`'s download logs into `api.{board}boardapp.com` (`PUT /sessions` → token,
+`POST /sync`). A browser can't replicate that — those mobile-app endpoints send **no CORS headers**,
+and collecting board credentials in a static page is exactly the "auth surface" this project forbids.
+Bundled snapshots + in-browser SQLite keep the tool 100% client-side. sql.js (not a flattened JSON
+blob) is required because the headline feature is exporting a **real** `.db` the phone can import —
+which means keeping the genuine Aurora schema end-to-end (reference/geometry tables copied whole, only
+the climb tables subset by the user's filter).
+
+**Trade-offs**: The export schema is now a **cross-repo contract** pinned to snappet-mobile's
+validator/builder — guarded by `validate.ts` (parity checks) and a `validate.test.ts` fixture, plus an
+integration test that round-trips the real snapshot. sql.js adds a ~660 KB WASM file (lazy, in
+`public/`, precache-excluded) and a ~1 MB worker chunk (lazy). Real board snapshots are large (Kilter
+~69 MB raw); the **hosting strategy** (in-repo vs git-LFS vs GitHub Release asset, against the 512 MB
+import cap) is a Phase-0 gate to settle with real numbers — only the tiny synthetic fixtures are
+committed for now. Non-Kilter boards export a valid Aurora `.db` but mobile has no reader for their
+layouts yet, so the UI marks only Kilter "✓ importable into Snappet mobile".
+
+**How to apply**: Refresh data with `scripts/build-board-snapshots.py` (keep its FULL_TABLES /
+CLIMB_TABLES trim in sync with snappet-mobile's `build_bundled_db.py`). Keep `board-data/**` and
+`sql-wasm.wasm` out of the PWA `globPatterns` (a defensive `globIgnores` is also set).
+
+**Don't suggest**: calling the Aurora API from the browser (CORS + credential surface); a CORS proxy
+or any backend; flattening snapshots to a single denormalized table (breaks board geometry and the
+mobile import contract); bundling real proprietary Aurora data without resolving the licensing
+question logged in the research doc.
+
+---
+
 ## [2026-06-02] PWA service worker: switch from `prompt` to `autoUpdate`
 
 **Decision**: Change `vite-plugin-pwa`'s `registerType` from `'prompt'` to `'autoUpdate'`. A new

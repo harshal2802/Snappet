@@ -501,6 +501,37 @@ export const catalog: AppMeta[] = [
     ],
     keywords: ['video editor', 'online video editor', 'browser video editor', 'trim video', 'free video editor no watermark'],
   },
+  {
+    path: '/board-explorer',
+    label: 'Board Explorer',
+    description:
+      'Browse and filter Aurora climbing-board catalogues (Kilter, Tension, …) and download a filtered SQLite/CSV/JSON.',
+    category: 'Utilities',
+    icon: '🧗',
+    tagline:
+      'Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more, then export the slice as CSV, JSON, or a SQLite database.',
+    features: [
+      'Filter climbs by board, layout, angle, grade range, ascents, quality, setter, name, and benchmark',
+      'Sortable, paged results — everything queried locally with in-browser SQLite (sql.js)',
+      'Export the filtered set as CSV, JSON, or a SQLite .db',
+      'The Kilter .db imports directly into the Snappet mobile app — your data never leaves your device',
+    ],
+    faqs: [
+      {
+        q: 'Where does the climbing-board data come from?',
+        a: 'It is downloaded from Aurora Climbing boards with the open-source boardlib tool and bundled as a snapshot. The app queries that snapshot entirely in your browser; nothing is uploaded.',
+      },
+      {
+        q: 'Can I use the downloaded database in the Snappet phone app?',
+        a: 'Yes. Export the Kilter set as a SQLite .db and use "Import catalog file…" in the Snappet mobile app — the schema matches what its importer expects.',
+      },
+      {
+        q: 'Is my data uploaded anywhere?',
+        a: 'No. The board data is processed locally with WebAssembly SQLite; filtering and export all happen on your device.',
+      },
+    ],
+    keywords: ['kilter board', 'tension board', 'climbing board database', 'boardlib', 'kilter climbs', 'aurora climbing'],
+  },
 ]
 
 export const catalogByPath: Record<string, AppMeta> = Object.fromEntries(

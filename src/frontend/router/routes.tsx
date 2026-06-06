@@ -33,6 +33,7 @@ const loaders: Record<string, () => Promise<{ default: ComponentType }>> = {
   '/unit-converter': () => import('../apps/unit-converter'),
   '/workout': () => import('../apps/workout'),
   '/video-editor': () => import('../apps/video-editor'),
+  '/board-explorer': () => import('../apps/board-explorer'),
 }
 
 export const routes: AppRoute[] = catalog
