@@ -1,0 +1,75 @@
+# One-time / on-demand generation of REAL Aurora board snapshots for the Board
+# Explorer (/board-explorer). This is MANUAL ONLY (workflow_dispatch — no schedule,
+# no push trigger), so it runs only when you click "Run workflow". GitHub-hosted
+# runners have open network egress, so boardlib can reach apkpure + the Aurora APIs
+# (the Claude-on-web sandbox cannot). It downloads each board's public base DB,
+# trims it with scripts/build-board-snapshots.py, and commits the gzipped snapshots
+# + manifest to the branch it ran on.
+#
+# Note on data: this publishes Aurora Climbing's public climb catalogue. See
+# pdd/context/research/aurora-board-explorer.md for the licensing context.
+
+name: Build board snapshots (manual, one-time)
+
+on:
+  workflow_dispatch:
+    inputs:
+      boards:
+        description: 'Space-separated board names to generate'
+        default: 'kilter tension aurora decoy grasshopper soill touchstone'
+        required: true
+      limit:
+        description: 'Max climbs per board (0 = no cap; the app filters in-browser)'
+        default: '0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  snapshots:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (the branch this was dispatched on)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install boardlib
+        run: python -m pip install --upgrade pip boardlib Pillow
+
+      - name: Download + trim each board
+        run: |
+          set -u
+          rm -f src/frontend/public/board-data/*.sqlite.gz src/frontend/public/board-data/manifest.json
+          for board in ${{ github.event.inputs.boards }}; do
+            echo "::group::$board"
+            if python -m boardlib database "$board" "/tmp/$board.sqlite3"; then
+              extra=""
+              if [ "$board" = "kilter" ]; then extra="--importable-to-mobile"; fi
+              python scripts/build-board-snapshots.py \
+                --board "$board" --source "/tmp/$board.sqlite3" \
+                --limit "${{ github.event.inputs.limit }}" $extra \
+                || echo "::warning::trim failed for $board"
+            else
+              echo "::warning::download failed for $board (skipped)"
+            fi
+            echo "::endgroup::"
+          done
+          echo "=== generated snapshots ==="
+          ls -la src/frontend/public/board-data/ || true
+
+      - name: Commit snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/frontend/public/board-data
+          if git diff --cached --quiet; then
+            echo "No snapshot changes to commit."
+          else
+            git commit -m "chore(board-explorer): generate real Aurora board snapshots"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
