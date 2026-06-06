@@ -455,8 +455,38 @@ const NODES = [
     desc: 'Trim, split, sequence, add text/filters/transitions, and export MP4 — all client-side via WebCodecs.',
     tags: ['video', 'editor', 'webcodecs', 'mp4'],
   },
+  {
+    id: 'board-explorer',
+    label: 'Board Explorer',
+    type: 'app',
+    category: 'Utilities',
+    layer: 'app',
+    file: 'src/frontend/apps/board-explorer/',
+    desc: 'Filter Aurora climbing-board (Kilter/Tension) catalogues in-browser with sql.js and export CSV/JSON/SQLite. The Kilter .db imports into snappet-mobile.',
+    tags: ['climbing', 'kilter', 'tension', 'sqlite', 'boardlib'],
+  },
 
   // ── External dependencies / data sources ────────────────────────────────
+  {
+    id: 'sql-js',
+    label: 'sql.js (WASM SQLite)',
+    type: 'external',
+    category: 'Platform',
+    layer: 'external',
+    file: 'sql.js',
+    desc: 'WebAssembly build of SQLite. Runs in a Web Worker to query board snapshots and build the filtered .db export.',
+    tags: ['sqlite', 'wasm', 'worker'],
+  },
+  {
+    id: 'boardlib',
+    label: 'boardlib + board snapshots',
+    type: 'external',
+    category: 'Data',
+    layer: 'external',
+    file: 'public/board-data/, scripts/build-board-snapshots.py',
+    desc: 'Aurora climbing-board data downloaded offline with boardlib, trimmed to schema-faithful per-board SQLite snapshots (gzipped, precache-excluded).',
+    tags: ['boardlib', 'aurora', 'kilter', 'data'],
+  },
   {
     id: 'react',
     label: 'React + Router',
@@ -713,7 +743,7 @@ const EDGES = [
     'kanban-board', 'markdown-editor', 'pomodoro-timer', 'stopwatch',
     'json-explorer', 'regex-playground', 'code-snapshot', 'color-picker',
     'password-generator', 'qr-code', 'tally-counter', 'random-picker',
-    'doc-viewer', 'workout', 'video-editor',
+    'doc-viewer', 'workout', 'video-editor', 'board-explorer',
   ].map((id) => ({ s: 'routes', t: id, type: 'route' })),
 
   // Every mini-app uses Tailwind + the persistence hook (the established patterns)
@@ -722,13 +752,13 @@ const EDGES = [
     'kanban-board', 'markdown-editor', 'pomodoro-timer', 'stopwatch',
     'json-explorer', 'regex-playground', 'code-snapshot', 'color-picker',
     'password-generator', 'qr-code', 'tally-counter', 'random-picker',
-    'doc-viewer', 'workout', 'video-editor',
+    'doc-viewer', 'workout', 'video-editor', 'board-explorer',
   ].map((id) => ({ s: id, t: 'tailwind', type: 'uses' })),
 
   // Apps that persist user state to localStorage
   ...[
     'tip-calculator', 'expense-splitter', 'kanban-board', 'markdown-editor',
-    'tally-counter', 'workout', 'video-editor', 'json-explorer',
+    'tally-counter', 'workout', 'video-editor', 'json-explorer', 'board-explorer',
   ].map((id) => ({ s: id, t: 'use-local-storage', type: 'persists' })),
 
   // App-specific external dependencies
@@ -741,6 +771,9 @@ const EDGES = [
   { s: 'video-editor', t: 'webcodecs', type: 'uses' },
   { s: 'video-editor', t: 'zustand', type: 'uses' },
   { s: 'workout', t: 'free-exercise-db', type: 'uses' },
+  { s: 'board-explorer', t: 'sql-js', type: 'uses' },
+  { s: 'board-explorer', t: 'boardlib', type: 'uses' },
+  { s: 'board-explorer', t: 'snappet-mobile', type: 'feeds', label: 'exports importable .db' },
 
   // Product brain documents the work
   { s: 'pdd-project', t: 'snappet', type: 'documents' },
@@ -749,6 +782,7 @@ const EDGES = [
   { s: 'pdd-prompts', t: 'snappet', type: 'documents', label: 'how each app was built' },
   { s: 'pdd-research', t: 'workout', type: 'documents' },
   { s: 'pdd-research', t: 'video-editor', type: 'documents' },
+  { s: 'pdd-research', t: 'board-explorer', type: 'documents' },
   { s: 'pdd-decisions', t: 'pwa', type: 'documents' },
   { s: 'pdd-decisions', t: 'prerender', type: 'documents' },
   { s: 'mobile-plan', t: 'snappet-mobile', type: 'documents', label: 'plans' },

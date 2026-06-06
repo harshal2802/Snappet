@@ -63,6 +63,7 @@ get a polished tool instantly, with dark mode and a mobile-first responsive layo
 | Document Viewer | `/doc-viewer` | Utilities | View PDFs/images with in-browser OCR |
 | Workout | `/workout` | Health | 800+ exercise library, routines, player, progress dashboard |
 | Video Editor | `/video-editor` | Creative | Trim/split/sequence + export MP4, all via WebCodecs |
+| Board Explorer | `/board-explorer` | Utilities | Filter Aurora climbing-board (Kilter/Tension) catalogues + export CSV/JSON/SQLite |
 
 ## Guided tours
 
@@ -137,7 +138,7 @@ they never drift from the real model. Full docs:
                        ├─ useSeoHead   ← seo/meta ← seo/catalog  (single source of truth)
                        ├─ lib/usage    → localStorage (per-device open counts)
                        └─ Routes ──────┬─ Hub (search · filter · sort · usage dashboard)
-                                       └─ 20 lazily-loaded mini-apps
+                                       └─ 21 lazily-loaded mini-apps
                                             └─ useLocalStorage (snappet:<app>:<field>)
 ```
 

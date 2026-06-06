@@ -1,6 +1,8 @@
 # PLAN: Board Explorer (Aurora / boardlib data)
 
-**Status**: drafting (rev. 3 — codebase-verified refinement: Web Worker, vitest, hosting, export algo)
+**Status**: IMPLEMENTED (rev. 3 plan; built on branch `claude/funny-thompson-qTcoP`). Remaining: real
+board snapshots + hosting/licensing sign-off (Phase-0 gate) and an in-app import verification against
+snappet-mobile. The app, worker, exporter, validator, scripts, and tests ship with a synthetic fixture.
 **Owner**: pdd
 **Route**: `/board-explorer`  ·  **Category**: `Utilities`  ·  **Icon**: 🧗
 **Research**: [`pdd/context/research/aurora-board-explorer.md`](../../context/research/aurora-board-explorer.md)
