@@ -5,23 +5,78 @@
       "board": "kilter",
       "label": "Kilter Board",
       "file": "kilter.sqlite.gz",
-      "climbs": 240,
+      "climbs": 194473,
       "generatedAt": "2026-06-06",
-      "isFixture": true,
+      "isFixture": false,
       "importableToMobile": true,
-      "sizeBytesGz": 34644,
-      "sizeBytesRaw": 245760
+      "sizeBytesGz": 60017682,
+      "sizeBytesRaw": 125353984
     },
     {
       "board": "tension",
       "label": "Tension Board",
       "file": "tension.sqlite.gz",
-      "climbs": 240,
+      "climbs": 87174,
       "generatedAt": "2026-06-06",
-      "isFixture": true,
+      "isFixture": false,
       "importableToMobile": false,
-      "sizeBytesGz": 34609,
-      "sizeBytesRaw": 245760
+      "sizeBytesGz": 25506720,
+      "sizeBytesRaw": 51023872
+    },
+    {
+      "board": "aurora",
+      "label": "Aurora Board",
+      "file": "aurora.sqlite.gz",
+      "climbs": 4691,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 1798998,
+      "sizeBytesRaw": 3780608
+    },
+    {
+      "board": "decoy",
+      "label": "Decoy Board",
+      "file": "decoy.sqlite.gz",
+      "climbs": 5403,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 1663201,
+      "sizeBytesRaw": 3719168
+    },
+    {
+      "board": "grasshopper",
+      "label": "Grasshopper Board",
+      "file": "grasshopper.sqlite.gz",
+      "climbs": 14842,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 4256021,
+      "sizeBytesRaw": 8925184
+    },
+    {
+      "board": "soill",
+      "label": "Soill Board",
+      "file": "soill.sqlite.gz",
+      "climbs": 887,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 259963,
+      "sizeBytesRaw": 708608
+    },
+    {
+      "board": "touchstone",
+      "label": "Touchstone Board",
+      "file": "touchstone.sqlite.gz",
+      "climbs": 1087,
+      "generatedAt": "2026-06-06",
+      "isFixture": false,
+      "importableToMobile": false,
+      "sizeBytesGz": 304258,
+      "sizeBytesRaw": 778240
     }
   ]
 }
