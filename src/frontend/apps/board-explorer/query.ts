@@ -8,11 +8,22 @@
 // MAX()" behaviour, so the row shown is the climb's most-climbed matching angle.
 
 import type { SqlValue } from 'sql.js'
-import type { FilterState, SortKey } from './types'
+import type { FilterState, SizeInfo, SortKey } from './types'
 
 export interface BuiltSql {
   sql: string
   params: SqlValue[]
+}
+
+/**
+ * Resolve a `sizeId` to its box and stash it on the filter as `sizeBox` so the pure
+ * SQL builders can add the geometry constraint. Called in the worker (which holds the
+ * size list read at open time); the resolved box is never persisted to localStorage.
+ */
+export function withResolvedSize(f: FilterState, sizes: SizeInfo[]): FilterState {
+  if (typeof f.sizeId !== 'number') return f
+  const s = sizes.find((s) => s.id === f.sizeId)
+  return s ? { ...f, sizeBox: s.box } : f
 }
 
 /**
@@ -33,6 +44,12 @@ export function buildConditions(f: FilterState): BuiltSql {
   } else if (f.layoutIds && f.layoutIds.length > 0) {
     conds.push(`c.layout_id IN (${f.layoutIds.map(() => '?').join(',')})`)
     params.push(...f.layoutIds)
+  }
+
+  // Board size: keep only climbs whose bounding box fits inside the size's box.
+  if (f.sizeBox) {
+    conds.push('c.edge_left >= ? AND c.edge_right <= ? AND c.edge_bottom >= ? AND c.edge_top <= ?')
+    params.push(...f.sizeBox)
   }
 
   if (typeof f.angle === 'number') {

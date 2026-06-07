@@ -505,13 +505,15 @@ export const catalog: AppMeta[] = [
     path: '/board-explorer',
     label: 'Board Explorer',
     description:
-      'Browse and filter Aurora climbing-board catalogues (Kilter, Tension, …) and download a filtered SQLite/CSV/JSON.',
+      'Browse, filter, and visualize Aurora climbing-board catalogues (Kilter, Tension, …), view any climb on the board, and download a filtered SQLite/CSV/JSON.',
     category: 'Utilities',
     icon: '🧗',
     tagline:
-      'Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by angle, grade, popularity and more, then export the slice as CSV, JSON, or a SQLite database.',
+      'Snappet Board Explorer is a free, in-browser tool to filter the Kilter / Tension (Aurora) climbing-board catalogue by board size, angle, grade, popularity and more, view any climb drawn on the board, then export the slice as CSV, JSON, or a SQLite database.',
     features: [
-      'Filter climbs by board, layout, angle, grade range, ascents, quality, setter, name, and benchmark',
+      'Filter climbs by board, layout, board size, angle, grade range, ascents, quality, setter, name, and benchmark',
+      'Click any climb to see it drawn on the board — holds coloured by role (start, hand, foot, finish)',
+      'Filter by board size (7×10, 8×12, 12×12, …) — only climbs whose holds fit that board',
       'Sortable, paged results — everything queried locally with in-browser SQLite (sql.js)',
       'Export the filtered set as CSV, JSON, or a SQLite .db',
       'The Kilter .db imports directly into the Snappet mobile app — your data never leaves your device',
@@ -526,11 +528,15 @@ export const catalog: AppMeta[] = [
         a: 'Yes. Export the Kilter set as a SQLite .db and use "Import catalog file…" in the Snappet mobile app — the schema matches what its importer expects.',
       },
       {
+        q: 'Can I see what a climb looks like on the board?',
+        a: 'Yes — click any climb in the results to view it drawn on the board, with holds coloured by role (start, hand, foot, finish). Filter to a specific board size and only climbs whose holds physically fit that board are shown.',
+      },
+      {
         q: 'Is my data uploaded anywhere?',
-        a: 'No. The board data is processed locally with WebAssembly SQLite; filtering and export all happen on your device.',
+        a: 'No. The board data is processed locally with WebAssembly SQLite; filtering, rendering, and export all happen on your device.',
       },
     ],
-    keywords: ['kilter board', 'tension board', 'climbing board database', 'boardlib', 'kilter climbs', 'aurora climbing'],
+    keywords: ['kilter board', 'tension board', 'climbing board database', 'boardlib', 'kilter climbs', 'aurora climbing', 'kilter board size', 'kilter board layout'],
   },
 ]
 

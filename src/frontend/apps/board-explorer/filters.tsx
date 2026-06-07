@@ -26,6 +26,20 @@ export default function FilterPanel({ meta, filter, onChange }: Props) {
   }
   const num = (v: string): number | null => (v === '' ? null : Number(v))
 
+  // Board sizes belong to a product; show those for the selected layout's product
+  // (or all, when no layout is picked). Each size is a box a climb must fit within.
+  const layoutProduct = meta.layouts.find((l) => l.id === filter.layoutId)?.productId
+  const sizeOptions = meta.sizes.filter((s) => layoutProduct == null || s.productId === layoutProduct)
+
+  function onLayout(value: string): void {
+    const layoutId = value === '' ? null : Number(value)
+    const product = meta.layouts.find((l) => l.id === layoutId)?.productId
+    const sizeStillValid =
+      filter.sizeId != null &&
+      meta.sizes.some((s) => s.id === filter.sizeId && (product == null || s.productId === product))
+    onChange({ ...filter, layoutId, sizeId: sizeStillValid ? filter.sizeId : null })
+  }
+
   return (
     <div
       data-tour="filters"
@@ -33,15 +47,28 @@ export default function FilterPanel({ meta, filter, onChange }: Props) {
     >
       <div>
         <label className={LABEL}>Layout</label>
-        <select
-          className={INPUT}
-          value={filter.layoutId ?? ''}
-          onChange={(e) => set('layoutId', e.target.value === '' ? null : Number(e.target.value))}
-        >
+        <select className={INPUT} value={filter.layoutId ?? ''} onChange={(e) => onLayout(e.target.value)}>
           <option value="">All layouts</option>
           {meta.layouts.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className={LABEL}>Board size</label>
+        <select
+          className={INPUT}
+          value={filter.sizeId ?? ''}
+          disabled={sizeOptions.length === 0}
+          onChange={(e) => set('sizeId', e.target.value === '' ? null : Number(e.target.value))}
+        >
+          <option value="">Any size</option>
+          {sizeOptions.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.description ? `${s.name} (${s.description})` : s.name}
             </option>
           ))}
         </select>

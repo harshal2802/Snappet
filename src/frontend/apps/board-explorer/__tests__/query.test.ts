@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildConditions, buildListingSql, buildUuidSql, buildCountSql } from '../query'
+import { buildConditions, buildListingSql, buildUuidSql, buildCountSql, withResolvedSize } from '../query'
 import { DEFAULT_FILTER } from '../types'
-import type { FilterState } from '../types'
+import type { FilterState, SizeInfo } from '../types'
 
 const f = (over: Partial<FilterState>): FilterState => ({ ...DEFAULT_FILTER, ...over })
 
@@ -49,6 +49,29 @@ describe('buildConditions', () => {
     const { sql, params } = buildConditions(f({ layoutIds: [1, 8] }))
     expect(sql).toContain('c.layout_id IN (?,?)')
     expect(params).toEqual([1, 8])
+  })
+
+  it('adds bounding-box conditions when a sizeBox is set', () => {
+    const { sql, params } = buildConditions(f({ sizeBox: [24, 120, 0, 156] }))
+    expect(sql).toContain('c.edge_left >= ? AND c.edge_right <= ? AND c.edge_bottom >= ? AND c.edge_top <= ?')
+    expect(params).toEqual([24, 120, 0, 156])
+  })
+
+  it('adds no edge conditions without a sizeBox', () => {
+    expect(buildConditions(DEFAULT_FILTER).sql).not.toContain('edge_left')
+  })
+})
+
+describe('withResolvedSize', () => {
+  const sizes: SizeInfo[] = [
+    { id: 8, productId: 1, name: '8 x 12', description: 'Home', box: [24, 120, 0, 156] },
+  ]
+  it('resolves a sizeId to its box', () => {
+    expect(withResolvedSize(f({ sizeId: 8 }), sizes).sizeBox).toEqual([24, 120, 0, 156])
+  })
+  it('passes through when sizeId is null or unknown', () => {
+    expect(withResolvedSize(f({ sizeId: null }), sizes).sizeBox).toBeUndefined()
+    expect(withResolvedSize(f({ sizeId: 999 }), sizes).sizeBox).toBeUndefined()
   })
 })
 

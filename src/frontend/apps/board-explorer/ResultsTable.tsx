@@ -7,9 +7,10 @@ interface Props {
   pageSize: number
   loading: boolean
   onPage: (page: number) => void
+  onSelect: (row: ClimbRow) => void
 }
 
-export default function ResultsTable({ rows, total, page, pageSize, loading, onPage }: Props) {
+export default function ResultsTable({ rows, total, page, pageSize, loading, onPage, onSelect }: Props) {
   const start = total === 0 ? 0 : page * pageSize + 1
   const end = Math.min(total, page * pageSize + rows.length)
   const lastPage = Math.max(0, Math.ceil(total / pageSize) - 1)
@@ -36,7 +37,19 @@ export default function ResultsTable({ rows, total, page, pageSize, loading, onP
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {rows.map((r) => (
-              <tr key={r.uuid} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <tr
+                key={r.uuid}
+                onClick={() => onSelect(r)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onSelect(r)
+                  }
+                }}
+                tabIndex={0}
+                aria-label={`View ${r.name} on the board`}
+                className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+              >
                 <td className="px-3 py-2 font-mono text-gray-900 dark:text-gray-100 whitespace-nowrap">
                   {r.grade}
                   {r.benchmark && (

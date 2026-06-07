@@ -18,7 +18,7 @@ export const tourSteps: TourStep[] = [
   {
     target: 'results',
     title: 'Browse the results',
-    body: 'Sortable, paged results show the match count. Each row is a climb at its most-climbed matching angle.',
+    body: 'Sortable, paged results show the match count. Each row is a climb at its most-climbed matching angle — click any row to see it drawn on the board.',
   },
   {
     target: 'export',
