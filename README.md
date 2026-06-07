@@ -63,7 +63,7 @@ get a polished tool instantly, with dark mode and a mobile-first responsive layo
 | Document Viewer | `/doc-viewer` | Utilities | View PDFs/images with in-browser OCR |
 | Workout | `/workout` | Health | 800+ exercise library, routines, player, progress dashboard |
 | Video Editor | `/video-editor` | Creative | Trim/split/sequence + export MP4, all via WebCodecs |
-| Board Explorer | `/board-explorer` | Utilities | Filter Aurora climbing-board (Kilter/Tension) catalogues + export CSV/JSON/SQLite |
+| Board Explorer | `/board-explorer` | Utilities | Filter Aurora climbing-board (Kilter/Tension) catalogues by size/angle/grade, view climbs on the board + export CSV/JSON/SQLite |
 
 ## Guided tours
 

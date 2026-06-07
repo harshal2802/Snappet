@@ -4,6 +4,9 @@ dev-dist/
 .DS_Store
 *.local
 
+# Generated ML datasets from scripts/build-climb-dataset.py (derived artifacts).
+scripts/out/
+
 # iCloud / Finder duplicate artifacts (project lives under ~/Desktop which syncs).
 # Filenames are kebab-case with no spaces, so these patterns only catch duplicates.
 * [0-9].*

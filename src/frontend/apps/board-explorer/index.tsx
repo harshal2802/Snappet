@@ -6,6 +6,7 @@ import { detectCapabilities, isSupported } from './support'
 import { BoardDB, loadManifest } from './db'
 import FilterPanel from './filters'
 import ResultsTable from './ResultsTable'
+import ClimbModal from './ClimbModal'
 import { toCsv, toJson } from './exportFlat'
 import { downloadBlob, today } from './download'
 import { upsertPreset, removePreset, type Preset } from './presets'
@@ -37,6 +38,7 @@ function Explorer() {
   const [rows, setRows] = useState<ClimbRow[]>([])
   const [total, setTotal] = useState(0)
   const [querying, setQuerying] = useState(false)
+  const [selected, setSelected] = useState<ClimbRow | null>(null)
 
   const [presets, setPresets] = useLocalStorage<Preset[]>('snappet:board-explorer:presets', [])
   const [presetName, setPresetName] = useState('')
@@ -110,6 +112,7 @@ function Explorer() {
     setFilter(DEFAULT_FILTER)
     setPage(0)
     setExportMsg(null)
+    setSelected(null)
   }
 
   async function exportFlat(format: 'csv' | 'json'): Promise<void> {
@@ -165,7 +168,7 @@ function Explorer() {
         <div data-tour="header">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Board Explorer</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Filter Aurora climbing-board catalogues and download the slice you want.
+            Filter Aurora climbing-board catalogues, view a climb on the board, and download the slice you want.
           </p>
         </div>
         <div className="mt-1 flex items-center gap-2">
@@ -193,6 +196,7 @@ function Explorer() {
               setSelectedBoard(e.target.value)
               setMeta(null)
               setExportMsg(null)
+              setSelected(null)
             }}
           >
             {!manifest && <option>Loading…</option>}
@@ -272,6 +276,7 @@ function Explorer() {
             pageSize={PAGE_SIZE}
             loading={querying}
             onPage={setPage}
+            onSelect={setSelected}
           />
 
           {/* Export bar */}
@@ -297,6 +302,16 @@ function Explorer() {
             from Aurora Climbing boards and processed entirely in your browser — nothing is uploaded.
           </p>
         </>
+      )}
+
+      {selected && meta && (
+        <ClimbModal
+          db={getDb()}
+          meta={meta}
+          row={selected}
+          sizeBox={meta.sizes.find((s) => s.id === filter.sizeId)?.box ?? null}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   )

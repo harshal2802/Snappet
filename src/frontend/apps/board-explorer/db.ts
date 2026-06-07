@@ -2,7 +2,7 @@
 // media/proxy.ts pattern). Owns one worker, correlates requests by id, and exposes
 // a small promise API. Also loads the board manifest and decompresses snapshots.
 
-import type { BoardMeta, ClimbRow, FilterState, ManifestEntry, ValidationResult } from './types'
+import type { BoardMeta, ClimbDetail, ClimbRow, FilterState, ManifestEntry, ValidationResult } from './types'
 import type { WorkerRequest, WorkerResponse } from './workerMessages'
 
 const wasmUrl = `${import.meta.env.BASE_URL}sql-wasm.wasm`
@@ -105,6 +105,11 @@ export class BoardDB {
   async count(filter: FilterState): Promise<number> {
     const res = await this.send({ type: 'count', filter })
     return res.type === 'count' ? res.n : 0
+  }
+
+  async getClimb(uuid: string): Promise<ClimbDetail | null> {
+    const res = await this.send({ type: 'climb', uuid })
+    return res.type === 'climb' ? res.climb : null
   }
 
   async exportRows(filter: FilterState, cap = 100_000): Promise<ClimbRow[]> {
