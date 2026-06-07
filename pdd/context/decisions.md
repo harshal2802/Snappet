@@ -1,8 +1,43 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-06-02
+**Last updated**: 2026-06-07
 
 A log of significant technical decisions and the reasoning behind them.
+
+---
+
+## [2026-06-07] Climb generator: explored + data scaffold only (no model/runtime committed yet)
+
+**Decision**: Capture the feasibility and design of a **conditional Kilter climb generator** — given
+**(board size, angle, target grade)**, generate a new, valid climb — as a research brief
+(`pdd/context/research/kilter-climb-generator.md`) plus a maintainer-only, offline **data-prep +
+tokenizer scaffold** (`scripts/build-climb-dataset.py`). **No model, weights, or runtime UI are
+committed.** The recommended model is a small conditional autoregressive Transformer over
+`(placement, role)` hold tokens, with **board size handled both as a conditioning token and as a
+hard decode-time hold mask**, plus a companion CNN grade/quality predictor for re-ranking. The
+scaffold reads the same gzipped snapshot the Board Explorer ships and emits split JSONL + `vocab.json`
++ per-size `size_masks.json`.
+
+**Why**: The data is already bundled and unusually ML-friendly — a climb is a small set of holds on a
+fixed grid, ~227k Kilter layout-1 climbs / ~286k (climb×angle) examples (66.5k with ≥5 ascents). Board
+**size** is a first-class constraint (a rectangle in hold-coordinate units; smaller boards expose fewer
+holds and far fewer climbs — ~3.9k on 7×10 vs ~221k on 12×12), so "generate big and crop" is invalid;
+the per-size mask guarantees physical fit while the SIZE token learns per-board style. The model is
+small enough (5–15M params) to train offline and run **client-side via ONNX/transformers.js**, honoring
+the no-backend rule. Writing this down keeps the product brain ahead of the code.
+
+**Trade-offs / risks**: Grade controllability is bounded by crowd-grade noise (~1 V-grade MAE);
+small-board *style* is weak due to data poverty (validity still guaranteed by the mask); a valid hold
+set isn't necessarily a *good* climb (needs the quality head + reach heuristics + human eval). There is
+no public write path to Aurora's servers, so the framing is "design / visualise / export," not "publish
+to Kilter." Integration needs a board renderer the Explorer doesn't have yet, and the Explorer still
+lacks a size filter (`FilterState` has `layoutId` only) though `product_sizes` is already shipped.
+
+**How to apply**: Generated dataset artifacts are gitignored (`scripts/out/`); run
+`python3 scripts/build-climb-dataset.py --self-test` for the DB-free logic checks, or without flags to
+build the Kilter Original training set. To promote this from research to a feature, write a PLAN under
+`pdd/prompts/features/` (renderer + size lookup are shared prerequisites). See the open questions in the
+research brief.
 
 ---
 
