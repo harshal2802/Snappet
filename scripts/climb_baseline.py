@@ -229,6 +229,7 @@ def main() -> None:
     ap.add_argument("--min-holds", type=int, default=4)
     ap.add_argument("--max-holds", type=int, default=20)
     ap.add_argument("--temperature", type=float, default=0.9)
+    ap.add_argument("--rerank", type=int, default=1, help="sample N candidates; the grade model picks the closest to target")
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--out", default="/tmp/generated-climb.png")
     args = ap.parse_args()
@@ -286,15 +287,37 @@ def main() -> None:
     starts = {t: w for t, w in unigram.items() if role_of[t] == "start"}
     finishes = {t: w for t, w in unigram.items() if role_of[t] == "finish"}
 
-    seq = sample_climb(
-        rng, trans, unigram, bos=bos, eos=eos, allowed=allowed,
-        placement_of=placement_of, role_of=role_of, starts=starts, finishes=finishes,
-        min_holds=args.min_holds, max_holds=args.max_holds, temperature=args.temperature,
-    )
-
-    # Canonical order (start, body bottom→top, finish) for a tidy frames string + render.
+    # Re-ranker: if a grade model is present, sample N candidates and keep the one
+    # the predictor rates closest to the target grade (this is what fixes the
+    # baseline's tendency to drift off the requested grade).
     rank = {"start": 0, "finish": 2}
-    seq.sort(key=lambda t: (rank.get(role_of[t], 1), xy[placement_of[t]][1], xy[placement_of[t]][0]))
+
+    def make_one():
+        s = sample_climb(
+            rng, trans, unigram, bos=bos, eos=eos, allowed=allowed,
+            placement_of=placement_of, role_of=role_of, starts=starts, finishes=finishes,
+            min_holds=args.min_holds, max_holds=args.max_holds, temperature=args.temperature,
+        )
+        s.sort(key=lambda t: (rank.get(role_of[t], 1), xy[placement_of[t]][1], xy[placement_of[t]][0]))
+        return s
+
+    mp = os.path.join(args.data, "grade_model.json")
+    model = load_json(mp) if os.path.exists(mp) else None
+
+    def grade_of(s):
+        ai = model["angle_index"].get(str(args.angle))
+        v = model["bias"] + model["w_nomatch"] * nomatch + (model["w_angle"][ai] if ai is not None else 0.0)
+        return v + sum(model["w_hold"][t] for t in s) + model["y_mean"]
+
+    cands = [make_one() for _ in range(max(1, args.rerank))]
+    chosen_pred = spread = None
+    if model is not None:
+        scored = sorted(((abs(grade_of(s) - args.grade), grade_of(s), s) for s in cands), key=lambda x: x[0])
+        seq, chosen_pred = scored[0][2], scored[0][1]
+        spread = (min(x[1] for x in scored), max(x[1] for x in scored))
+    else:
+        seq = cands[0]
+
     frames = "".join(f"p{placement_of[t]}r{int(itos[t].split('_')[2])}" for t in seq)
     holds_xy_color = [(xy[placement_of[t]][0], xy[placement_of[t]][1], color_of[t]) for t in seq]
     grid_xy = [(p["x"], p["y"]) for p in geom["placements"]]
@@ -310,6 +333,9 @@ def main() -> None:
     print(f"  spec: size={size_name!r}  angle={args.angle}°  grade≈{glabel}  {'no-match' if nomatch else 'match'}")
     print(f"  bucket: {n} training climbs{note}")
     print(f"  holds: {len(seq)}  (start={counts['start']} finish={counts['finish']} foot={counts['foot']} hand/other={counts['other']})")
+    if chosen_pred is not None:
+        extra = f"  (best of {len(cands)}; spread {spread[0]:.1f}–{spread[1]:.1f})" if len(cands) > 1 else ""
+        print(f"  predicted grade ≈ {chosen_pred:.1f}{extra}")
     print(f"  frames: {frames}")
     print(f"  rendered → {out}")
 
