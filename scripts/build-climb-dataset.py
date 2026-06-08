@@ -9,18 +9,22 @@ Explorer ships (`src/frontend/public/board-data/<board>.sqlite.gz`) and emits th
 artifacts a model-training notebook consumes:
 
     out/
-      vocab.json         token <-> id, plus geometry/role/size metadata (self-describing)
+      vocab.json         token <-> id, plus SIZE/ANGLE/GRADE/MATCH token maps (self-describing)
       size_masks.json    per board SIZE: the hold-token ids physically present on that size
+      geometry.json      placement x/y, role colours, size boxes — so rendering needs no DB
+      names.txt          filtered, deduped climb names (corpus for a name model)
       dataset.train.jsonl \
       dataset.val.jsonl    } one example per (climb x angle), split by climb uuid (no leakage)
       dataset.test.jsonl  /
       meta.json          run parameters + the size table + counts (reproducibility)
-      stats.json         distributions per size / grade / angle / split (sanity)
+      stats.json         distributions per size / grade / angle / nomatch (sanity)
 
 A "climb" is an unordered set of holds, each a (placement, role) where role is one
-of start / middle / finish / foot. We turn that into a conditioned token sequence:
+of start / middle / finish / foot. We turn that into a conditioned token sequence,
+where MATCH/NOMATCH is the climb-level `is_nomatch` rule (no-match forbids matching
+both hands on a hold, and skews harder):
 
-    [BOS] [SIZE=8x12] [ANGLE=40] [GRADE=V5]  H..  H..  ..  [EOS]
+    [BOS] [SIZE=8x12] [ANGLE=40] [GRADE=V5] [NOMATCH]  H..  H..  ..  [EOS]
 
 The two SIZE mechanisms the research doc calls for are produced here:
   1. SIZE conditioning token  -> prepended to every example (style per board size).
@@ -78,6 +82,30 @@ def role_rank(role_name: str) -> int:
     if role_name == "finish":
         return _FINISH
     return _BODY
+
+
+# A small, deliberately non-exhaustive profanity blocklist so the names corpus for a
+# public tool doesn't carry the worst of the crowd-sourced names (substring match,
+# case-insensitive). For production, swap in a maintained list (e.g. `better-profanity`).
+NAME_BLOCKLIST = {
+    "fuck", "shit", "cunt", "nigger", "faggot", "bitch", "pussy", "asshole", "dick", "whore",
+}
+JUNK_NAMES = {"test", "untitled", "asdf", "asdfasdf", "qwer", "qwerty", "test test", "new climb"}
+
+
+def clean_name(name: str) -> str | None:
+    """Normalise a climb name for the name-model corpus, or None to drop it."""
+    n = (name or "").strip()
+    if len(n) < 2:
+        return None
+    low = n.lower()
+    if low in JUNK_NAMES:
+        return None
+    if not any(ch.isalpha() for ch in n):  # pure numbers / symbols
+        return None
+    if any(bad in low for bad in NAME_BLOCKLIST):
+        return None
+    return n
 
 
 # ─────────────────────────── pure encode logic ───────────────────────────────
@@ -147,6 +175,8 @@ def build_vocab(
     tokens += [f"SIZE_{s['id']}" for s in sizes]
     tokens += [f"ANGLE_{a}" for a in angles]
     tokens += [f"GRADE_{g}" for g in grades]
+    # Match rule (climb-level): MATCH = matching allowed, NOMATCH = not allowed.
+    tokens += ["MATCH", "NOMATCH"]
     # Holds last so the contiguous tail [first_hold_id .. EOS-of-vocab) is the only
     # range a constrained decoder ever samples from.
     hold_tokens = [f"HOLD_{p}_{r}" for p, r in sorted(hold_pairs)]
@@ -160,6 +190,8 @@ def build_vocab(
         "size_token": {s["id"]: stoi[f"SIZE_{s['id']}"] for s in sizes},
         "angle_token": {a: stoi[f"ANGLE_{a}"] for a in angles},
         "grade_token": {g: stoi[f"GRADE_{g}"] for g in grades},
+        # is_nomatch flag (0/1) → conditioning token.
+        "match_token": {0: stoi["MATCH"], 1: stoi["NOMATCH"]},
     }
 
 
@@ -196,11 +228,13 @@ def encode_example(
     size_id: int,
     angle: int,
     grade: int,
+    nomatch: int,
     vocab: dict,
 ) -> list[int]:
-    """(ordered holds, conditioners) -> token-id sequence with BOS/SIZE/ANGLE/GRADE … EOS."""
+    """(ordered holds, conditioners) -> token sequence: BOS SIZE ANGLE GRADE MATCH … EOS."""
     stoi = vocab["stoi"]
-    seq = [stoi["BOS"], stoi[f"SIZE_{size_id}"], stoi[f"ANGLE_{angle}"], stoi[f"GRADE_{grade}"]]
+    match_tok = "NOMATCH" if nomatch else "MATCH"
+    seq = [stoi["BOS"], stoi[f"SIZE_{size_id}"], stoi[f"ANGLE_{angle}"], stoi[f"GRADE_{grade}"], stoi[match_tok]]
     seq += [stoi[f"HOLD_{p}_{r}"] for p, r in holds_ordered]
     seq.append(stoi["EOS"])
     return seq
@@ -234,8 +268,10 @@ def open_snapshot(source: str) -> tuple[sqlite3.Connection, str | None]:
 def load_reference(cur: sqlite3.Cursor, layout: int) -> dict:
     """Roles, the placement->(x,y) grid for this layout, grade labels, and the size
     table for the layout's product (deduped by geometry)."""
-    cur.execute("SELECT id, name FROM placement_roles")
-    role_name = {rid: name for rid, name in cur.fetchall()}
+    cur.execute("SELECT id, name, screen_color FROM placement_roles")
+    role_rows = cur.fetchall()
+    role_name = {rid: name for rid, name, _ in role_rows}
+    role_color = {rid: (col or "888888") for rid, _, col in role_rows}
 
     cur.execute(
         "SELECT p.id, h.x, h.y FROM placements p JOIN holes h ON h.id = p.hole_id WHERE p.layout_id = ?",
@@ -269,13 +305,13 @@ def load_reference(cur: sqlite3.Cursor, layout: int) -> dict:
         }
         seen_box[box] = s
         sizes.append(s)
-    return {"role_name": role_name, "xy": xy, "grade_label": grade_label,
+    return {"role_name": role_name, "role_color": role_color, "xy": xy, "grade_label": grade_label,
             "product_id": product_id, "sizes": sizes}
 
 
 def iter_examples(cur: sqlite3.Cursor, layout: int, min_ascents: int):
     cur.execute(
-        """SELECT c.uuid, c.frames, cs.angle, cs.display_difficulty,
+        """SELECT c.uuid, c.frames, c.name, c.is_nomatch, cs.angle, cs.display_difficulty,
                   cs.quality_average, cs.ascensionist_count
            FROM climbs c JOIN climb_stats cs ON cs.climb_uuid = c.uuid
            WHERE c.is_listed = 1 AND c.frames_count = 1 AND c.layout_id = ?
@@ -294,7 +330,8 @@ def build(args) -> None:
     conn, tmp = open_snapshot(args.source)
     cur = conn.cursor()
     ref = load_reference(cur, args.layout)
-    role_name, xy, grade_label, sizes = ref["role_name"], ref["xy"], ref["grade_label"], ref["sizes"]
+    role_name, role_color = ref["role_name"], ref["role_color"]
+    xy, grade_label, sizes = ref["xy"], ref["grade_label"], ref["sizes"]
     if not sizes:
         raise SystemExit(f"no listed product_sizes for layout {args.layout} (product {ref['product_id']})")
     print(f"layout {args.layout}: {len(xy)} placements, {len(sizes)} sizes, product {ref['product_id']}")
@@ -305,8 +342,11 @@ def build(args) -> None:
     records: list[dict] = []
     hold_pairs: set[tuple[int, int]] = set()
     angles, grades = set(), set()
+    names_by_uuid: dict[str, str] = {}
     skipped_illformed = skipped_oversize = skipped_long = 0
-    for uuid, frames, angle, disp, quality, ascents in iter_examples(cur, args.layout, args.min_ascents):
+    for uuid, frames, name, is_nomatch, angle, disp, quality, ascents in iter_examples(
+        cur, args.layout, args.min_ascents
+    ):
         holds = parse_frames(frames)
         if not holds or not is_well_formed(holds, role_name):
             skipped_illformed += 1
@@ -319,17 +359,20 @@ def build(args) -> None:
             skipped_oversize += 1
             continue
         grade = int(round(disp))
+        nomatch = 1 if is_nomatch else 0
         ordered = canonical_order(holds, role_name, xy)
         records.append({
             "uuid": uuid, "angle": int(angle), "grade": grade,
             "grade_label": grade_label.get(grade, str(grade)),
-            "size": size["id"], "size_name": size["name"],
+            "size": size["id"], "size_name": size["name"], "nomatch": nomatch,
             "quality": round(quality, 4) if quality is not None else None,
-            "ascents": int(ascents), "holds": ordered,
+            "ascents": int(ascents), "name": name or "", "holds": ordered,
         })
         hold_pairs.update(ordered)
         angles.add(int(angle))
         grades.add(grade)
+        if uuid not in names_by_uuid:
+            names_by_uuid[uuid] = name or ""
         if args.limit and len(records) >= args.limit:
             break
 
@@ -344,15 +387,16 @@ def build(args) -> None:
     by_size: dict[str, int] = {}
     by_grade: dict[str, int] = {}
     by_angle: dict[str, int] = {}
+    by_nomatch = {"match": 0, "nomatch": 0}
     writers = {s: open(os.path.join(args.out, f"dataset.{s}.jsonl"), "w") for s in counts}
     for rec in records:
         split = split_of(rec["uuid"], args.seed_salt, args.val_frac, args.test_frac)
-        tokens = encode_example(rec["holds"], rec["size"], rec["angle"], rec["grade"], vocab)
+        tokens = encode_example(rec["holds"], rec["size"], rec["angle"], rec["grade"], rec["nomatch"], vocab)
         line = {
             "uuid": rec["uuid"], "size": rec["size"], "size_name": rec["size_name"],
             "angle": rec["angle"], "grade": rec["grade"], "grade_label": rec["grade_label"],
-            "quality": rec["quality"], "ascents": rec["ascents"],
-            "n_holds": len(rec["holds"]), "tokens": tokens,
+            "nomatch": rec["nomatch"], "quality": rec["quality"], "ascents": rec["ascents"],
+            "name": rec["name"], "n_holds": len(rec["holds"]), "tokens": tokens,
         }
         if args.keep_holds:
             line["holds"] = rec["holds"]
@@ -361,8 +405,25 @@ def build(args) -> None:
         by_size[rec["size_name"]] = by_size.get(rec["size_name"], 0) + 1
         by_grade[rec["grade_label"]] = by_grade.get(rec["grade_label"], 0) + 1
         by_angle[str(rec["angle"])] = by_angle.get(str(rec["angle"]), 0) + 1
+        by_nomatch["nomatch" if rec["nomatch"] else "match"] += 1
     for w in writers.values():
         w.close()
+
+    # Filtered, deduped name corpus for the name model (one per climb).
+    clean_names = sorted({cn for cn in (clean_name(n) for n in names_by_uuid.values()) if cn})
+    with open(os.path.join(args.out, "names.txt"), "w") as f:
+        f.write("\n".join(clean_names) + ("\n" if clean_names else ""))
+
+    # Geometry so downstream (baseline renderer, eventual web export) needs no DB.
+    geometry = {
+        "layout": args.layout,
+        "placements": [{"id": pid, "x": x, "y": y} for pid, (x, y) in sorted(xy.items())],
+        "roles": [{"id": rid, "name": role_name.get(rid, ""), "color": role_color.get(rid, "888888")}
+                  for rid in sorted(role_name)],
+        "sizes": [{"id": s["id"], "name": s["name"], "box": list(s["box"])} for s in sizes],
+    }
+    with open(os.path.join(args.out, "geometry.json"), "w") as f:
+        json.dump(geometry, f, indent=2)
 
     sizes_meta = [{k: v for k, v in s.items()} for s in sizes]
     for s in sizes_meta:
@@ -373,12 +434,13 @@ def build(args) -> None:
         "layout": args.layout, "product_id": ref["product_id"],
         "min_ascents": args.min_ascents, "max_len": args.max_len,
         "val_frac": args.val_frac, "test_frac": args.test_frac, "seed_salt": args.seed_salt,
+        "conditioners": ["size", "angle", "grade", "match"],
         "vocab_size": len(vocab["itos"]), "n_hold_tokens": len(hold_pairs),
-        "n_examples": len(records), "splits": counts,
+        "n_examples": len(records), "n_names": len(clean_names), "splits": counts,
         "skipped": {"illformed": skipped_illformed, "oversize": skipped_oversize, "too_long": skipped_long},
         "sizes": sizes_meta,
     }
-    stats = {"by_size": by_size, "by_grade": by_grade, "by_angle": by_angle}
+    stats = {"by_size": by_size, "by_grade": by_grade, "by_angle": by_angle, "by_nomatch": by_nomatch}
 
     with open(os.path.join(args.out, "vocab.json"), "w") as f:
         json.dump(vocab, f, indent=2)
@@ -393,13 +455,14 @@ def build(args) -> None:
     if tmp:
         os.remove(tmp)
 
-    print(f"\nexamples={len(records)}  vocab={len(vocab['itos'])} ({len(hold_pairs)} hold tokens)")
+    print(f"\nexamples={len(records)}  vocab={len(vocab['itos'])} ({len(hold_pairs)} hold tokens)  names={len(clean_names)}")
     print(f"splits: train={counts['train']} val={counts['val']} test={counts['test']}")
+    print(f"match={by_nomatch['match']}  nomatch={by_nomatch['nomatch']}")
     print(f"skipped: illformed={skipped_illformed} oversize={skipped_oversize} too_long={skipped_long}")
     print("by min-fit size:")
     for name, n in sorted(by_size.items(), key=lambda kv: -kv[1]):
         print(f"  {name:<28} {n}")
-    print(f"\nwrote {args.out}/  (vocab.json, size_masks.json, dataset.*.jsonl, meta.json, stats.json)")
+    print(f"\nwrote {args.out}/  (vocab.json, size_masks.json, geometry.json, names.txt, dataset.*.jsonl, meta.json, stats.json)")
 
 
 def self_test() -> None:
@@ -425,12 +488,17 @@ def self_test() -> None:
     assert min_fit_size((0, 50, 0, 50), sizes)["id"] == 1  # fits small
 
     vocab = build_vocab(set(holds), sizes, angles=[40], grades=[20])
-    seq = encode_example(ordered, size_id=2, angle=40, grade=20, vocab=vocab)
+    assert vocab["match_token"] == {0: vocab["stoi"]["MATCH"], 1: vocab["stoi"]["NOMATCH"]}
+    seq = encode_example(ordered, size_id=2, angle=40, grade=20, nomatch=1, vocab=vocab)
     itos = vocab["itos"]
     assert itos[seq[0]] == "BOS" and itos[seq[1]] == "SIZE_2"
     assert itos[seq[2]] == "ANGLE_40" and itos[seq[3]] == "GRADE_20"
+    assert itos[seq[4]] == "NOMATCH"  # is_nomatch=1
     assert itos[seq[-1]] == "EOS"
-    assert all(itos[t].startswith("HOLD_") for t in seq[4:-1])
+    assert all(itos[t].startswith("HOLD_") for t in seq[5:-1])
+    assert itos[encode_example(ordered, 2, 40, 20, 0, vocab)[4]] == "MATCH"
+
+    assert clean_name("  Crimpy  ") == "Crimpy" and clean_name("123") is None and clean_name("test") is None
 
     masks = build_size_masks(vocab, sizes, xy)
     small_ids = set(masks["1"]["allowed_token_ids"])
