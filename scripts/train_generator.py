@@ -222,20 +222,19 @@ def main() -> None:
     geom = json.load(open(os.path.join(args.data, "geometry.json")))
     pad = vocab["stoi"]["PAD"]
 
-    train = load_seqs(os.path.join(args.data, "dataset.train.jsonl"), args.limit_train)
-    block = min(72, max(len(s) for s in train))
-
-    if args.sample:
-        model = GPT(len(vocab["itos"]), args.dim, args.layers, args.heads, block).to(device)
+    if args.sample:  # self-contained: size the net from the checkpoint, no dataset needed
         ck = torch.load(args.ckpt, map_location=device)
+        cfg = ck.get("cfg", {"dim": args.dim, "layers": args.layers, "heads": args.heads})
+        model = GPT(len(vocab["itos"]), cfg["dim"], cfg["layers"], cfg["heads"], ck["block"]).to(device)
         model.load_state_dict(ck["model"])
-        block = ck["block"]
         holds, placement, role = generate(model, vocab, masks, geom, size=args.size, angle=args.angle,
                                            grade=args.grade, nomatch=args.nomatch, device=device)
         frames = "".join(f"p{placement[t]}r{role[t]}" for t in holds)
         print(f"generated {len(holds)} holds  frames: {frames}")
         return
 
+    train = load_seqs(os.path.join(args.data, "dataset.train.jsonl"), args.limit_train)
+    block = min(72, max(len(s) for s in train))
     val = load_seqs(os.path.join(args.data, "dataset.val.jsonl"), (args.limit_train or 0) // 8 or None)
     model = GPT(len(vocab["itos"]), args.dim, args.layers, args.heads, block).to(device)
     n_params = sum(p.numel() for p in model.parameters())

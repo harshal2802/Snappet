@@ -191,10 +191,29 @@ Snappet is strictly **client-side, no backend** — which the tiny model size ma
 - **Licensing/attribution.** Same consideration as shipping the snapshots — a model derived from public
   boardlib data needs the same owner sign-off before publishing.
 
+## First results (implemented + trained)
+
+The scaffold above is built and trained end-to-end — `scripts/train_generator.py` (trainer +
+constrained sampler), `scripts/train_generator_colab.ipynb` (GPU run), `scripts/render_samples.py`
+(visualiser), alongside the `climb_baseline.py` CPU baseline and `train_grade_predictor.py` reranker.
+
+- **Model:** small conditional GPT — 5.31M params (dim 256 / 6 layers / 8 heads), tied embeddings,
+  GPT-style init + grad clipping; loss is masked over the given `[SIZE][ANGLE][GRADE][MATCH]` prefix so
+  it learns to predict holds + EOS only (a true conditional LM).
+- **Data:** 52,913 train / 6,610 val sequences (≥5 ascents, layout 1) from `build-climb-dataset.py`.
+- **Training:** CPU only (no GPU in-environment), AdamW, early-stopped after 7 epochs. Val perplexity
+  **~1100 (init) → 31.9 (best, epoch 4)**.
+- **Sampling:** constrained decoding under the per-size hold mask + no-duplicate + ≥1 start / ≥1 finish,
+  so every sample is valid by construction. The trained net emits varied, realistic hold counts (12–21)
+  with the right spatial structure (starts low, finish high, feet below hands) — see
+  `kilter-climb-generator-samples.png` (match/no-match × easy/medium/hard at 12×12). A GPU run on the
+  larger schedule should sharpen grade adherence and style; this CPU run is a correctness/feasibility
+  proof, not the final model.
+
 ## Open questions for the maintainer
 
-1. **Ship it?** This is research + a data scaffold only. Promote to a PLAN + feature, or park as a brain
-   doc? (No runtime code or weights are committed.)
+1. **Ship it?** The research now has a working trainer + a CPU-trained checkpoint committed (see *First
+   results*). Promote to a PLAN + feature (ONNX export → "Generate" tab in Board Explorer), or park?
 2. **Where does training live?** A Colab/Kaggle notebook referenced from `pdd/`, or a `scripts/`
    trainer? Weights hosting (in-repo `public/` vs. release asset) mirrors the snapshot hosting gate.
 3. **Generator surface:** a new mini-app vs. a tab inside Board Explorer (the renderer + size lookup are
