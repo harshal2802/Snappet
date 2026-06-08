@@ -42,7 +42,9 @@ def main() -> None:
     model.load_state_dict(ck["model"])
     model.eval()
 
-    onnx_path = os.path.join(OUT, "model.onnx")
+    # The float32 graph is only an intermediate (the browser uses the quantized
+    # model); keep it under scripts/out (gitignored), not in the web public dir.
+    onnx_path = os.path.join(DATA, "model.fp32.onnx")
     dummy = torch.zeros(1, block, dtype=torch.long)
     torch.onnx.export(
         model, (dummy,), onnx_path, input_names=["tokens"], output_names=["logits"],
@@ -73,6 +75,13 @@ def main() -> None:
     # Bundle everything the browser needs (vocab, geometry, masks, grade model).
     grades = sorted(int(t.split("_")[1]) for t in itos if t.startswith("GRADE_"))
     angles = sorted(int(t.split("_")[1]) for t in itos if t.startswith("ANGLE_"))
+    grade_labels: dict[int, str] = {}
+    with open(os.path.join(DATA, "dataset.train.jsonl")) as f:
+        for line in f:
+            r = json.loads(line)
+            grade_labels.setdefault(r["grade"], r["grade_label"])
+            if len(grade_labels) >= len(grades):
+                break
     meta = {
         "block": block,
         "pad": stoi["PAD"],
@@ -86,6 +95,7 @@ def main() -> None:
         "sizeNames": {k: masks[k]["name"] for k in masks},
         "gradeModel": gmodel,
         "grades": grades,
+        "gradeLabels": {str(g): grade_labels.get(g, str(g)) for g in grades},
         "angles": angles,
         "defaultSize": next((s["id"] for s in geom["sizes"] if "12 x 12 with kickboard" in s["name"]),
                             geom["sizes"][0]["id"]),
