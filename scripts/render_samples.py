@@ -34,6 +34,7 @@ def main() -> None:
     ap.add_argument("--angle", type=int, default=40)
     ap.add_argument("--grades", type=int, nargs="+", default=[10, 17, 24], help="easy → hard")
     ap.add_argument("--temperature", type=float, default=0.9)
+    ap.add_argument("--rerank", type=int, default=12, help="sample N per tile; grade model picks the closest")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default=os.path.join(DATA, "samples.png"))
     args = ap.parse_args()
@@ -41,6 +42,8 @@ def main() -> None:
     device = "cpu"
 
     vocab, masks, geom = load("vocab.json"), load("size_masks.json"), load("geometry.json")
+    gm_path = os.path.join(DATA, "grade_model.json")
+    gmodel = load("grade_model.json") if os.path.exists(gm_path) else None
     ck = torch.load(args.ckpt, map_location=device)
     cfg = ck["cfg"]
     model = T.GPT(len(vocab["itos"]), cfg["dim"], cfg["layers"], cfg["heads"], ck["block"]).to(device)
@@ -58,16 +61,17 @@ def main() -> None:
     tiles = []
     for nomatch in (0, 1):
         for grade in args.grades:
-            holds, placement, role = T.generate(model, vocab, masks, geom, size=size, angle=args.angle,
-                                                 grade=grade, nomatch=nomatch, device=device,
-                                                 temperature=args.temperature)
+            holds, placement, role, pg = T.generate_reranked(
+                model, vocab, masks, geom, gmodel, size=size, angle=args.angle, grade=grade,
+                nomatch=nomatch, device=device, n=args.rerank, temperature=args.temperature)
             holds.sort(key=lambda t: (rank.get(role_name.get(role[t], ""), 1),
                                       xy[placement[t]][1], xy[placement[t]][0]))
             hxc = [(xy[placement[t]][0], xy[placement[t]][1], role_color.get(role[t], "888888"))
                    for t in holds if placement[t] in xy]
             tmp = os.path.join("/tmp", f"sample_{nomatch}_{grade}.png")
             out = render(hxc, grid_xy, box, tmp, "")
-            label = f"grade~{grade}  {'no-match' if nomatch else 'match'}  ({len(holds)} holds)"
+            pred = f"  pred~{pg:.1f}" if gmodel is not None else ""
+            label = f"target grade~{grade}{pred}  {'no-match' if nomatch else 'match'}  ({len(holds)} holds)"
             tiles.append((out, label))
             print(f"  {label} -> {out}")
 

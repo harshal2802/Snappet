@@ -46,29 +46,32 @@ IGNORE = -100
 # ─────────────────────────────────── model ───────────────────────────────────
 
 class Block(nn.Module):
-    def __init__(self, dim: int, heads: int, block: int):
+    def __init__(self, dim: int, heads: int, block: int, dropout: float = 0.0):
         super().__init__()
         self.ln1 = nn.LayerNorm(dim)
-        self.attn = nn.MultiheadAttention(dim, heads, batch_first=True)
+        self.attn = nn.MultiheadAttention(dim, heads, dropout=dropout, batch_first=True)
         self.ln2 = nn.LayerNorm(dim)
-        self.mlp = nn.Sequential(nn.Linear(dim, 4 * dim), nn.GELU(), nn.Linear(4 * dim, dim))
+        self.mlp = nn.Sequential(nn.Linear(dim, 4 * dim), nn.GELU(), nn.Linear(4 * dim, dim),
+                                 nn.Dropout(dropout))
+        self.drop = nn.Dropout(dropout)
         self.register_buffer("mask", torch.triu(torch.ones(block, block) * float("-inf"), diagonal=1))
 
     def forward(self, x):
         t = x.size(1)
         h = self.ln1(x)
         a, _ = self.attn(h, h, h, attn_mask=self.mask[:t, :t], need_weights=False)
-        x = x + a
+        x = x + self.drop(a)
         return x + self.mlp(self.ln2(x))
 
 
 class GPT(nn.Module):
-    def __init__(self, vocab: int, dim: int, layers: int, heads: int, block: int):
+    def __init__(self, vocab: int, dim: int, layers: int, heads: int, block: int, dropout: float = 0.0):
         super().__init__()
         self.block = block
         self.tok = nn.Embedding(vocab, dim)
         self.pos = nn.Embedding(block, dim)
-        self.blocks = nn.ModuleList([Block(dim, heads, block) for _ in range(layers)])
+        self.drop = nn.Dropout(dropout)
+        self.blocks = nn.ModuleList([Block(dim, heads, block, dropout) for _ in range(layers)])
         self.lnf = nn.LayerNorm(dim)
         self.head = nn.Linear(dim, vocab, bias=False)
         self.head.weight = self.tok.weight  # tie
@@ -85,7 +88,7 @@ class GPT(nn.Module):
 
     def forward(self, idx):
         pos = torch.arange(idx.size(1), device=idx.device)
-        x = self.tok(idx) + self.pos(pos)[None]
+        x = self.drop(self.tok(idx) + self.pos(pos)[None])
         for b in self.blocks:
             x = b(x)
         return self.head(self.lnf(x))
@@ -187,6 +190,30 @@ def generate(model, vocab, masks, geom, *, size, angle, grade, nomatch, device,
     return holds, placement, role
 
 
+def predict_grade(gmodel, holds, angle, nomatch):
+    """Estimate a climb's grade with the linear grade model (scripts/train_grade_predictor.py)."""
+    ai = gmodel["angle_index"].get(str(angle))
+    v = gmodel["bias"] + gmodel["w_nomatch"] * nomatch + (gmodel["w_angle"][ai] if ai is not None else 0.0)
+    return v + sum(gmodel["w_hold"][t] for t in holds) + gmodel["y_mean"]
+
+
+@torch.no_grad()
+def generate_reranked(model, vocab, masks, geom, gmodel, *, size, angle, grade, nomatch, device,
+                      n=12, temperature=0.9):
+    """Sample `n` candidates and keep the one the grade model rates closest to the target grade.
+    This is the lever that turns a valid-but-grade-drifting generator into a controllable one."""
+    best = None
+    for _ in range(max(1, n)):
+        holds, placement, role = generate(model, vocab, masks, geom, size=size, angle=angle,
+                                          grade=grade, nomatch=nomatch, device=device, temperature=temperature)
+        pg = predict_grade(gmodel, holds, angle, nomatch) if gmodel is not None else float(grade)
+        if best is None or abs(pg - grade) < abs(best[3] - grade):
+            best = (holds, placement, role, pg)
+        if gmodel is None:
+            break
+    return best  # (holds, placement, role, predicted_grade)
+
+
 # ──────────────────────────────────── main ───────────────────────────────────
 
 def main() -> None:
@@ -201,6 +228,9 @@ def main() -> None:
     ap.add_argument("--limit-train", type=int, default=None, help="cap train examples (debug)")
     ap.add_argument("--max-steps", type=int, default=None, help="cap optimiser steps (debug)")
     ap.add_argument("--patience", type=int, default=3, help="early-stop after N epochs w/o val improvement")
+    ap.add_argument("--dropout", type=float, default=0.1, help="dropout (regularization; combats overfit)")
+    ap.add_argument("--label-smoothing", type=float, default=0.05, help="cross-entropy label smoothing")
+    ap.add_argument("--warmup", type=int, default=200, help="linear LR warmup steps before cosine decay")
     ap.add_argument("--ckpt", default=os.path.join(DEFAULT_DATA, "generator.pt"))
     ap.add_argument("--smoke", action="store_true", help="tiny net, few steps, CPU — just prove the loop")
     ap.add_argument("--sample", action="store_true", help="load --ckpt and generate instead of training")
@@ -214,6 +244,7 @@ def main() -> None:
         args.dim, args.layers, args.heads, args.epochs, args.batch = 96, 2, 4, 4, 128
         args.limit_train = args.limit_train or 4000
         args.max_steps = args.max_steps or 90
+        args.warmup = 20
     torch.manual_seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -236,28 +267,41 @@ def main() -> None:
     train = load_seqs(os.path.join(args.data, "dataset.train.jsonl"), args.limit_train)
     block = min(72, max(len(s) for s in train))
     val = load_seqs(os.path.join(args.data, "dataset.val.jsonl"), (args.limit_train or 0) // 8 or None)
-    model = GPT(len(vocab["itos"]), args.dim, args.layers, args.heads, block).to(device)
+    model = GPT(len(vocab["itos"]), args.dim, args.layers, args.heads, block, args.dropout).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"device={device}  block={block}  params={n_params/1e6:.2f}M  train={len(train)} val={len(val)}")
+    print(f"device={device}  block={block}  params={n_params/1e6:.2f}M  train={len(train)} val={len(val)}"
+          f"  dropout={args.dropout} ls={args.label_smoothing}")
 
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     g = torch.Generator().manual_seed(args.seed)
     ckpt = {"block": block, "cfg": {"dim": args.dim, "layers": args.layers, "heads": args.heads}}
+    steps_per_epoch = (len(train) + args.batch - 1) // args.batch
+    total_steps = max(1, args.epochs * steps_per_epoch)
+
+    def lr_at(s):  # linear warmup → cosine decay to 10% of peak
+        if s < args.warmup:
+            return args.lr * (s + 1) / args.warmup
+        prog = (s - args.warmup) / max(1, total_steps - args.warmup)
+        return args.lr * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * min(1.0, prog))))
+
     step, best_val, bad = 0, float("inf"), 0
     for ep in range(args.epochs):
         model.train()
         order = torch.randperm(len(train), generator=g).tolist()
         for i in range(0, len(train), args.batch):
+            for pg in opt.param_groups:
+                pg["lr"] = lr_at(step)
             x, y = make_batch(train, order[i : i + args.batch], block, pad, device)
             logits = model(x)
-            loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), y.reshape(-1), ignore_index=IGNORE)
+            loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), y.reshape(-1),
+                                   ignore_index=IGNORE, label_smoothing=args.label_smoothing)
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
             step += 1
-            if step % 10 == 0:
-                print(f"  ep{ep+1} step{step} train_loss={loss.item():.3f}")
+            if step % 50 == 0:
+                print(f"  ep{ep+1} step{step} lr={lr_at(step):.2e} train_loss={loss.item():.3f}", flush=True)
             if args.max_steps and step >= args.max_steps:
                 break
         vl = eval_loss(model, val, block, pad, device)
