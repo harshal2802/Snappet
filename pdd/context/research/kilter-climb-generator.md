@@ -191,10 +191,49 @@ Snappet is strictly **client-side, no backend** — which the tiny model size ma
 - **Licensing/attribution.** Same consideration as shipping the snapshots — a model derived from public
   boardlib data needs the same owner sign-off before publishing.
 
+## First results (implemented + trained + evaluated)
+
+The scaffold above is built, trained, and quantitatively evaluated end-to-end — `train_generator.py`
+(trainer + constrained sampler + grade re-ranking), `train_generator_colab.ipynb` (GPU run),
+`render_samples.py` (visualiser), `eval_generator.py` (metrics), alongside the `climb_baseline.py` CPU
+baseline and `train_grade_predictor.py` reranker.
+
+- **Model:** conditional GPT — 8.18M params (dim 320 / 6 layers / 8 heads), tied embeddings, GPT-style
+  init, **dropout 0.1 + label smoothing + cosine LR w/ warmup**; loss masked over the given
+  `[SIZE][ANGLE][GRADE][MATCH]` prefix so it learns to predict holds + EOS only (a true conditional LM).
+- **Data:** 87,879 train / 10,961 val sequences (≥3 ascents, layout 1) from `build-climb-dataset.py`.
+- **Training:** CPU only (no GPU in-environment), AdamW. Val perplexity **~1100 (init) → 28.4 (best,
+  epoch 6)**; the regularization + larger data fixed the earlier overfitting (an un-regularized 5.3M model
+  on the ≥5-ascent data bottomed out at 31.9 by epoch 4, then overfit).
+- **Sampling:** constrained decoding under the per-size hold mask + no-duplicate + ≥1 start / ≥1 finish,
+  so **every sample is valid by construction**. Grade control comes from re-ranking N candidates by the
+  grade predictor.
+
+**Evaluation** (`eval_generator.py`, 12×12 board, 40°, 12 climbs × 6 grades × match/no-match):
+
+| metric | no re-rank | re-rank (N=12) |
+|---|---|---|
+| grade MAE (V-grades) | 2.76 | **0.47** |
+| within 1 grade | 26% | **88%** |
+| validity | 100% | **100%** |
+| diversity (mean pairwise Jaccard) | 0.96 | 0.95 |
+| distinct / novel (not a training copy) | 100% / 100% | 100% / 100% |
+| mean holds | 13.7 | 15.3 |
+
+So: valid, diverse, non-memorised climbs whose **grade tracks the request to ~½ a V-grade**.
+
+**Honest caveat on grade accuracy.** That 0.47 MAE is measured against the *grade predictor's* estimate,
+and the reranker optimises the same predictor — it shows the model reliably hits the grade the predictor
+believes, not necessarily a human consensus. End-to-end accuracy versus real crowd grades is bounded by
+the predictor's own error (~1.9 MAE vs. crowd grades), so expect ~1.5–2 V-grades against humans. Other
+honest gaps: a mild left/right style bias in samples; evaluated only at 12×12 / 40°; and *valid ≠ fun*
+— physical climbability still wants real-climber validation. Net: good enough for a "generate a valid
+climb near your grade" MVP; a GPU run + real-climber feedback is the path to polish.
+
 ## Open questions for the maintainer
 
-1. **Ship it?** This is research + a data scaffold only. Promote to a PLAN + feature, or park as a brain
-   doc? (No runtime code or weights are committed.)
+1. **Ship it?** The research now has a working trainer + a CPU-trained checkpoint committed (see *First
+   results*). Promote to a PLAN + feature (ONNX export → "Generate" tab in Board Explorer), or park?
 2. **Where does training live?** A Colab/Kaggle notebook referenced from `pdd/`, or a `scripts/`
    trainer? Weights hosting (in-repo `public/` vs. release asset) mirrors the snapshot hosting gate.
 3. **Generator surface:** a new mini-app vs. a tab inside Board Explorer (the renderer + size lookup are

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { catalog, SITE } from './seo/catalog'
 import { renderForPath } from './seo/render'
@@ -108,9 +108,31 @@ function seoPrerender(): Plugin {
   }
 }
 
+// Self-host onnxruntime-web's wasm next to the generator model so the Board
+// Explorer "Generate" tab loads it same-origin (single-threaded — no
+// cross-origin isolation needed). Copied from node_modules into public/ for both
+// `dev` (configureServer) and `build` (buildStart); the dir is gitignored.
+function copyOrtWasm(): Plugin {
+  const files = ['ort-wasm-simd-threaded.wasm', 'ort-wasm-simd-threaded.mjs']
+  const src = resolve(process.cwd(), 'node_modules/onnxruntime-web/dist')
+  const dst = resolve(process.cwd(), 'public/climb-generator/ort')
+  const copy = (): void => {
+    mkdirSync(dst, { recursive: true })
+    for (const f of files) {
+      try {
+        copyFileSync(join(src, f), join(dst, f))
+      } catch {
+        /* onnxruntime-web not installed — the Generate tab will surface a load error */
+      }
+    }
+  }
+  return { name: 'copy-ort-wasm', buildStart() { copy() }, configureServer() { copy() } }
+}
+
 export default defineConfig({
   plugins: [
     react(),
+    copyOrtWasm(),
     VitePWA({
       // autoUpdate: a new build activates on the next page load (skipWaiting +
       // clientsClaim) instead of waiting for a manual "Reload" tap — so deploys
@@ -149,7 +171,7 @@ export default defineConfig({
         // Defensive: keep the large board snapshots + sql.js WASM out of the
         // precache even if the allowlist above is ever widened. They're fetched
         // lazily by the Board Explorer (see apps/board-explorer/db.ts).
-        globIgnores: ['**/board-data/**', '**/sql-wasm.wasm'],
+        globIgnores: ['**/board-data/**', '**/sql-wasm.wasm', '**/climb-generator/**'],
         // SPA navigation fallback so deep links work offline.
         navigateFallback: `${base}index.html`,
         // Don't intercept the GH Pages 404 redirect path or the SW script itself.
