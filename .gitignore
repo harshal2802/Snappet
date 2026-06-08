@@ -16,3 +16,6 @@ __pycache__/
 * [0-9].*
 * copy.*
 *\ copy
+
+# ONNX float32 intermediate (the browser uses the quantized model.q.onnx; regenerate via scripts/export_onnx.py)
+src/frontend/public/climb-generator/model.onnx
