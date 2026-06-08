@@ -7,6 +7,10 @@ dev-dist/
 # Generated ML datasets from scripts/build-climb-dataset.py (derived artifacts).
 scripts/out/
 
+# Python bytecode cache (from scripts/*.py imports).
+__pycache__/
+*.pyc
+
 # iCloud / Finder duplicate artifacts (project lives under ~/Desktop which syncs).
 # Filenames are kebab-case with no spaces, so these patterns only catch duplicates.
 * [0-9].*
