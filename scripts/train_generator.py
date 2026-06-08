@@ -200,6 +200,7 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--limit-train", type=int, default=None, help="cap train examples (debug)")
     ap.add_argument("--max-steps", type=int, default=None, help="cap optimiser steps (debug)")
+    ap.add_argument("--patience", type=int, default=3, help="early-stop after N epochs w/o val improvement")
     ap.add_argument("--ckpt", default=os.path.join(DEFAULT_DATA, "generator.pt"))
     ap.add_argument("--smoke", action="store_true", help="tiny net, few steps, CPU — just prove the loop")
     ap.add_argument("--sample", action="store_true", help="load --ckpt and generate instead of training")
@@ -242,7 +243,8 @@ def main() -> None:
 
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     g = torch.Generator().manual_seed(args.seed)
-    step = 0
+    ckpt = {"block": block, "cfg": {"dim": args.dim, "layers": args.layers, "heads": args.heads}}
+    step, best_val, bad = 0, float("inf"), 0
     for ep in range(args.epochs):
         model.train()
         order = torch.randperm(len(train), generator=g).tolist()
@@ -260,13 +262,24 @@ def main() -> None:
             if args.max_steps and step >= args.max_steps:
                 break
         vl = eval_loss(model, val, block, pad, device)
-        print(f"epoch {ep+1}: val_loss={vl:.3f}  ppl={math.exp(vl):.1f}")
+        if vl < best_val - 1e-4:
+            best_val, bad = vl, 0
+            ckpt["model"] = model.state_dict()
+            torch.save(ckpt, args.ckpt)
+            tag = "  ← best, saved"
+        else:
+            bad += 1
+            tag = f"  (no improve {bad}/{args.patience})"
+        print(f"epoch {ep+1}: val_loss={vl:.3f}  ppl={math.exp(vl):.1f}{tag}", flush=True)
         if args.max_steps and step >= args.max_steps:
             break
+        if bad >= args.patience:
+            print(f"early stop: val plateaued after {ep+1} epochs (best ppl={math.exp(best_val):.1f})")
+            break
 
-    torch.save({"model": model.state_dict(), "block": block,
-                "cfg": {"dim": args.dim, "layers": args.layers, "heads": args.heads}}, args.ckpt)
-    print(f"saved {args.ckpt}")
+    print(f"saved {args.ckpt}  (best val_loss={best_val:.3f}, ppl={math.exp(best_val):.1f})")
+    if "model" in ckpt:  # sample from the best checkpoint, not the last epoch
+        model.load_state_dict(ckpt["model"])
 
     holds, placement, role = generate(model, vocab, masks, geom, size=args.size, angle=args.angle,
                                       grade=args.grade, nomatch=args.nomatch, device=device)
