@@ -29,8 +29,8 @@ function entryUrl(entry: ManifestEntry): string {
   return entry.url ?? `${import.meta.env.BASE_URL}board-data/${entry.file}`
 }
 
-async function fetchAndDecompress(entry: ManifestEntry): Promise<ArrayBuffer> {
-  const res = await fetch(entryUrl(entry))
+async function fetchAndDecompress(entry: ManifestEntry, signal?: AbortSignal): Promise<ArrayBuffer> {
+  const res = await fetch(entryUrl(entry), { signal })
   if (!res.ok || !res.body) throw new Error(`Could not download ${entry.label} (${res.status})`)
   const stream = res.body.pipeThrough(new DecompressionStream('gzip'))
   return new Response(stream).arrayBuffer()
@@ -83,8 +83,8 @@ export class BoardDB {
     })
   }
 
-  async open(entry: ManifestEntry): Promise<BoardMeta> {
-    const bytes = await fetchAndDecompress(entry)
+  async open(entry: ManifestEntry, signal?: AbortSignal): Promise<BoardMeta> {
+    const bytes = await fetchAndDecompress(entry, signal)
     const res = await this.send({ type: 'open', bytes, wasmUrl }, [bytes])
     if (res.type !== 'opened') throw new Error('Unexpected open response')
     return {

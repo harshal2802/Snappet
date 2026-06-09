@@ -1,8 +1,40 @@
 # Decisions: Snappet
 
-**Last updated**: 2026-06-07
+**Last updated**: 2026-06-09
 
 A log of significant technical decisions and the reasoning behind them.
+
+---
+
+## [2026-06-09] Board Explorer: generate flow loads nothing it doesn't use; model registry for lazy multi-model
+
+**Decision**: Two related changes to the Board Explorer's **Generate** tab. (1) **Don't download the
+SQLite catalogue when generating.** The board-open effect now only runs while the **Browse** tab is
+active, the active tab is persisted (`snappet:board-explorer:tab`), and an in-flight snapshot download
+is aborted (via `AbortController`/`AbortSignal` threaded through `BoardDB.open`) if you leave Browse.
+(2) **A model registry** (`public/climb-generator/manifest.json`: `{ default, models[] }`) backs the
+generator. `loadMeta`/`loadSession` are keyed by model id (Map-cached), a `disposeSession(id)` frees the
+previous model's runtime on switch, and `GeneratePanel` shows a model picker only when more than one
+model is listed. A missing/malformed manifest falls back to the single committed checkpoint.
+
+**Why**: The generator runs a self-contained ONNX model (~9 MB) + bundled `meta.json` and never touches
+the board SQLite — yet the catalogue was fetched on mount regardless of tab, so opening Generate (or
+just landing on the page) eagerly pulled the default board (**Kilter ≈ 81 MB gz**). Gating on the tab
+removes that entirely for generate-only users. Mirroring the existing board-manifest pattern for models
+makes "train a better model later" a **data-only change** — drop the `.onnx` + `meta.json` into
+`public/climb-generator/`, add one manifest entry — and keeps it **lazy**: each model's bytes (and the
+onnxruntime wasm) download only when that model is first selected, honoring the no-backend rule.
+
+**Trade-offs / risks**: Persisting the tab means a returning generate-user lands on Generate and won't
+see Browse's auto-load until they click it (intended). Browse itself still auto-downloads the selected
+board on entry — unchanged, since that's the tool's purpose; only the *eager-regardless-of-tab* behavior
+was the bug. Switching models frees the prior session (re-selecting it re-downloads from the HTTP cache),
+trading a little re-init time for bounded memory. The picker stays hidden today (one model), so current
+UX is unchanged.
+
+**How to apply**: To add a model, commit its `*.onnx` + `meta.json` under `public/climb-generator/` and
+append `{ id, label, model, meta, sizeBytes? }` to `manifest.json`; set `default` to the best one. No
+code change. The `ort/` wasm dir is still gitignored and copied by the vite `copyOrtWasm` plugin.
 
 ---
 

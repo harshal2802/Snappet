@@ -8,7 +8,14 @@ import {
   type RenderHold,
 } from './render'
 import type { HoldPos, RoleInfo } from './types'
-import { loadMeta, loadSession, makeRunLogits } from './generate/session'
+import {
+  disposeSession,
+  loadMeta,
+  loadModelManifest,
+  loadSession,
+  makeRunLogits,
+  type ModelManifest,
+} from './generate/session'
 import {
   generateReranked,
   prepare,
@@ -39,6 +46,11 @@ export default function GeneratePanel() {
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState<string | null>(null)
 
+  // Model registry: which checkpoints exist + which one is selected.
+  const [manifest, setManifest] = useState<ModelManifest | null>(null)
+  const [modelId, setModelId] = useState<string | null>(null)
+  const activeModel = useRef<string | null>(null)
+
   // Controls
   const [sizeId, setSizeId] = useState<number | null>(null)
   const [angle, setAngle] = useState(40)
@@ -49,12 +61,36 @@ export default function GeneratePanel() {
   const [result, setResult] = useState<RerankedClimb | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
 
-  // Load the metadata + ONNX model once when the tab opens.
+  // Load the model registry once when the tab opens, then select the default.
   useEffect(() => {
     let cancelled = false
-    Promise.all([loadMeta(), loadSession()])
+    loadModelManifest()
+      .then((m) => {
+        if (cancelled) return
+        setManifest(m)
+        setModelId((cur) => cur ?? m.default)
+      })
+      .catch((e) => !cancelled && (setError(e instanceof Error ? e.message : String(e)), setStatus('error')))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Lazily load the selected model's metadata + ONNX session. Only the chosen
+  // model's bytes download, and the previously-active model is freed on switch.
+  useEffect(() => {
+    if (!manifest || !modelId) return
+    const entry = manifest.models.find((m) => m.id === modelId)
+    if (!entry) return
+    let cancelled = false
+    setStatus('loading')
+    setError(null)
+    Promise.all([loadMeta(entry), loadSession(entry)])
       .then(([meta, session]) => {
         if (cancelled) return
+        const prev = activeModel.current
+        if (prev && prev !== entry.id) void disposeSession(prev)
+        activeModel.current = entry.id
         setEngine({
           meta,
           prep: prepare(meta),
@@ -62,14 +98,16 @@ export default function GeneratePanel() {
           grid: meta.placements.map((p) => ({ placementId: p.id, layoutId: 1, x: p.x, y: p.y })),
           roles: meta.roles.map((r) => ({ id: r.id, name: r.name, color: r.color })),
         })
-        setSizeId(meta.defaultSize)
+        // Keep the user's size if the new model still supports it; else reset.
+        setSizeId((cur) => (cur != null && meta.sizes.some((s) => s.id === cur) ? cur : meta.defaultSize))
+        setResult(null)
         setStatus('ready')
       })
       .catch((e) => !cancelled && (setError(e instanceof Error ? e.message : String(e)), setStatus('error')))
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [manifest, modelId])
 
   const placementById = useMemo(() => indexPlacements(engine?.grid ?? []), [engine])
   const roleById = useMemo(() => indexRoles(engine?.roles ?? []), [engine])
@@ -127,16 +165,39 @@ export default function GeneratePanel() {
     )
   }
   if (!engine || sizeId == null) {
-    return <p className="text-sm text-gray-400 py-8 text-center">Loading generator model (~9&nbsp;MB, once)…</p>
+    const bytes = manifest?.models.find((m) => m.id === modelId)?.sizeBytes
+    const mb = bytes ? Math.round(bytes / 1_000_000) : null
+    return (
+      <p className="text-sm text-gray-400 py-8 text-center">
+        Loading generator model{mb ? ` (~${mb} MB, once)` : ''}…
+      </p>
+    )
   }
 
   const { meta } = engine
-  const busy = status === 'generating'
+  const busy = status === 'generating' || status === 'loading'
+  const models = manifest?.models ?? []
 
   return (
     <div className="grid gap-6 md:grid-cols-[18rem_1fr]">
       {/* Controls */}
       <div className="space-y-4">
+        {models.length > 1 && (
+          <Field label="Model">
+            <select
+              value={modelId ?? ''}
+              onChange={(e) => setModelId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+
         <Field label="Board size">
           <select
             value={sizeId}
