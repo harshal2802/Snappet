@@ -1,0 +1,13 @@
+{
+  "default": "v1",
+  "models": [
+    {
+      "id": "v1",
+      "label": "Transformer v1",
+      "model": "model.q.onnx",
+      "meta": "meta.json",
+      "sizeBytes": 9199531,
+      "description": "Small conditional transformer (quantized int8) trained on Kilter climbs with ≥3 ascents. Conditions on board size, angle, and target grade."
+    }
+  ]
+}

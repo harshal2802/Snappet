@@ -40,7 +40,9 @@ function Explorer() {
   const [total, setTotal] = useState(0)
   const [querying, setQuerying] = useState(false)
   const [selected, setSelected] = useState<ClimbRow | null>(null)
-  const [tab, setTab] = useState<'browse' | 'generate'>('browse')
+  // Persisted so a Generate-focused user lands back on Generate and never pays
+  // for the (large) board catalogue download they don't use there.
+  const [tab, setTab] = useLocalStorage<'browse' | 'generate'>('snappet:board-explorer:tab', 'browse')
 
   const [presets, setPresets] = useLocalStorage<Preset[]>('snappet:board-explorer:presets', [])
   const [presetName, setPresetName] = useState('')
@@ -57,27 +59,36 @@ function Explorer() {
       .catch((e) => setManifestError(e instanceof Error ? e.message : String(e)))
   }, [setSelectedBoard])
 
-  // Open the selected board.
+  // Open the selected board — only while the Browse tab is active. The Generate
+  // tab runs its own bundled model and never touches the SQLite snapshot, so
+  // gating here means switching to / landing on Generate downloads none of the
+  // (tens-of-MB) catalogue. An in-flight download is aborted if you leave Browse
+  // before it finishes.
   useEffect(() => {
-    if (!manifest || !selectedBoard) return
+    if (tab !== 'browse' || !manifest || !selectedBoard) return
     const entry = manifest.find((b) => b.board === selectedBoard)
     if (!entry || meta?.board === selectedBoard) return
     let cancelled = false
+    const controller = new AbortController()
     setBoardLoading(true)
     setBoardError(null)
     getDb()
-      .open(entry)
+      .open(entry, controller.signal)
       .then((m) => {
         if (cancelled) return
         setMeta(m)
         setPage(0)
       })
-      .catch((e) => !cancelled && setBoardError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => {
+        if (cancelled || controller.signal.aborted) return
+        setBoardError(e instanceof Error ? e.message : String(e))
+      })
       .finally(() => !cancelled && setBoardLoading(false))
     return () => {
       cancelled = true
+      controller.abort()
     }
-  }, [manifest, selectedBoard, meta])
+  }, [manifest, selectedBoard, meta, tab])
 
   // Run the (debounced) query whenever the board / filter / page changes.
   useEffect(() => {
