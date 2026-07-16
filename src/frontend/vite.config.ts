@@ -171,7 +171,10 @@ export default defineConfig({
         // Defensive: keep the large board snapshots + sql.js WASM out of the
         // precache even if the allowlist above is ever widened. They're fetched
         // lazily by the Board Explorer (see apps/board-explorer/db.ts).
-        globIgnores: ['**/board-data/**', '**/sql-wasm.wasm', '**/climb-generator/**'],
+        // music-festivals/ is hosted data for the Snappet mobile app (lineup .fpack
+        // packs + their manifest/index), not app shell — same posture as board-data/.
+        globIgnores: ['**/board-data/**', '**/sql-wasm.wasm', '**/climb-generator/**',
+                      '**/music-festivals/**'],
         // SPA navigation fallback so deep links work offline.
         navigateFallback: `${base}index.html`,
         // Don't intercept the GH Pages 404 redirect path or the SW script itself.

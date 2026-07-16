@@ -1,0 +1,200 @@
+{
+  "id": "glastonbury-2026",
+  "name": "Glastonbury 2026",
+  "location": "Worthy Farm, Pilton",
+  "startDate": "2026-06-24",
+  "endDate": "2026-06-28",
+  "utcOffsetSeconds": 3600,
+  "updated": "2026-06-22",
+  "days": [
+    {
+      "date": "2026-06-26",
+      "stages": [
+        {
+          "name": "Pyramid Stage",
+          "sets": [
+            ["The Big Moon", "11:30", "12:15"],
+            ["Michael Kiwanuka", "13:00", "14:00"],
+            ["Wet Leg", "15:00", "16:00"],
+            ["Burna Boy", "17:00", "18:15"],
+            ["Charli XCX", "19:15", "20:30"],
+            ["Arctic Monkeys", "21:45", "23:15"]
+          ]
+        },
+        {
+          "name": "Other Stage",
+          "sets": [
+            ["English Teacher", "12:00", "12:45"],
+            ["Holly Humberstone", "13:30", "14:20"],
+            ["Confidence Man", "15:15", "16:15"],
+            ["Bicep", "17:15", "18:30"],
+            ["Jamie xx", "19:30", "20:45"],
+            ["Peggy Gou", "22:00", "23:30"]
+          ]
+        },
+        {
+          "name": "West Holts",
+          "sets": [
+            ["Ezra Collective", "14:00", "15:00"],
+            ["Sampha", "16:00", "17:00"],
+            ["Little Dragon", "18:00", "19:00"],
+            ["Róisín Murphy", "20:00", "21:15"],
+            ["Bonobo", "22:30", "00:00"]
+          ]
+        },
+        {
+          "name": "Woodsies",
+          "sets": [
+            ["NewDad", "12:30", "13:15"],
+            ["Arlo Parks", "14:30", "15:30"],
+            ["Fontaines D.C.", "17:30", "18:45"],
+            ["Floating Points", "21:00", "22:30"]
+          ]
+        },
+        {
+          "name": "The Park",
+          "sets": [
+            ["Alabaster DePlume", "13:00", "14:00"],
+            ["Yaeji", "16:30", "17:30"],
+            ["King Krule", "19:00", "20:15"],
+            ["Sudan Archives", "21:30", "22:45"]
+          ]
+        },
+        {
+          "name": "Arcadia",
+          "sets": [
+            ["Hessle Audio", "22:00", "23:30"],
+            ["Ben UFO", "23:30", "01:00"],
+            ["Sherelle", "01:00", "02:30"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-06-27",
+      "stages": [
+        {
+          "name": "Pyramid Stage",
+          "sets": [
+            ["The Staves", "11:45", "12:30"],
+            ["Olivia Dean", "13:15", "14:15"],
+            ["Loyle Carner", "15:15", "16:15"],
+            ["RAYE", "17:15", "18:30"],
+            ["Little Simz", "20:00", "21:15"],
+            ["Fred again..", "22:15", "23:45"]
+          ]
+        },
+        {
+          "name": "Other Stage",
+          "sets": [
+            ["Lambrini Girls", "12:15", "13:00"],
+            ["CMAT", "14:00", "15:00"],
+            ["Sugababes", "16:00", "17:00"],
+            ["Disclosure", "18:00", "19:15"],
+            ["Four Tet", "20:30", "22:00"],
+            ["Skrillex", "23:00", "00:30"]
+          ]
+        },
+        {
+          "name": "West Holts",
+          "sets": [
+            ["Nubya Garcia", "14:30", "15:30"],
+            ["Masego", "16:30", "17:30"],
+            ["Jungle", "18:30", "19:45"],
+            ["Jamie Jones", "21:15", "22:45"],
+            ["Overmono", "23:30", "01:00"],
+            ["Jayda G", "01:00", "02:30"]
+          ]
+        },
+        {
+          "name": "Woodsies",
+          "sets": [
+            ["Divorce", "12:45", "13:30"],
+            ["Griff", "14:45", "15:45"],
+            ["The Japanese House", "17:00", "18:00"],
+            ["Caribou", "19:30", "20:45"],
+            ["Erol Alkan", "22:15", "23:45"]
+          ]
+        },
+        {
+          "name": "The Park",
+          "sets": [
+            ["Bar Italia", "13:30", "14:30"],
+            ["Mount Kimbie", "16:00", "17:00"],
+            ["Weyes Blood", "18:15", "19:15"],
+            ["Kelly Lee Owens", "20:30", "21:45"],
+            ["Daniel Avery", "23:00", "00:30"]
+          ]
+        },
+        {
+          "name": "Arcadia",
+          "sets": [
+            ["Eric Prydz", "23:00", "00:30"],
+            ["Mall Grab", "00:30", "02:00"],
+            ["Interplanetary Criminal", "02:00", "03:30"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-06-28",
+      "stages": [
+        {
+          "name": "Pyramid Stage",
+          "sets": [
+            ["Brass Against", "11:30", "12:15"],
+            ["Celeste", "13:00", "14:00"],
+            ["Father John Misty", "15:00", "16:00"],
+            ["Dua Lipa", "17:15", "18:30"],
+            ["London Grammar", "19:30", "20:30"],
+            ["Radiohead", "21:30", "23:00"]
+          ]
+        },
+        {
+          "name": "Other Stage",
+          "sets": [
+            ["Panic Shack", "12:00", "12:45"],
+            ["Beabadoobee", "13:45", "14:45"],
+            ["Ride", "15:45", "16:45"],
+            ["Underworld", "18:00", "19:15"],
+            ["The Chemical Brothers", "20:45", "22:15"]
+          ]
+        },
+        {
+          "name": "West Holts",
+          "sets": [
+            ["The Comet Is Coming", "14:00", "15:00"],
+            ["Khruangbin", "16:15", "17:30"],
+            ["Erykah Badu", "18:45", "20:00"],
+            ["Justice", "21:30", "23:00"]
+          ]
+        },
+        {
+          "name": "Woodsies",
+          "sets": [
+            ["mui zyu", "12:30", "13:15"],
+            ["Alvvays", "14:30", "15:30"],
+            ["Bombay Bicycle Club", "17:00", "18:00"],
+            ["Jon Hopkins", "19:45", "21:15"]
+          ]
+        },
+        {
+          "name": "The Park",
+          "sets": [
+            ["Naima Bock", "13:00", "13:45"],
+            ["This Is The Kit", "15:00", "16:00"],
+            ["Anohni", "17:30", "18:30"],
+            ["Bicep present Chroma", "20:00", "21:30"]
+          ]
+        },
+        {
+          "name": "Arcadia",
+          "sets": [
+            ["Andy C", "22:00", "23:30"],
+            ["Chase & Status", "23:30", "01:00"]
+          ]
+        }
+      ]
+    }
+  ]
+}

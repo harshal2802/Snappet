@@ -1,0 +1,185 @@
+{
+  "id": "tomorrowland-2026-w2",
+  "name": "Tomorrowland 2026 · W2",
+  "location": "Boom, Belgium",
+  "startDate": "2026-07-24",
+  "endDate": "2026-07-26",
+  "utcOffsetSeconds": 7200,
+  "updated": "2026-07-10",
+  "days": [
+    {
+      "date": "2026-07-24",
+      "stages": [
+        {
+          "name": "Mainstage",
+          "sets": [
+            ["Mandy", "12:00", "13:00"],
+            ["Lost Frequencies", "13:00", "14:00"],
+            ["Steve Aoki", "14:00", "15:00"],
+            ["Alok", "15:00", "16:00"],
+            ["Amber Broos", "16:00", "17:00"],
+            ["Afrojack", "17:00", "18:00"],
+            ["Armin van Buuren", "18:00", "19:30"],
+            ["David Guetta", "19:30", "21:00"],
+            ["Swedish House Mafia", "21:30", "23:00"]
+          ]
+        },
+        {
+          "name": "Freedom Stage",
+          "sets": [
+            ["Goodboys", "13:00", "14:00"],
+            ["HUGEL", "14:00", "15:30"],
+            ["Vintage Culture", "15:30", "17:00"],
+            ["Mochakk", "17:00", "18:30"],
+            ["The Martinez Brothers", "18:30", "20:00"],
+            ["Solomun", "20:00", "22:00"],
+            ["Adriatique", "22:00", "00:00"]
+          ]
+        },
+        {
+          "name": "The Rave Cave",
+          "sets": [
+            ["Juicy Romance", "12:30", "14:00"],
+            ["Nico Moreno", "14:00", "15:30"],
+            ["Sara Landry", "15:30", "17:00"],
+            ["Trym", "17:00", "18:30"],
+            ["999999999", "18:30", "20:00"]
+          ]
+        },
+        {
+          "name": "Elixir",
+          "sets": [
+            ["Chloé Caillet", "14:00", "16:00"],
+            ["Jimi Jules", "16:00", "18:00"],
+            ["&ME", "18:00", "20:00"],
+            ["Rampa", "20:00", "22:00"]
+          ]
+        },
+        {
+          "name": "Core",
+          "sets": [
+            ["Carlita", "15:00", "16:30"],
+            ["DJ Tennis", "16:30", "18:00"],
+            ["Maceo Plex", "18:00", "20:00"],
+            ["Tale Of Us", "20:00", "22:00"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-07-25",
+      "stages": [
+        {
+          "name": "Mainstage",
+          "sets": [
+            ["Yves Deruyter", "12:00", "13:00"],
+            ["W&W", "13:00", "14:00"],
+            ["Nervo", "14:00", "15:00"],
+            ["Oliver Heldens", "15:00", "16:00"],
+            ["Timmy Trumpet", "16:00", "17:00"],
+            ["Steve Angello", "17:00", "18:00"],
+            ["Amelie Lens", "18:00", "19:30"],
+            ["Martin Garrix", "19:30", "21:00"],
+            ["Charlotte de Witte", "21:30", "23:00"]
+          ]
+        },
+        {
+          "name": "Freedom Stage",
+          "sets": [
+            ["Bond & Bapes", "13:00", "14:30"],
+            ["Argy", "14:30", "16:00"],
+            ["Miss Monique", "16:00", "17:30"],
+            ["Kölsch", "17:30", "19:00"],
+            ["Boris Brejcha", "19:00", "21:00"],
+            ["Eric Prydz presents HOLO", "21:30", "23:30"]
+          ]
+        },
+        {
+          "name": "The Rave Cave",
+          "sets": [
+            ["Klangkuenstler", "13:00", "14:30"],
+            ["Funk Tribu", "14:30", "16:00"],
+            ["Horsegiirl", "16:00", "17:30"],
+            ["I Hate Models", "17:30", "19:00"],
+            ["SPFDJ", "19:00", "20:30"]
+          ]
+        },
+        {
+          "name": "Elixir",
+          "sets": [
+            ["Francis Mercier", "14:00", "16:00"],
+            ["Sparrow & Barbossa", "16:00", "18:00"],
+            ["Themba", "18:00", "20:00"],
+            ["Black Coffee", "20:00", "22:30"]
+          ]
+        },
+        {
+          "name": "Core",
+          "sets": [
+            ["Sofia Kourtesis", "15:00", "16:30"],
+            ["DJ Koze", "16:30", "18:30"],
+            ["Michael Bibi", "18:30", "20:15"],
+            ["Ricardo Villalobos", "20:15", "22:00"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-07-26",
+      "stages": [
+        {
+          "name": "Mainstage",
+          "sets": [
+            ["Henri PFR", "12:00", "13:00"],
+            ["Robin Schulz", "13:00", "14:00"],
+            ["Kygo", "14:00", "15:15"],
+            ["Don Diablo", "15:15", "16:15"],
+            ["Marlon Hoffstadt", "16:15", "17:30"],
+            ["Hardwell", "17:30", "18:45"],
+            ["Anyma", "18:45", "20:15"],
+            ["Dimitri Vegas & Like Mike", "20:15", "21:45"],
+            ["Tiësto", "22:00", "23:30"]
+          ]
+        },
+        {
+          "name": "Freedom Stage",
+          "sets": [
+            ["Layla Benitez", "13:00", "14:30"],
+            ["Ben Böhmer", "14:30", "16:00"],
+            ["Innellea", "16:00", "17:30"],
+            ["Mind Against", "17:30", "19:00"],
+            ["Afterlife Showcase", "19:00", "21:00"],
+            ["FISHER", "21:30", "23:30"]
+          ]
+        },
+        {
+          "name": "The Rave Cave",
+          "sets": [
+            ["Onlynumbers", "13:00", "14:30"],
+            ["Paco Osuna", "14:30", "16:00"],
+            ["Indira Paganotto", "16:00", "17:30"],
+            ["ANNA", "17:30", "19:00"],
+            ["Reinier Zonneveld", "19:00", "21:00"]
+          ]
+        },
+        {
+          "name": "Elixir",
+          "sets": [
+            ["Âme", "14:00", "16:00"],
+            ["Trikk", "16:00", "18:00"],
+            ["Dixon", "18:00", "20:30"]
+          ]
+        },
+        {
+          "name": "Core",
+          "sets": [
+            ["Avalon Emerson", "15:00", "16:30"],
+            ["HAAi", "16:30", "18:00"],
+            ["Folamour", "18:00", "19:45"],
+            ["Peggy Gou", "19:45", "21:45"]
+          ]
+        }
+      ]
+    }
+  ]
+}
