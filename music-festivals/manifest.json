@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-07-10",
+  "festivals": [
+    {
+      "id": "glastonbury-2026",
+      "name": "Glastonbury 2026",
+      "location": "Worthy Farm, Pilton",
+      "startDate": "2026-06-24",
+      "endDate": "2026-06-28",
+      "file": "glastonbury-2026.fpack",
+      "stages": 18,
+      "sets": 84,
+      "updatedAt": "2026-06-22",
+      "sizeBytes": 1607
+    },
+    {
+      "id": "tomorrowland-2026-w2",
+      "name": "Tomorrowland 2026 · W2",
+      "location": "Boom, Belgium",
+      "startDate": "2026-07-24",
+      "endDate": "2026-07-26",
+      "file": "tomorrowland-2026-w2.fpack",
+      "stages": 15,
+      "sets": 84,
+      "updatedAt": "2026-07-10",
+      "sizeBytes": 1452
+    }
+  ]
+}
