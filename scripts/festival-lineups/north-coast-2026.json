@@ -1,0 +1,241 @@
+{
+  "id": "north-coast-2026",
+  "name": "North Coast 2026",
+  "location": "SeatGeek Stadium, Bridgeview, IL",
+  "startDate": "2026-09-04",
+  "endDate": "2026-09-06",
+  "utcOffsetSeconds": -18000,
+  "updated": "2026-09-05",
+  "days": [
+    {
+      "date": "2026-09-04",
+      "stages": [
+        {
+          "name": "The Stadium",
+          "sets": [
+            ["Basura Boyz", "17:45", "18:45"],
+            ["DRAMA [Club]", "18:45", "19:45"],
+            ["Jigitz", "19:45", "20:45"],
+            ["Chris Lorenzo", "20:45", "22:15"],
+            ["Fisher", "22:25", "23:59"]
+          ]
+        },
+        {
+          "name": "The Shipyard",
+          "sets": [
+            ["Thalo", "14:30", "15:40"],
+            ["TVVIN", "15:40", "16:40"],
+            ["Viperactive", "16:40", "17:40"],
+            ["Wuki", "17:40", "18:40"],
+            ["TroyBoi", "18:40", "19:50"],
+            ["Dabin", "19:55", "21:10"],
+            ["Porter Robinson (DJ Set)", "21:15", "22:45"]
+          ]
+        },
+        {
+          "name": "The Vega",
+          "sets": [
+            ["Aireloosh", "14:30", "15:25"],
+            ["Cozy Kev", "15:25", "16:25"],
+            ["Bou", "16:25", "17:25"],
+            ["Richard Finger", "17:25", "18:25"],
+            ["Sippy", "18:25", "19:25"],
+            ["Level Up", "19:25", "20:25"],
+            ["Jade Cicada", "20:25", "21:25"],
+            ["Levity B2B Tape B", "21:30", "23:00"]
+          ]
+        },
+        {
+          "name": "Fire Pit",
+          "sets": [
+            ["Noirkxtty", "14:00", "14:45"],
+            ["Exxorcist", "14:45", "15:30"],
+            ["DJ Scari", "15:30", "16:15"],
+            ["Hazcat", "16:15", "17:00"],
+            ["Wayve", "17:00", "18:00"],
+            ["Scarlet Widow", "18:00", "19:00"],
+            ["Aych", "19:00", "20:00"],
+            ["Mad Dubz B2B VKTM", "20:00", "21:00"],
+            ["Emorfik", "21:00", "22:00"]
+          ]
+        },
+        {
+          "name": "OCB Dome",
+          "sets": [
+            ["R34L", "14:30", "15:30"],
+            ["Sylo", "15:30", "16:30"],
+            ["Riija", "16:45", "17:45"],
+            ["DIØN", "18:00", "19:00"],
+            ["DØMINA", "19:15", "20:15"],
+            ["Alignment", "20:30", "21:45"],
+            ["GRAVEDGR", "21:45", "22:45"]
+          ]
+        },
+        {
+          "name": "Silent Disco",
+          "sets": [
+            ["Ill Bias", "14:30", "15:30"],
+            ["LIZ!", "15:30", "16:30"],
+            ["Lars", "16:45", "17:45"],
+            ["Cxnt Dxddy", "18:00", "19:00"],
+            ["Heily Beatz", "19:15", "20:15"],
+            ["Meachie", "20:30", "21:30"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-05",
+      "stages": [
+        {
+          "name": "The Stadium",
+          "sets": [
+            ["Super Future", "17:30", "18:25"],
+            ["Mary Droppinz", "18:25", "19:25"],
+            ["YDG", "19:25", "20:25"],
+            ["ALLEYCVT", "20:25", "21:25"],
+            ["Ganja White Night", "21:30", "22:30"],
+            ["GRiZ", "22:40", "23:55"]
+          ]
+        },
+        {
+          "name": "The Shipyard",
+          "sets": [
+            ["Ladiesman", "14:00", "15:40"],
+            ["Zorza", "15:40", "16:40"],
+            ["JSTJR", "16:40", "17:40"],
+            ["Marie Vaunt", "17:40", "19:10"],
+            ["Restricted", "19:10", "20:40"],
+            ["Lilly Palmer", "20:40", "22:10"],
+            ["Holy Priest", "22:15", "23:45"]
+          ]
+        },
+        {
+          "name": "The Vega",
+          "sets": [
+            ["Galena Crew", "14:00", "15:00"],
+            ["Fly", "15:00", "16:00"],
+            ["Nostalgix", "16:00", "17:00"],
+            ["Flowdan", "17:00", "18:00"],
+            ["Casey Club", "18:00", "19:00"],
+            ["ARMNHMR", "19:00", "20:05"],
+            ["Mersiv", "20:10", "21:25"],
+            ["Wooli", "21:30", "22:45"]
+          ]
+        },
+        {
+          "name": "Fire Pit",
+          "sets": [
+            ["Andrew Streams", "14:30", "15:30"],
+            ["Yuri Kay", "15:30", "16:30"],
+            ["Kevin Alvarez B2B Lee Sandstrom", "16:30", "17:30"],
+            ["Twan", "17:30", "18:30"],
+            ["Dansyn", "18:30", "19:30"],
+            ["Gudfella", "19:30", "20:30"],
+            ["Gravagerz", "20:30", "21:30"]
+          ]
+        },
+        {
+          "name": "OCB Dome",
+          "sets": [
+            ["Naughta", "14:30", "15:30"],
+            ["Intel", "15:30", "16:30"],
+            ["YDG (House Set)", "16:30", "17:30"],
+            ["Wyser", "17:30", "18:30"],
+            ["Zebo", "18:30", "19:30"],
+            ["Nanoos", "19:30", "20:30"],
+            ["Nimda", "20:30", "21:00"],
+            ["Prosecute", "21:00", "21:30"],
+            ["The Resistance", "21:30", "22:30"]
+          ]
+        },
+        {
+          "name": "Silent Disco",
+          "sets": [
+            ["Bluefox", "14:30", "15:30"],
+            ["Morrison Todd", "15:30", "16:30"],
+            ["Ray Callahan", "16:45", "17:45"],
+            ["Nabss", "18:00", "19:00"],
+            ["Joe Mixin", "19:15", "20:15"],
+            ["Doggpound", "20:30", "21:30"]
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-09-06",
+      "stages": [
+        {
+          "name": "The Stadium",
+          "sets": [
+            ["Double D", "17:00", "17:40"],
+            ["William Black", "17:40", "18:40"],
+            ["BUNT.", "18:45", "19:45"],
+            ["Crankdat", "19:50", "21:05"],
+            ["Illenium B2B Slander", "21:15", "22:30"]
+          ]
+        },
+        {
+          "name": "The Shipyard",
+          "sets": [
+            ["Ham Ñ Cheez", "14:00", "14:40"],
+            ["Hashtom", "14:40", "15:30"],
+            ["Miriam", "15:30", "16:20"],
+            ["Close Friends Only", "16:20", "17:10"],
+            ["Bolo", "17:10", "18:05"],
+            ["3BallMTY", "18:05", "19:05"],
+            ["Deorro", "19:10", "20:10"],
+            ["Gryffin", "20:15", "21:30"]
+          ]
+        },
+        {
+          "name": "The Vega",
+          "sets": [
+            ["Basik", "14:00", "15:00"],
+            ["Deux Saints", "15:00", "16:00"],
+            ["33 Below", "16:00", "17:00"],
+            ["dj_dave", "17:00", "18:00"],
+            ["Interplanetary Criminal", "18:00", "19:10"],
+            ["Tchami", "19:20", "20:35"],
+            ["Sammy Virji", "20:45", "22:15"]
+          ]
+        },
+        {
+          "name": "Fire Pit",
+          "sets": [
+            ["K-Fresh", "14:00", "14:45"],
+            ["Kazii", "14:45", "15:30"],
+            ["Sudoku", "15:30", "16:15"],
+            ["Kauze", "16:15", "17:00"],
+            ["GQueue", "17:00", "18:00"],
+            ["Zarkilor", "18:00", "19:00"],
+            ["Kiefer Ian", "19:00", "20:00"],
+            ["Reaper", "20:00", "21:00"]
+          ]
+        },
+        {
+          "name": "OCB Dome",
+          "sets": [
+            ["Northside", "14:30", "15:30"],
+            ["Chess Knight", "15:30", "16:30"],
+            ["Byorn", "16:45", "17:45"],
+            ["Jazzy", "18:00", "19:00"],
+            ["Nikolina", "19:15", "20:15"],
+            ["Angerfist", "20:30", "21:30"]
+          ]
+        },
+        {
+          "name": "Silent Disco",
+          "sets": [
+            ["Physicill & Tantra", "14:30", "15:30"],
+            ["Mon", "15:30", "16:30"],
+            ["DJ BK", "16:45", "17:45"],
+            ["Partî", "18:00", "19:00"],
+            ["Kahrise", "19:15", "20:15"],
+            ["Jet Blvck", "20:30", "21:30"]
+          ]
+        }
+      ]
+    }
+  ]
+}

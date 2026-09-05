@@ -1,132 +1,81 @@
-# Research: North Coast Music Festival 2026 — lineup pack source
+# Research: North Coast Music Festival 2026 — lineup pack
 
 **Date**: 2026-09-05
-**Outcome**: **Blocked on set times.** Everything the `.fpack` wire format needs *except* the
-per-set start/end times is confirmed below, along with a drop-in source skeleton. The published
-set-time grid could not be retrieved from this environment (see *Why this isn't a pack yet*), and
-the packs under `music-festivals/` are consumed by snappet-mobile as **the published schedule** —
-so no times were guessed.
+**Outcome**: **Shipped** — `north-coast-2026.fpack` (1,977 bytes · 18 stages · 125 sets), built from
+`scripts/festival-lineups/north-coast-2026.json`.
 
-**To finish**: paste the official grid into the skeleton, save it as
-`scripts/festival-lineups/north-coast-2026.json`, run `python3 scripts/build-fpack.py`, commit the
-regenerated `.fpack` + `manifest.json`. Nothing else in the repo needs to change.
-
-Companion to [`pdd/prompts/features/music-festivals/PLAN-music-festivals.md`](../../prompts/features/music-festivals/PLAN-music-festivals.md).
+Source of the schedule: the festival's own **daily set-time posters** (cards 2/4, 3/4 and 4/4 of the
+Instagram carousel on [@northcoastfest](https://www.instagram.com/northcoastfest/)), transcribed by
+hand. Companion to
+[`pdd/prompts/features/music-festivals/PLAN-music-festivals.md`](../../prompts/features/music-festivals/PLAN-music-festivals.md).
 
 ---
 
-## Festival metadata (confirmed)
+## Festival metadata
 
 | Field | Value | Notes |
 |---|---|---|
-| `id` | `north-coast-2026` | matches the `<id>.fpack` / `<id>.json` convention |
+| `id` | `north-coast-2026` | |
 | `name` | `North Coast 2026` | 16th edition |
 | `location` | `SeatGeek Stadium, Bridgeview, IL` | Chicago metro |
 | `startDate` | `2026-09-04` | Friday |
 | `endDate` | `2026-09-06` | Sunday (Labor Day weekend) |
 | `utcOffsetSeconds` | `-18000` | America/Chicago is **CDT (UTC−5)** in September, not CST |
 
-**Daily windows** — doors 14:00 CT all three days; music ends **00:00** Friday and Saturday,
-**22:30** Sunday. Every set therefore lands inside the builder's 06:00→06:00 day window with room
-to spare, and no set crosses the 06:00 rollover, so no `HH:MM < 06:00` next-day entries are
-expected for this festival.
+**Six stages**, consistent across all three days:
+`The Stadium` · `The Shipyard` · `The Vega` · `Fire Pit` · `OCB Dome` · `Silent Disco`
 
-**Six stages** (the pack's `stages[].name` values):
-`Stadium` · `Vega` · `Shipyard` · `Firepit` · `Chill Dome` · `Silent Disco`
+**Day shape** — music starts 14:00 CT daily. Friday and Saturday run to midnight (latest sets end
+23:59 and 23:55); **Sunday's curfew is early**, with the last set ending 22:30. That matches the
+independently-reported daily hours, which is a useful check on the transcription.
 
-The Chill Dome is new for 2026. Silent Disco may or may not be worth packing — it typically runs
-unbilled/back-to-back host sets; drop the stage entirely rather than inventing filler sets for it,
-since the builder rejects a stage with no sets.
+| Day | Sets | Stadium closer |
+|---|---|---|
+| Fri 09-04 | 42 | Fisher 22:25–23:59 |
+| Sat 09-05 | 43 | GRiZ 22:40–23:55 |
+| Sun 09-06 | 40 | Illenium B2B Slander 21:15–22:30 |
 
-## Artist roster (confirmed, day assignment NOT confirmed)
+## Transcription decisions
 
-Corroborated across the phase-one and phase-two announcements. Day and stage placement for these
-names is **not** established — treat this as the pool to slot into the grid, not as an ordering.
+These are the judgement calls behind the source file — worth recording, because a future re-scrape
+of the same posters should land on the same JSON.
 
-**Headliners / top billing** — FISHER · GRiZ · ILLENIUM B2B SLANDER · Porter Robinson (DJ set) ·
-Levity B2B Tape B · GRYFFIN · Ganja White Night · Sammy Virji · Crankdat · Wooli · Jade Cicada ·
-Chris Lorenzo (special guest)
+- **OCB Dome is one stage, not two.** The poster's OCB Dome column tags each set with a colour chip
+  — red for *Bunker*, blue for *Chill Dome* — so the column is really two rooms sharing a lane. The
+  wire format has no sub-stage concept, and the two rooms are **strictly sequential** on all three
+  days (verified: no two OCB Dome sets overlap), so they merge into a single `OCB Dome` stage
+  without tripping the validator's same-stage overlap check. The Bunker/Chill Dome split is lost;
+  that seemed a better trade than inventing two stage names the poster doesn't print.
+- **B2B sets are one set, one artist string** — `Levity B2B Tape B`, `Illenium B2B Slander`,
+  `Mad Dubz B2B VKTM`, `Kevin Alvarez B2B Lee Sandstrom`. Splitting them into two sets on one stage
+  would be rejected as an overlap, and is wrong anyway.
+- **Casing is normalised to the artists' usual styling**, not the poster's all-caps
+  (`GRiZ`, `TroyBoi`, `ALLEYCVT`, `ARMNHMR`, `dj_dave`, `BUNT.`, `3BallMTY`). The poster sets every
+  name in caps as a design choice, so it isn't evidence about the name itself. Non-ASCII stylings
+  are preserved: `DIØN`, `DØMINA`, `Ham Ñ Cheez`, `Partî`.
+- **`YDG` plays twice on Saturday** — a Stadium set at 19:25 and `YDG (House Set)` in the OCB Dome
+  at 16:30. Different stages, no overlap; both are real.
+- **Presenter branding is not a set.** `BROWNIES & LEMONADE` (Friday, Shipyard foot) and
+  `EDM CHICAGO` (Fire Pit foot) label who curates the stage — they are not artists and are omitted.
+- **No set crosses the 06:00 rollover.** Every day ends before midnight, so this pack has no
+  `HH:MM < 06:00` next-day entries and the rollover rule never fires.
 
-**Melodic bass** — ARMNHMR · Dabin · William Black
-**House** — Tchami · Nostalgix · Chris Lorenzo · Wuki
-**Bass** — TroyBoi · ALLEYCVT · Viperactive · Holy Priest
-**Techno** — Restricted · Lilly Palmer · Marie Vaunt · Alignment
-**Drum & bass** — Bou · Reaper
-**Other billed** — BUNT · DRAMA (DJ set)
-**Phase two additions** — Interplanetary Criminal · Level Up · Sippy · Jigitz
-
-Billing runs to 75+ artists; the above is the reliably-attested subset. The official lineup page is
-the authority for the rest.
-
-## Why this isn't a pack yet
-
-The `.fpack` format requires a start and end time for **every** set — `build-fpack.py` rejects a
-stage with no sets, and snappet-mobile renders whatever times ship as the real schedule. The set-time
-grid lives on `northcoastfestival.com/music/schedule/` and on the aggregators (Festival Dust,
-Festiplannr, JamBase, Music Festival Wizard), and **all of them are blocked by this environment's
-network egress policy** — only GitHub and the package registries are reachable. Web search returns
-page summaries rather than page content, and it returned *three mutually contradictory* answers for
-the single question "what time does FISHER play on Friday" (`14:45–15:30`, `22:25–23:59`, and "not
-available"), which is exactly the failure mode that must not reach a pack.
-
-So: metadata and roster are recorded here, times are left to whoever can open the schedule page.
-
-## Drop-in source skeleton
-
-Save as `scripts/festival-lineups/north-coast-2026.json` **once the sets are filled in** — any
-`*.json` in that directory is picked up by the builder, so an incomplete file will fail the build
-for every pack, not just this one. Times are festival-local `HH:MM`, `["Artist", "start", "end"]`.
-
-```json
-{
-  "id": "north-coast-2026",
-  "name": "North Coast 2026",
-  "location": "SeatGeek Stadium, Bridgeview, IL",
-  "startDate": "2026-09-04",
-  "endDate": "2026-09-06",
-  "utcOffsetSeconds": -18000,
-  "updated": "2026-09-05",
-  "days": [
-    {
-      "date": "2026-09-04",
-      "stages": [
-        { "name": "Stadium",  "sets": [["Artist", "14:00", "15:00"]] },
-        { "name": "Vega",     "sets": [["Artist", "14:00", "15:00"]] },
-        { "name": "Shipyard", "sets": [["Artist", "14:00", "15:00"]] },
-        { "name": "Firepit",  "sets": [["Artist", "14:00", "15:00"]] },
-        { "name": "Chill Dome", "sets": [["Artist", "14:00", "15:00"]] }
-      ]
-    },
-    { "date": "2026-09-05", "stages": [] },
-    { "date": "2026-09-06", "stages": [] }
-  ]
-}
-```
-
-Then:
+## Rebuilding
 
 ```bash
-python3 scripts/build-fpack.py north-coast-2026   # builds the pack, refreshes the manifest
+python3 scripts/build-fpack.py north-coast-2026   # rebuilds the pack + refreshes the manifest
 ```
 
-The builder self-checks the round-trip and mirrors snappet-mobile's `FestivalPackValidator`
-(empty artist, inverted window, same-stage overlap, set outside the day window, day outside the
-festival dates, duplicate day, bad offset), so a clean build here installs cleanly there.
-
-**Two things to watch for this lineup specifically:**
-
-- **B2B sets** — `ILLENIUM B2B SLANDER` and `Levity B2B Tape B` are one set each, one artist
-  string. Don't split them into two overlapping sets; the validator rejects same-stage overlap.
-- **Sunday's early curfew** — Sunday ends at 22:30, so a Sunday set running to midnight is a
-  transcription error, not a late night.
+The builder self-checks the round-trip and mirrors snappet-mobile's `FestivalPackValidator` (empty
+artist, inverted window, same-stage overlap, set outside the day window, day outside the festival
+dates, duplicate day, bad offset), so a clean build here installs cleanly there. This pack builds
+clean, and the two pre-existing packs still reproduce byte-for-byte.
 
 ## Sources
 
+- **Daily set-time posters** — [@northcoastfest on Instagram](https://www.instagram.com/northcoastfest/) (carousel cards 2/4 Friday, 3/4 Saturday, 4/4 Sunday) — the schedule this pack is built from
+- [2026 Daily Schedule — North Coast Music Festival](https://www.northcoastfestival.com/music/schedule/)
 - [2026 Lineup — North Coast Music Festival](https://www.northcoastfestival.com/music/lineup/)
-- [2026 Daily Schedule (set times by stage)](https://www.northcoastfestival.com/music/schedule/) — the grid this doc is missing
 - [Festival Experience — six stages](https://www.northcoastfestival.com/experience/)
 - [North Coast Announces Initial 2026 Lineup — EDM Identity](https://edmidentity.com/2026/02/02/north-coast-2026-phase-1-lineup/)
 - [North Coast Drops Off More Artists (phase two) — EDM Identity](https://edmidentity.com/2026/04/25/north-coast-2026-phase-2-lineup/)
-- [North Coast Music Festival Unveils Massive 2026 Lineup — EDM.com](https://edm.com/events/north-coast-music-festival-2026-lineup/)
-- [FISHER, Illenium, Porter Robinson & More — JamBase](https://www.jambase.com/article/north-coast-music-festival-2026-lineup)
-- [North Coast Music Festival 2026 — Music Festival Wizard](https://www.musicfestivalwizard.com/festivals/north-coast-music-festival-2026/)
