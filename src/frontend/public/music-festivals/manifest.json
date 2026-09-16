@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-05",
+  "generatedAt": "2026-09-16",
   "festivals": [
     {
       "id": "glastonbury-2026",
@@ -12,6 +12,18 @@
       "sets": 84,
       "updatedAt": "2026-06-22",
       "sizeBytes": 1607
+    },
+    {
+      "id": "lost-lands-2026",
+      "name": "Lost Lands 2026",
+      "location": "Legend Valley, Thornville, OH",
+      "startDate": "2026-09-16",
+      "endDate": "2026-09-20",
+      "file": "lost-lands-2026.fpack",
+      "stages": 22,
+      "sets": 220,
+      "updatedAt": "2026-09-16",
+      "sizeBytes": 3097
     },
     {
       "id": "north-coast-2026",
