@@ -178,7 +178,13 @@ export default defineConfig({
         // SPA navigation fallback so deep links work offline.
         navigateFallback: `${base}index.html`,
         // Don't intercept the GH Pages 404 redirect path or the SW script itself.
-        navigateFallbackDenylist: [/^\/?\d{3}\.html$/, /sw\.js$/],
+        // music-festivals/ is a real static page, not a React route, and it's
+        // globIgnored above — so without this entry a navigation to it is served
+        // the SPA shell from precache and the router renders its not-found (a 404
+        // for anyone who already has the SW installed). knowledge-graph/ is also a
+        // static page but IS precached, so workbox's directoryIndex resolves it
+        // before the navigation fallback ever runs; this one can't be.
+        navigateFallbackDenylist: [/^\/?\d{3}\.html$/, /sw\.js$/, /\/music-festivals\//],
         cleanupOutdatedCaches: true,
       },
     }),
