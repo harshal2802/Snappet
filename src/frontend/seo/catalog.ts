@@ -543,3 +543,38 @@ export const catalog: AppMeta[] = [
 export const catalogByPath: Record<string, AppMeta> = Object.fromEntries(
   catalog.map((m) => [m.path, m]),
 )
+
+// Hand-written static pages that ship from `public/<slug>/index.html`, not React
+// routes and not mini-apps. They are deliberately NOT part of `catalog`:
+//   - `router/routes.tsx` keys off a loader map, so they'd never render anyway;
+//   - the hub grid lists tools, and these aren't tools;
+//   - and critically, the prerender plugin writes `dist/<slug>/index.html` for
+//     EVERY catalog entry, so listing them there would overwrite the real pages
+//     with the SPA shell. `vite.config.ts` asserts the two lists stay disjoint.
+// They still belong in sitemap.xml and llms.txt — without an entry, nothing
+// links to them and neither search engines nor AI crawlers ever find them.
+export interface StaticPage {
+  path: string
+  label: string
+  description: string
+  tagline?: string // preferred over `description` in llms.txt
+}
+
+export const staticPages: StaticPage[] = [
+  {
+    path: '/music-festivals',
+    label: 'Snappet Lineups',
+    description:
+      'Festival lineup packs (.fpack) for the Snappet Festival mini-app, plus the manifest the app browses.',
+    tagline:
+      'Snappet Lineups hosts free, community-maintained festival lineup packs — full stage-by-stage set times you can install into the Snappet Festival app and use offline, with no account and no tracking.',
+  },
+  {
+    path: '/knowledge-graph',
+    label: 'Knowledge Graph',
+    description:
+      'An interactive, searchable map of the Snappet codebase and how every part connects.',
+    tagline:
+      'The Snappet Knowledge Graph is a free, dependency-free interactive visualization of an entire codebase — every mini-app, shared hook, build step and dependency, wired by the relationships between them, with search, filters and shortest-path tracing.',
+  },
+]
