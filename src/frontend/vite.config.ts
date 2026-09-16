@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
-import { catalog, SITE } from './seo/catalog'
+import { catalog, staticPages, SITE } from './seo/catalog'
 import { renderForPath } from './seo/render'
 import { pageUrl } from './seo/meta'
 
@@ -53,6 +53,21 @@ function seoPrerender(): Plugin {
         return html
       }
 
+      // Static pages ship their own hand-written HTML from public/. Prerendering
+      // one would overwrite it with the SPA shell, so the two lists must never
+      // overlap — fail the build loudly rather than silently destroy a page.
+      const collisions = staticPages
+        .map((p) => p.path)
+        .filter((p) => catalog.some((a) => a.path === p))
+      if (collisions.length) {
+        this.error(
+          `seo-prerender: ${collisions.join(', ')} ` +
+            `${collisions.length > 1 ? 'appear' : 'appears'} in both catalog and ` +
+            `staticPages. A catalog entry is prerendered, which would overwrite ` +
+            `the hand-written public/ page. Remove it from one of the two lists.`,
+        )
+      }
+
       // Hub (overwrite dist/index.html) + every tool route.
       writeFileSync(join(dist, 'index.html'), buildPage('/'))
       const indexable = catalog.filter((a) => !a.noindex)
@@ -63,8 +78,9 @@ function seoPrerender(): Plugin {
         writeFileSync(join(dir, 'index.html'), buildPage(app.path))
       }
 
-      // sitemap.xml (indexable routes only)
-      const urls = ['/', ...indexable.map((a) => a.path)]
+      // sitemap.xml — indexable routes + the static pages (which are never
+      // prerendered above, but still need to be discoverable).
+      const urls = ['/', ...indexable.map((a) => a.path), ...staticPages.map((p) => p.path)]
       const sitemap =
         `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -98,11 +114,16 @@ function seoPrerender(): Plugin {
         indexable
           .map((a) => `- [${a.label}](${pageUrl(a.path)}): ${a.tagline ?? a.description}`)
           .join('\n') +
+        '\n\n## Pages\n' +
+        staticPages
+          .map((p) => `- [${p.label}](${pageUrl(p.path)}): ${p.tagline ?? p.description}`)
+          .join('\n') +
         '\n'
       writeFileSync(join(dist, 'llms.txt'), llms)
 
       this.info?.(
-        `seo-prerender: wrote ${catalog.length + 1} HTML pages + sitemap/robots/llms`,
+        `seo-prerender: wrote ${catalog.length + 1} HTML pages + sitemap/robots/llms ` +
+          `(${staticPages.length} static pages indexed, not prerendered)`,
       )
     },
   }
