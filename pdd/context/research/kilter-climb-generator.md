@@ -238,3 +238,15 @@ climb near your grade" MVP; a GPU run + real-climber feedback is the path to pol
    trainer? Weights hosting (in-repo `public/` vs. release asset) mirrors the snapshot hosting gate.
 3. **Generator surface:** a new mini-app vs. a tab inside Board Explorer (the renderer + size lookup are
    shared either way).
+
+## Training index for the app's "was this in the training data?" check (2026-10-04)
+
+`build-climb-dataset.py --min-ascents 3 --training-index src/frontend/public/climb-generator/training-index.json.gz`
+re-derives the v1 training split from the published snapshot (`board-data/kilter.sqlite.gz`, generated
+2026-06-06) and writes one row per climb: `[uuid, name, setter, split, frames, ascents, angle, grade]`, with
+`split` = the same deterministic per-uuid hash the trainer used (salt `kilter-gen-v1`). Verified exact: the
+rebuild reproduces the trained 87,879 train / 10,961 val examples = 52,878 / 6,600 / 6,860 climbs. ~4.6 MB gz,
+listed in `climb-generator/manifest.json` as `trainingIndex`, excluded from the PWA precache like the model.
+The mobile app downloads it once and checks a generated climb on-device (exact copy / held-out match /
+≥80% of holds shared / nearest training climb). **Pin it to the model**: when the snapshot workflow refreshes
+`board-data/`, don't regenerate this index until a model is retrained on the new snapshot.

@@ -409,6 +409,9 @@ def build(args) -> None:
     for w in writers.values():
         w.close()
 
+    if args.training_index:
+        write_training_index(args, cur, records)
+
     # Filtered, deduped name corpus for the name model (one per climb).
     clean_names = sorted({cn for cn in (clean_name(n) for n in names_by_uuid.values()) if cn})
     with open(os.path.join(args.out, "names.txt"), "w") as f:
@@ -463,6 +466,46 @@ def build(args) -> None:
     for name, n in sorted(by_size.items(), key=lambda kv: -kv[1]):
         print(f"  {name:<28} {n}")
     print(f"\nwrote {args.out}/  (vocab.json, size_masks.json, geometry.json, names.txt, dataset.*.jsonl, meta.json, stats.json)")
+
+
+def write_training_index(args, cur: sqlite3.Cursor, records: list[dict]) -> None:
+    """One row per CLIMB (not per angle) with its split, so an app can tell whether a climb the model
+    generated was in the training data — or how close it is to the nearest one — without the 30 MB
+    jsonl. The split is the same deterministic per-uuid hash the trainer used, so this is exact for a
+    model trained from this snapshot. gzip with mtime 0 so rebuilding the same snapshot is byte-stable."""
+    setters = dict(cur.execute("SELECT uuid, setter_username FROM climbs WHERE layout_id = ?", (args.layout,)))
+    by_uuid: dict[str, dict] = {}
+    for rec in records:
+        best = by_uuid.get(rec["uuid"])
+        if best is None or rec["ascents"] > best["ascents"]:
+            by_uuid[rec["uuid"]] = rec
+    rows, counts = [], {"train": 0, "val": 0, "test": 0}
+    for uuid in sorted(by_uuid):
+        rec = by_uuid[uuid]
+        split = split_of(uuid, args.seed_salt, args.val_frac, args.test_frac)
+        counts[split] += 1
+        frames = "".join(f"p{p}r{r}" for p, r in rec["holds"])
+        rows.append([uuid, rec["name"], setters.get(uuid) or "", split, frames,
+                     rec["ascents"], rec["angle"], rec["grade_label"]])
+    snapshot = None
+    manifest = os.path.join(os.path.dirname(os.path.abspath(args.source)), "manifest.json")
+    if os.path.exists(manifest):
+        with open(manifest) as f:
+            snapshot = json.load(f).get("generatedAt")
+    index = {
+        "version": 1, "model": args.index_model, "layout": args.layout,
+        "snapshotGeneratedAt": snapshot, "minAscents": args.min_ascents, "maxLen": args.max_len,
+        "seedSalt": args.seed_salt, "valFrac": args.val_frac, "testFrac": args.test_frac,
+        "splits": counts,
+        "fields": ["uuid", "name", "setter", "split", "frames", "ascents", "angle", "grade"],
+        "climbs": rows,
+    }
+    raw = json.dumps(index, separators=(",", ":"), ensure_ascii=False).encode()
+    with open(args.training_index, "wb") as f:
+        with gzip.GzipFile(fileobj=f, mode="wb", mtime=0) as gz:
+            gz.write(raw)
+    print(f"training index: {len(rows)} climbs {counts} -> {args.training_index} "
+          f"({os.path.getsize(args.training_index):,} bytes gz)")
 
 
 def self_test() -> None:
@@ -522,6 +565,10 @@ def main() -> None:
     ap.add_argument("--test-frac", type=float, default=0.1, help="test fraction (split by uuid)")
     ap.add_argument("--seed-salt", default="kilter-gen-v1", help="salt for the deterministic uuid split")
     ap.add_argument("--keep-holds", action="store_true", help="also write raw [pid,rid] holds per example")
+    ap.add_argument("--training-index", default="",
+                    help="also write a per-climb training-split index (.json.gz) for the app's 'was this in "
+                         "the training data?' check, e.g. src/frontend/public/climb-generator/training-index.json.gz")
+    ap.add_argument("--index-model", default="v1", help="the generator model id the index describes")
     ap.add_argument("--self-test", action="store_true", help="run the DB-free logic checks and exit")
     args = ap.parse_args()
 
