@@ -2,38 +2,90 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Snappet</title>
     <!--
-      GitHub Pages SPA redirect (spa-github-pages technique).
-      Encodes the requested path into a query string and redirects to index.html,
-      which reads it back and restores the real URL via history.replaceState.
-      pathSegmentsToKeep = 1 preserves the /Snappet/ repo prefix.
+      Two jobs:
+      1. /Snappet/open/<rest> is a Snappet app link (a universal link — the app's twin of snappet://<rest>).
+         With the app installed iOS opens it directly and this page never loads; without it, show an
+         "Open in Snappet" page instead of the web app.
+      2. Everything else: the GitHub Pages SPA redirect (spa-github-pages technique). Encodes the requested
+         path into a query string and redirects to index.html, which reads it back and restores the real URL
+         via history.replaceState. pathSegmentsToKeep = 1 preserves the /Snappet/ repo prefix.
     -->
     <script type="text/javascript">
-      var pathSegmentsToKeep = 1
+      var openPrefix = '/Snappet/open/'
       var l = window.location
-      l.replace(
-        l.protocol +
-          '//' +
-          l.hostname +
-          (l.port ? ':' + l.port : '') +
-          l.pathname
-            .split('/')
-            .slice(0, 1 + pathSegmentsToKeep)
-            .join('/') +
-          '/?/' +
-          l.pathname
-            .slice(1)
-            .split('/')
-            .slice(pathSegmentsToKeep)
-            .join('/')
-            .replace(/&/g, '~and~') +
-          (l.search
-            ? '&' + l.search.slice(1).replace(/&/g, '~and~')
-            : '') +
-          l.hash
-      )
+      var isAppLink = l.pathname.indexOf(openPrefix) === 0 && l.pathname.length > openPrefix.length
+      if (!isAppLink) {
+        var pathSegmentsToKeep = 1
+        l.replace(
+          l.protocol +
+            '//' +
+            l.hostname +
+            (l.port ? ':' + l.port : '') +
+            l.pathname
+              .split('/')
+              .slice(0, 1 + pathSegmentsToKeep)
+              .join('/') +
+            '/?/' +
+            l.pathname
+              .slice(1)
+              .split('/')
+              .slice(pathSegmentsToKeep)
+              .join('/')
+              .replace(/&/g, '~and~') +
+            (l.search
+              ? '&' + l.search.slice(1).replace(/&/g, '~and~')
+              : '') +
+            l.hash
+        )
+      }
     </script>
+    <style>
+      :root { --bg: #f6f5f2; --card: #ffffff; --ink: #17171a; --muted: #6b6b73; --brand: #ff5a3c; --line: #e6e4df; }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #0e0e10; --card: #1a1a1e; --ink: #f2f2f4; --muted: #9a9aa3; --line: #2a2a30; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+             padding: 24px 16px; background: var(--bg); color: var(--ink);
+             font: 16px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+      .card { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line);
+              border-radius: 22px; padding: 28px 22px; text-align: center; }
+      img { width: 64px; height: 64px; border-radius: 16px; }
+      h1 { font-size: 22px; margin: 14px 0 6px; }
+      p { margin: 0 0 18px; color: var(--muted); }
+      .what { font-weight: 600; color: var(--ink); }
+      a.btn { display: block; padding: 14px; border-radius: 14px; font-weight: 600; text-decoration: none; margin-top: 10px; }
+      a.primary { background: var(--brand); color: #fff; }
+      a.secondary { border: 1px solid var(--line); color: var(--ink); }
+      small { display: block; margin-top: 16px; color: var(--muted); font-size: 13px; }
+    </style>
   </head>
-  <body></body>
+  <body>
+    <div class="card" id="open" hidden>
+      <img src="/Snappet/apple-touch-icon-180x180.png" alt="" />
+      <h1>Open in Snappet</h1>
+      <p>This link is for the Snappet app: <span class="what" id="what">a Snappet link</span>.</p>
+      <a class="btn primary" id="openBtn" href="#">Open in Snappet</a>
+      <a class="btn secondary" href="https://testflight.apple.com/join/v4vZ51Y4">Get Snappet (iPhone beta)</a>
+      <small>Already have it? Tap “Open in Snappet”. Scanning the QR code with the iPhone Camera opens the app directly.</small>
+    </div>
+    <script type="text/javascript">
+      if (isAppLink) {
+        var rest = l.pathname.slice(openPrefix.length)
+        var kind = rest.split('/')[0].toLowerCase()
+        var labels = {
+          kilter: 'a Kilter climb', routine: 'a workout routine', festival: 'a festival lineup',
+          household: 'a household invite', quick: 'start a Quick Session', log: 'log a set',
+          attempt: 'log a climb attempt', finish: 'finish a workout', exercise: 'an exercise',
+          pomodoro: 'a focus timer', feed: 'your feed', clips: 'your clips'
+        }
+        document.getElementById('what').textContent = labels[kind] || 'a Snappet link'
+        document.getElementById('openBtn').href = 'snappet://' + rest + l.search + l.hash
+        document.getElementById('open').hidden = false
+      }
+    </script>
+  </body>
 </html>
