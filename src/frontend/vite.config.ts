@@ -205,7 +205,9 @@ export default defineConfig({
         // for anyone who already has the SW installed). knowledge-graph/ is also a
         // static page but IS precached, so workbox's directoryIndex resolves it
         // before the navigation fallback ever runs; this one can't be.
-        navigateFallbackDenylist: [/^\/?\d{3}\.html$/, /sw\.js$/, /\/music-festivals\//],
+        // open/ is a Snappet app link (universal link) — the GH Pages 404.html shows its
+        // "Open in Snappet" page; the SPA shell must not swallow it.
+        navigateFallbackDenylist: [/^\/?\d{3}\.html$/, /sw\.js$/, /\/music-festivals\//, /^\/Snappet\/open\//],
         cleanupOutdatedCaches: true,
       },
     }),
